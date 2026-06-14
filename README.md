@@ -52,6 +52,16 @@ React 19 + Vite + TypeScript (strict) + Vitest, `vite-plugin-pwa` (Workbox) for 
 Dexie (IndexedDB) for local persistence. The HP rules live in a small **pure, fully-tested domain
 core** (`src/domain/`); the UI is presentational.
 
+## Quality
+
+The rules domain is held to a high bar: **example + property-based tests** (fast-check) for its
+invariants, and **mutation testing** (Stryker) at a **100% score** on the domain — every injected
+fault is caught by a test. CI enforces lint, types, tests, build, and the mutation threshold.
+
+```bash
+pnpm mutation        # Stryker mutation testing over src/domain
+```
+
 ## License
 
 [AGPL-3.0](LICENSE). See [`NOTICE`](NOTICE). This is an independent, unofficial fan tool and ships no

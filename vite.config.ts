@@ -27,5 +27,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
     css: false,
+    // Never discover tests inside Stryker's sandbox copies (or build output).
+    exclude: ["**/node_modules/**", "**/dist/**", "**/.stryker-tmp/**"],
   },
 });

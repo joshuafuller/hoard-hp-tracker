@@ -12,10 +12,11 @@ export interface HpState {
 
 /**
  * Apply `n` damage. Temporary HP absorbs damage first (5e RAW); any overflow
- * reduces `current`. Both pools are floored at 0. Negative `n` is a no-op.
+ * reduces `current`. Both pools are floored at 0. A non-positive `n` is a no-op
+ * that returns the same state reference.
  */
 export function damage(s: HpState, n: number): HpState {
-  if (n < 0) return s;
+  if (n <= 0) return s;
   const temp = Math.max(0, s.temp - n);
   const overflow = n - (s.temp - temp);
   const current = Math.max(0, s.current - overflow);
@@ -24,10 +25,10 @@ export function damage(s: HpState, n: number): HpState {
 
 /**
  * Heal `current` by `n`, never exceeding `max` and never restoring `temp`.
- * Negative `n` is a no-op (symmetric with {@link damage}).
+ * A non-positive `n` is a no-op that returns the same state reference.
  */
 export function heal(s: HpState, n: number): HpState {
-  if (n < 0) return s;
+  if (n <= 0) return s;
   const current = Math.min(s.max, s.current + n);
   return { ...s, current };
 }
