@@ -210,6 +210,19 @@ describe("Sph.step — gravity pools the liquid", () => {
     const floor = Math.max(...ys);
     expect(floor - surface).toBeGreaterThan(sim.radius * 0.5); // real depth
   });
+
+  it("fills a full orb to near the top — reads full, not ~1/3 empty (#14)", () => {
+    // A full orb (count === capacity) must settle to a small bubble at the top.
+    // The pool packs denser than its zero-gravity rest lattice under gravity, so
+    // capacity over-provisions (slotPack < the calibration spacing); a looser
+    // lattice left the surface ~1/3 down the glass and the orb looked half-empty.
+    const sim = makeSim(0);
+    sim.setCount(sim.capacity);
+    settle(sim, 0, 1);
+    const top = 100 - sim.radius; // cy (100) − radius
+    const surface = Math.min(...sim.particles.map((p) => p.y));
+    expect(surface - top).toBeLessThan(sim.radius * 0.2); // within a small bubble of the top
+  });
 });
 
 describe("DEFAULT_PARAMS", () => {
