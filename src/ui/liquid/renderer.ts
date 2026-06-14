@@ -213,8 +213,8 @@ export class LiquidRenderer {
     const w = this.width;
     const h = this.height;
     this.width = this.height = 0; // force resize() to re-run
+    this.lost = false; // must clear BEFORE resize(), which early-returns while lost
     if (w && h) this.resize(w, h);
-    this.lost = false;
   };
 
   private buildGL(): GLState {
@@ -274,6 +274,7 @@ export class LiquidRenderer {
 
   /** Upload into a DYNAMIC buffer, growing (bufferData) only when it must. */
   private upload(buf: WebGLBuffer, data: Float32Array, used: number, cap: number): number {
+    if (used === 0) return cap; // nothing to upload; never sub-data an empty/unallocated store
     const gl = this.gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     if (used > cap) {
