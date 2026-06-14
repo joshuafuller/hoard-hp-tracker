@@ -94,7 +94,9 @@ describe("App (integration)", () => {
     expect(panel).not.toBeNull();
 
     // Orb is in the stage; the swappable panel is NOT inside the stage.
-    expect(stage).toContainElement(screen.getByTestId("hp-bar"));
+    // Target the orb by its `.vessel` root — the `hp-bar` testid is shared with
+    // ui/HpBar, so a testid query would be ambiguous if both ever render.
+    expect(stage!.querySelector(".vessel")).not.toBeNull();
     expect(stage!.querySelector(".hit-dice, .death-saves")).toBeNull();
 
     // Alive: the hit-dice panel occupies the dedicated slot.
@@ -106,7 +108,25 @@ describe("App (integration)", () => {
     await screen.findByLabelText(/death saving throws/i);
     expect(panel!.querySelector(".death-saves")).not.toBeNull();
     expect(stage!.querySelector(".death-saves")).toBeNull();
-    expect(stage).toContainElement(screen.getByTestId("hp-bar"));
+    expect(stage!.querySelector(".vessel")).not.toBeNull();
+  });
+
+  // Guards the Codex P2: the fixed panel slot is a shared scroll container for
+  // both Hit Dice and Death Saves. If the user scrolls it while on Hit Dice and
+  // then drops to 0, Death Saves must mount at the top of the slot, not into a
+  // stale scroll offset that hides its heading/pips.
+  it("resets the panel slot scroll when the panel contents swap", async () => {
+    const { container } = render(<App />);
+    await screen.findByText("10");
+    const panel = container.querySelector(".hp-tracker__panel") as HTMLElement;
+    panel.scrollTop = 60; // user scrolled the hit-dice slot
+
+    // 10 -> 0 mounts DeathSaves into the SAME scroll container.
+    await userEvent.click(screen.getByRole("button", { name: "Damage 5" }));
+    await userEvent.click(screen.getByRole("button", { name: "Damage 5" }));
+    await screen.findByLabelText(/death saving throws/i);
+
+    expect(panel.scrollTop).toBe(0);
   });
 
   it("hides death saves after healing back above 0", async () => {

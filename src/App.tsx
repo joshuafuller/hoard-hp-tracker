@@ -28,6 +28,14 @@ export function App() {
   const dying = hp.status !== "alive";
   const [editing, setEditing] = useState<EditTarget | null>(null);
 
+  // The panel slot is a shared scroll container for Hit Dice and Death Saves.
+  // Reset its scroll whenever the two swap, so the incoming panel starts at the
+  // top of the slot instead of a stale offset left by the outgoing one.
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (panelRef.current) panelRef.current.scrollTop = 0;
+  }, [dying]);
+
   // Dramatic status cues: a chime on stabilize, a knell on death. Gated until the
   // persisted record has hydrated, and the first hydrated status is taken as the
   // baseline — so reopening the app in a terminal state never fires a pre-gesture
@@ -93,7 +101,7 @@ export function App() {
       </div>
       {/* The swappable panel lives in its own fixed-height slot so the
           DeathSaves↔HitDicePanel height difference never re-centres the orb. */}
-      <div className="hp-tracker__panel">
+      <div className="hp-tracker__panel" ref={panelRef}>
         {dying ? (
           <DeathSaves
             successes={hp.successes}
