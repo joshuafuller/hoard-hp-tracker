@@ -76,6 +76,7 @@ body {
      behind it. The three rows size/shrink to fit within this height. */
   height: 100vh; /* legacy fallback */
   height: 100svh;
+  gap: clamp(0.35rem, 1.2vh, 1rem); /* fallback for browsers without svh */
   gap: clamp(0.35rem, 1.2svh, 1rem);
   padding:
     calc(env(safe-area-inset-top) + 0.4rem)
@@ -326,6 +327,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: clamp(0.5rem, 1.5vh, 1rem); /* fallback for browsers without svh */
   gap: clamp(0.5rem, 1.5svh, 1rem);
   width: min(100%, 30rem);
 }
@@ -357,10 +359,14 @@ body {
 
 .step-button[data-variant="primary"] {
   /* shrink on short screens too (min of width- and height-based) so the footer
-     compresses instead of clipping; floor keeps it thumb-tappable */
+     compresses instead of clipping; floor keeps it thumb-tappable. vw-only
+     fallback first for browsers without svh. */
+  width: clamp(58px, 22vw, 96px);
   width: clamp(58px, min(22vw, 10svh), 96px);
+  height: clamp(58px, 22vw, 96px);
   height: clamp(58px, min(22vw, 10svh), 96px);
   border-radius: 50%;
+  font-size: 2.5rem;
   font-size: clamp(1.8rem, 6svh, 2.5rem);
   background: radial-gradient(circle at 50% 30%, var(--obsidian-600), var(--obsidian-800));
   box-shadow:
@@ -370,6 +376,7 @@ body {
 
 .step-button[data-variant="secondary"] {
   min-width: 88px;
+  height: 48px; /* fallback for browsers without svh */
   height: clamp(38px, 5.5svh, 48px);
   padding: 0 1.25rem;
   border-radius: var(--radius-pill);
@@ -805,6 +812,7 @@ body {
   justify-content: center;
   gap: 0.15rem;
   min-width: 9.5rem;
+  min-height: 56px; /* fallback for browsers without svh */
   min-height: clamp(42px, 6.5svh, 56px);
   padding: 0.6rem 1.4rem;
   border-radius: var(--radius-lg);
