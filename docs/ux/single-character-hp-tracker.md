@@ -132,7 +132,8 @@ spell drops.
 
 *Acceptance criteria*
 - A concentration toggle with a clear on/off state.
-- On applying damage while concentrating, prompt the save DC (`max(10, ⌈damage/2⌉)`).
+- On applying damage while concentrating, prompt the save DC = `max(10, ⌊damage/2⌋)`
+  (half the damage **rounded down**, per 5e — so the DC stays 10 until damage ≥ 22).
 - Resolving or dropping concentration is one tap; clears on death/long rest.
 
 #### US-4 — Character identity · **Could** · weight 2
