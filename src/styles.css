@@ -1067,35 +1067,50 @@ body {
 @keyframes lv-aura { 0%,100% { opacity: 0.45; } 50% { opacity: 0.7; } }
 @keyframes lv-spin { to { transform: rotate(360deg); } }
 
-.vessel__svg { width: 100%; height: 100%; overflow: visible; display: block; filter: drop-shadow(0 20px 40px rgba(0,0,0,0.55)); }
-.vessel__well { fill: var(--obsidian-800); }
-
-.vessel__liquid {
-  /* the surface spring-settles to its new level on every change */
-  transition: transform 950ms cubic-bezier(0.34, 1.3, 0.5, 1);
-  will-change: transform;
+/* The circular glass orb that holds the fluid. The WebGL canvas (or the static
+   fallback) fills it; the rim + shine sit on top as the glass shell. */
+.vessel__orb {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(120% 120% at 50% 28%, var(--obsidian-800) 0%, var(--obsidian-900) 72%);
+  box-shadow:
+    inset 0 14px 36px rgba(0, 0, 0, 0.6),
+    0 22px 48px rgba(0, 0, 0, 0.55);
 }
-.vessel__wave { will-change: transform; }
-.vessel__wave--back path  { fill: color-mix(in oklab, var(--accent) 62%, black); opacity: 0.55; }
-.vessel__wave--front path { fill: var(--accent); filter: drop-shadow(0 0 8px var(--accent-glow)); transition: fill var(--dur-flow) ease; }
-.vessel__wave--back  { animation: lv-drift 9s linear infinite; }
-.vessel__wave--front { animation: lv-drift 5.5s linear infinite reverse; }
-@keyframes lv-drift { from { transform: translateX(0); } to { transform: translateX(-40px); } }
+.vessel__canvas { width: 100%; height: 100%; display: block; }
 
-.vessel__temp rect {
-  fill: var(--hp-temp);
-  opacity: 0.5;
-  filter: drop-shadow(0 0 6px color-mix(in oklab, var(--hp-temp) 60%, transparent));
+/* Static fallback: a simple eased fill from the bottom (no WebGL / reduced motion). */
+.vessel__fallback { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; }
+.vessel__fallback-fill {
+  width: 100%;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 85%, white 5%), color-mix(in oklab, var(--accent) 70%, black));
+  box-shadow: 0 0 24px var(--accent-glow);
+  transition: height var(--dur-flow) cubic-bezier(0.34, 1.2, 0.5, 1), background var(--dur-flow) ease;
 }
 
-/* Glass shell. */
+/* Glass shell over the fluid. */
 .vessel__rim {
-  fill: none;
-  stroke: color-mix(in oklab, var(--ink-100) 22%, transparent);
-  stroke-width: 1.5;
-  filter: drop-shadow(0 0 1px rgba(255,255,255,0.25));
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in oklab, var(--ink-100) 24%, transparent),
+    inset 0 2px 10px rgba(255, 255, 255, 0.12);
 }
-.vessel__shine { fill: rgba(255,255,255,0.16); filter: blur(3px); }
+.vessel__shine {
+  position: absolute;
+  top: 12%;
+  left: 18%;
+  width: 42%;
+  height: 22%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.22), transparent);
+  filter: blur(3px);
+}
 
 /* Centered readout, legible over liquid or void. */
 .vessel__readout {
@@ -1133,15 +1148,8 @@ body {
 .vessel__temp-badge[data-empty] { opacity: 0.5; }
 .vessel__temp-badge:focus-visible { outline: 2px solid var(--hp-temp); outline-offset: 2px; opacity: 1; }
 
-/* Slosh + flash on change. */
-.vessel[data-flash] .vessel__liquid { animation: lv-slosh 700ms cubic-bezier(0.36, 0.7, 0.2, 1); }
+/* Number flash on change (the fluid itself does the sloshing now). */
 .vessel[data-flash="damage"] .vessel__current { animation: lv-hit 600ms var(--ease-spring); }
 .vessel[data-flash="heal"] .vessel__current { animation: lv-heal 600ms var(--ease-spring); }
-@keyframes lv-slosh {
-  0% { transform: translateY(var(--lv-y, 0)) rotate(0deg); }
-  30% { rotate: -2.2deg; }
-  60% { rotate: 1.4deg; }
-  100% { rotate: 0deg; }
-}
 @keyframes lv-hit  { 0% { transform: translateX(0);} 25%{transform:translateX(-7px);}50%{transform:translateX(5px);}75%{transform:translateX(-3px);}100%{transform:translateX(0);} }
 @keyframes lv-heal { 0%,100%{transform:scale(1);} 45%{transform:scale(1.09);} }
