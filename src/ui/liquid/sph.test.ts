@@ -144,6 +144,35 @@ describe("Sph.step — gravity pools the liquid", () => {
     expect(meanY).toBeGreaterThan(sim.cy); // pooled below the centre
   });
 
+  // The downward velocity the gravity term alone imparts in one step, isolated
+  // from the (gravity-independent) initial depacking by differencing against a
+  // zero-gravity step from the identical deterministic spawn. The leftover is
+  // ~dt·scale·gravity, so it scales with the vector's clamped magnitude.
+  const meanVy = (sim: Sph) => sim.particles.reduce((s, p) => s + p.vy, 0) / sim.count;
+  const gravityVyDelta = (gx: number, gy: number) => {
+    const withG = makeSim(120);
+    withG.step(0.004, gx, gy);
+    const noG = makeSim(120);
+    noG.step(0.004, 0, 0);
+    return meanVy(withG) - meanVy(noG);
+  };
+
+  it("respects the gravity vector's magnitude (a flat phone barely pulls)", () => {
+    // A near-horizontal screen yields a small-magnitude gravity vector; the sim
+    // must apply proportionally gentle gravity rather than renormalizing it back
+    // to full strength (which would amplify sensor noise into a lurch).
+    const weak = gravityVyDelta(0, 0.15);
+    const strong = gravityVyDelta(0, 1);
+    expect(weak).toBeGreaterThan(0); // still downward
+    expect(weak / strong).toBeCloseTo(0.15, 2); // proportional to |g|
+  });
+
+  it("caps gravity at unit strength for over-long vectors", () => {
+    // A vector longer than 1 (e.g. the floor bias pushing |g| slightly over 1)
+    // is clamped, so it never pulls harder than a clean unit "down".
+    expect(gravityVyDelta(0, 3)).toBeCloseTo(gravityVyDelta(0, 1), 6);
+  });
+
   it("follows a tilted gravity vector to the low side", () => {
     const right = makeSim(120);
     settle(right, 1, 0); // gravity points +x

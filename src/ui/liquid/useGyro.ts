@@ -10,6 +10,34 @@ interface DeviceOrientationEventStatic {
   requestPermission?: () => Promise<"granted" | "denied">;
 }
 
+/** Gentle downward pull kept when the screen is flat, so the pool still rests
+ * at the bottom instead of floating — without amplifying sensor noise. */
+const FLAT_FLOOR = 0.15;
+
+/**
+ * Map device-orientation Euler angles (degrees) to a screen-space gravity vector
+ * (x right, y DOWN). This is the projection of world "down" onto the screen
+ * plane:
+ *
+ *   x = cos(beta)·sin(gamma)   y = sin(beta)
+ *
+ * Unlike a bare `sin`, this keeps the correct sign through every orientation:
+ * tilting past vertical (the screen turning to face the floor) keeps pulling
+ * down instead of reversing, and a roll inverts correctly once face-down.
+ *
+ * The result is intentionally NOT normalized — its magnitude shrinks toward 0 as
+ * the screen approaches horizontal, so the sim applies gentle (not amplified)
+ * gravity when the phone lies flat. A small downward floor keeps a flat screen
+ * settling calmly at the bottom.
+ */
+export function projectGravity(betaDeg: number, gammaDeg: number): Gravity {
+  const beta = (betaDeg * Math.PI) / 180; // front-back pitch
+  const gamma = (gammaDeg * Math.PI) / 180; // left-right roll
+  const x = Math.cos(beta) * Math.sin(gamma);
+  const y = Math.sin(beta) + FLAT_FLOOR;
+  return { x, y };
+}
+
 /**
  * Tracks device tilt and exposes it as a gravity direction the fluid sim can
  * follow, so water pools toward the low edge of the phone. Falls back to plain
@@ -27,15 +55,9 @@ export function useGyro(): { gravity: React.MutableRefObject<Gravity> } {
 
     const onOrient = (e: DeviceOrientationEvent) => {
       if (e.beta == null && e.gamma == null) return;
-      const beta = ((e.beta ?? 90) * Math.PI) / 180; // front-back pitch
-      const gamma = ((e.gamma ?? 0) * Math.PI) / 180; // left-right roll
-      // project world-down onto the screen plane
-      const gx = Math.sin(gamma);
-      const gy = Math.sin(beta);
-      // keep a gentle downward bias so a flat phone still has a clear bottom
-      const by = gy + 0.15;
-      const len = Math.hypot(gx, by) || 1;
-      gravity.current = { x: gx / len, y: by / len };
+      // Project world-down onto the screen plane. The vector is left un-normalized
+      // on purpose — its magnitude tells the sim how upright the phone is.
+      gravity.current = projectGravity(e.beta ?? 90, e.gamma ?? 0);
     };
 
     let attached = false;

@@ -254,17 +254,26 @@ export class Sph {
     return { x, y, ox: x, oy: y, vx: (this.rng() - 0.5) * 6, vy: this.rng() * 8, rho: this.params.restDensity, kind };
   }
 
-  /** Advance the simulation by `dt` seconds under gravity direction (gx, gy). */
+  /**
+   * Advance the simulation by `dt` seconds under the gravity vector (gx, gy).
+   * The vector's magnitude scales the pull (0 = weightless, 1 = full gravity);
+   * lengths over 1 are clamped. So a unit "down" of (0, 1) is full strength.
+   */
   step(dt: number, gx: number, gy: number): void {
     const ps = this.particles;
     const n = ps.length;
     if (n === 0) return;
     this.ensureArrays(n);
 
-    // 1. apply gravity, predict positions
-    const glen = Math.hypot(gx, gy) || 1;
-    const gax = (gx / glen) * this.params.gravity;
-    const gay = (gy / glen) * this.params.gravity;
+    // 1. apply gravity, predict positions.
+    // Respect the vector's magnitude (don't renormalize): a near-horizontal
+    // phone yields a short vector and so a gentle pull, instead of amplifying
+    // sensor noise back to full strength. Clamp at unit length so an over-long
+    // vector never pulls harder than a clean "down".
+    const glen = Math.hypot(gx, gy);
+    const scale = (glen > 1 ? 1 / glen : 1) * this.params.gravity;
+    const gax = gx * scale;
+    const gay = gy * scale;
     for (const p of ps) {
       p.ox = p.x;
       p.oy = p.y;
