@@ -14,6 +14,9 @@ permissions:
   id-token: write
 
 concurrency:
+  # Serialize deploys; do NOT cancel an in-flight one (canceling a running Pages
+  # deployment can leave the site half-updated). Overlapping main/beta pushes just
+  # queue and run in order — each run rebuilds the whole site, so the latest wins.
   group: pages
   cancel-in-progress: false
 
@@ -41,7 +44,7 @@ jobs:
         run: |
           if git ls-remote --exit-code --heads origin beta >/dev/null 2>&1; then
             git fetch origin beta
-            git checkout beta
+            git checkout -B beta FETCH_HEAD
             pnpm install --frozen-lockfile
             HOARD_BASE=/hoard-hp-tracker/beta/ pnpm build
             mkdir -p _site/beta

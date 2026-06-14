@@ -14,8 +14,9 @@ const base = process.env.HOARD_BASE ?? "/";
 // covers the whole site — including the /beta/ sub-app. Stop prod's SW from
 // serving its SPA fallback for /beta/ routes so the beta app loads from network
 // (and registers its own, more-specific SW). The beta build must NOT denylist
-// its own paths, so this only applies when we're not the beta build.
-const isBeta = base.includes("/beta/");
+// its own paths, so this only applies when we're not the beta build. Match a
+// base ending in /beta or /beta/ (tolerant of a missing trailing slash).
+const isBeta = /\/beta\/?$/.test(base);
 
 export default defineConfig({
   base,
@@ -26,7 +27,7 @@ export default defineConfig({
       manifest,
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,ico,webp,woff2}"],
-        ...(isBeta ? {} : { navigateFallbackDenylist: [/\/beta\//] }),
+        ...(isBeta ? {} : { navigateFallbackDenylist: [/\/beta(\/|$)/] }),
       },
     }),
   ],
