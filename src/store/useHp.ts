@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { db as defaultDb, HP_ID, type HpDb, type HpRecord } from "./db";
+import { db as defaultDb, HP_ID, type HpDb, type HpRecord, isReloading } from "./db";
 import {
   damage,
   heal,
@@ -95,11 +95,30 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
   const record = useLiveQuery(() => db.hp.get(HP_ID), [db]);
   const state: HpRecord = record ?? SEED;
 
-  const write = (fn: (r: HpRecord) => HpRecord) => () =>
+  const runTxn = (fn: (r: HpRecord) => HpRecord) =>
     db.transaction("rw", db.hp, async () => {
       const current = (await db.hp.get(HP_ID)) ?? SEED;
       await db.hp.put({ ...fn(current), id: HP_ID });
     });
+
+  // Writes are resilient: a transiently closed/blocked IndexedDB connection (a
+  // known mobile quirk after a background service-worker update) would otherwise
+  // drop the write silently, so a tap appears to do nothing. Reopen once and
+  // retry; if it still fails, surface it instead of failing invisibly. Skip the
+  // retry when a reload is imminent (versionchange) so we don't fight it.
+  const write = (fn: (r: HpRecord) => HpRecord) => async (): Promise<void> => {
+    try {
+      await runTxn(fn);
+    } catch (err) {
+      if (isReloading()) return;
+      try {
+        if (!db.isOpen()) await db.open();
+        await runTxn(fn);
+      } catch (err2) {
+        console.error("[hoard] HP write failed; the change was not saved", err ?? err2);
+      }
+    }
+  };
 
   // HP ops run the pure HP function, then reconcile death saves (saves only
   // exist at 0 HP, so any move above 0 clears them).

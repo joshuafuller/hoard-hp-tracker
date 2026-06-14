@@ -20,7 +20,7 @@ describe("App (integration)", () => {
 
   it("renders the seeded HP and the controls", async () => {
     render(<App />);
-    expect(await screen.findByTestId("hp-display")).toBeInTheDocument();
+    expect(await screen.findByTestId("hp-current")).toBeInTheDocument();
     expect(screen.getByTestId("hp-bar")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Damage 1" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Heal 1" })).toBeInTheDocument();
