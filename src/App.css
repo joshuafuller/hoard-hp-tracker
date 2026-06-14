@@ -1,12 +1,33 @@
 /* Layout glue for the composed app shell. The Obsidian theme + component styling
-   live in styles.css (owned by the UI work); this only positions the regions. */
+   live in styles.css (owned by the UI work); this only positions the regions.
+
+   The shell is a fixed-height (100dvh) column that never scrolls (see
+   `.hp-tracker` in styles.css). Three in-flow rows stack: the orb stage flexes
+   to fill the middle, the swappable panel sits in a fixed-height slot, and the
+   footer is pinned at the bottom. Keeping the panel slot a fixed height is what
+   stops the DeathSaves↔HitDicePanel swap from re-centring (and visibly nudging)
+   the orb. */
 .hp-tracker__stage {
+  flex: 1 1 auto;
+  min-height: 0; /* allow the orb to shrink on short screens instead of overflowing */
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2.25rem;
-  margin: auto 0;
+  justify-content: center;
   width: 100%;
+}
+
+/* Fixed-height slot for the hit-dice / death-saves panel. Its height does NOT
+   depend on which panel is shown, so the orb above it stays put. The taller
+   DeathSaves scrolls within the slot rather than pushing the page. */
+.hp-tracker__panel {
+  flex: 0 0 auto;
+  height: clamp(7.5rem, 24dvh, 11rem);
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .hp-tracker__editors {
@@ -17,10 +38,11 @@
 }
 
 .hp-tracker__footer {
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.25rem;
+  gap: clamp(0.75rem, 2dvh, 1.25rem);
   width: 100%;
 }
 

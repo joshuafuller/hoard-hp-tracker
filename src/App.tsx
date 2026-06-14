@@ -90,6 +90,10 @@ export function App() {
           onEditMax={() => setEditing("max")}
           onEditTemp={() => setEditing("temp")}
         />
+      </div>
+      {/* The swappable panel lives in its own fixed-height slot so the
+          DeathSaves↔HitDicePanel height difference never re-centres the orb. */}
+      <div className="hp-tracker__panel">
         {dying ? (
           <DeathSaves
             successes={hp.successes}
