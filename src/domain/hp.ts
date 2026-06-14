@@ -1,8 +1,10 @@
 /**
  * Pure HP domain model — the framework-free core (no React, Dexie, or DOM).
  *
- * Every function returns a NEW state and never mutates its input. Invariants
- * `0 <= current <= max`, `temp >= 0`, and `max >= 1` hold after every operation.
+ * Functions never mutate their input. They return a NEW state, except for a
+ * no-op (e.g. non-positive damage/heal), which returns the same reference
+ * unchanged. Invariants `0 <= current <= max`, `temp >= 0`, and `max >= 1` hold
+ * after every operation.
  */
 export interface HpState {
   current: number;
@@ -12,10 +14,11 @@ export interface HpState {
 
 /**
  * Apply `n` damage. Temporary HP absorbs damage first (5e RAW); any overflow
- * reduces `current`. Both pools are floored at 0. Negative `n` is a no-op.
+ * reduces `current`. Both pools are floored at 0. A non-positive `n` is a no-op
+ * that returns the same state reference.
  */
 export function damage(s: HpState, n: number): HpState {
-  if (n < 0) return s;
+  if (n <= 0) return s;
   const temp = Math.max(0, s.temp - n);
   const overflow = n - (s.temp - temp);
   const current = Math.max(0, s.current - overflow);
@@ -24,10 +27,10 @@ export function damage(s: HpState, n: number): HpState {
 
 /**
  * Heal `current` by `n`, never exceeding `max` and never restoring `temp`.
- * Negative `n` is a no-op (symmetric with {@link damage}).
+ * A non-positive `n` is a no-op that returns the same state reference.
  */
 export function heal(s: HpState, n: number): HpState {
-  if (n < 0) return s;
+  if (n <= 0) return s;
   const current = Math.min(s.max, s.current + n);
   return { ...s, current };
 }

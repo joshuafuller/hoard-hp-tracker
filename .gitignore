@@ -11,3 +11,8 @@ dev-dist/
 .idea/
 .vscode/
 *.log
+.gstack/
+
+# Mutation testing
+.stryker-tmp/
+reports/
