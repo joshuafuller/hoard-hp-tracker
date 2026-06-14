@@ -90,6 +90,34 @@ describe("Sph.setCount", () => {
   });
 });
 
+describe("Sph kinds (HP + temp)", () => {
+  it("never exceeds capacity across HP and temp", () => {
+    const sim = makeSim(0);
+    const cap = sim.capacity;
+    sim.setCount(cap); // HP fills the bowl
+    sim.setTempCount(20); // …so temp has no room
+    expect(sim.countOf(1)).toBe(0);
+    expect(sim.countOf(0) + sim.countOf(1)).toBeLessThanOrEqual(cap);
+  });
+
+  it("temp claims room only when HP leaves it free", () => {
+    const sim = makeSim(0);
+    const cap = sim.capacity;
+    sim.setCount(cap - 10);
+    sim.setTempCount(10);
+    expect(sim.countOf(1)).toBe(10);
+    expect(sim.countOf(0) + sim.countOf(1)).toBeLessThanOrEqual(cap);
+  });
+
+  it("HP and temp spawn into distinct positions (no slot collision)", () => {
+    const sim = makeSim(0);
+    sim.setCount(sim.capacity - 30);
+    sim.setTempCount(30);
+    const seen = new Set(sim.particles.map((p) => `${p.x.toFixed(3)},${p.y.toFixed(3)}`));
+    expect(seen.size).toBe(sim.particles.length);
+  });
+});
+
 describe("Sph.step — containment", () => {
   it("never lets a particle leave the bowl", () => {
     const sim = makeSim(120);

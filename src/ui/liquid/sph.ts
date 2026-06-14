@@ -130,7 +130,7 @@ export class Sph {
     this.dpy = new Float64Array(0);
 
     this.slots = this.buildSlots();
-    if (!opts.params || opts.params.restDensity == null) {
+    if (!opts.params || opts.params.restDensity == null || opts.params.restDensity <= 0) {
       this.params.restDensity = this.calibrateRestDensity();
     }
     const dq = this.params.sCorrDq * this.params.h;
@@ -215,7 +215,9 @@ export class Sph {
 
   private adjustKind(kind: 0 | 1, target: number): Particle[] {
     const cap = this.slots.length;
-    target = Math.max(0, Math.min(cap, Math.round(target)));
+    // leave room for the other kind so HP and temp never spawn into the same slot
+    const otherCount = this.countOf(kind === 0 ? 1 : 0);
+    target = Math.max(0, Math.min(cap - otherCount, Math.round(target)));
     const mine = this.particles.filter((p) => p.kind === kind);
     if (target === mine.length) return [];
     if (target < mine.length) {

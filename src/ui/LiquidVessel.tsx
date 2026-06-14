@@ -33,8 +33,11 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { gravity } = useGyro();
 
-  // Use the WebGL fluid only where it can run well; otherwise a static fill.
-  const [useGl] = useState(() => LiquidRenderer.isSupported() && !prefersReducedMotion());
+  // Use the WebGL fluid only where it can actually run: WebGL2 present, motion
+  // allowed, and the GL context built successfully (onUnsupported flips it off).
+  const [webglOk, setWebglOk] = useState(() => LiquidRenderer.isSupported());
+  const reducedMotion = useReducedMotion();
+  const active = webglOk && !reducedMotion;
 
   const color: [number, number, number] = TIER_RGB[tier] ?? [0.204, 0.827, 0.6];
   const tempRatio = max > 0 ? Math.max(0, Math.min(1, temp / max)) : 0;
@@ -46,14 +49,15 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
     deep: darken(color),
     tempColor: TEMP_RGB,
     gravity,
-    active: useGl,
+    active,
+    onUnsupported: () => setWebglOk(false),
   });
 
   return (
     <div className="vessel" data-tier={tier} data-flash={flash ?? undefined}>
       <div className="vessel__aura" aria-hidden="true" />
       <div className="vessel__orb" data-testid="hp-bar" data-tier={tier}>
-        {useGl ? (
+        {active ? (
           <canvas ref={canvasRef} className="vessel__canvas" aria-hidden="true" />
         ) : (
           <div className="vessel__fallback" aria-hidden="true">
@@ -100,8 +104,19 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
   );
 }
 
-function prefersReducedMotion(): boolean {
-  return typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+/** Live `prefers-reduced-motion` — reacts if the user toggles it while mounted. */
+function useReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(
+    () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true,
+  );
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onChange = () => setReduced(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return reduced;
 }
 
 function EditableValue({

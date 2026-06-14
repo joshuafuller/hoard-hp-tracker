@@ -4,6 +4,20 @@ import type { HitDieSize } from "../domain/hitDice";
 /** Default name for the production HP database. */
 export const HP_DB_NAME = "hoard-hp";
 
+/**
+ * True once a `versionchange` has fired and a reload is imminent, so the write
+ * path stops retrying (a retry would race the reload / reopen a dying database).
+ */
+let reloading = false;
+export const isReloading = (): boolean => reloading;
+
+/** Test environments (jsdom / vitest) can't navigate; suppress location.reload there. */
+function isTestEnv(): boolean {
+  const env = (import.meta as { env?: { MODE?: string } }).env;
+  if (env?.MODE === "test") return true;
+  return typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom");
+}
+
 /** The single HP record lives at this fixed primary key. */
 export const HP_ID = 1 as const;
 
@@ -85,11 +99,9 @@ export function createHpDb(name: string = HP_DB_NAME): HpDb {
   // would otherwise block and silently swallow every write. Close it so the
   // upgrade can proceed, then reload to reconnect cleanly.
   db.on("versionchange", () => {
+    reloading = true; // tell the write path to stop retrying — a reload is coming
     db.close();
-    // Reload only in a real browser; jsdom (tests) can't navigate and deleting a
-    // DB in a test would otherwise trip "navigation not implemented".
-    const isJsdom = typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom");
-    if (typeof location !== "undefined" && !isJsdom) {
+    if (typeof location !== "undefined" && !isTestEnv()) {
       try {
         location.reload();
       } catch {

@@ -18,6 +18,8 @@ export interface LiquidEngineOpts {
   gravity: React.MutableRefObject<Gravity>;
   /** false → tear down (used for the reduced-motion / unsupported fallback) */
   active: boolean;
+  /** called if WebGL2 can't actually be initialised, so the caller can fall back */
+  onUnsupported?: () => void;
 }
 
 const SUBSTEPS = 3;
@@ -26,9 +28,9 @@ const MAX_DPR = 2;
 
 /**
  * Owns the fluid sim, the WebGL renderer, and the animation loop. Particle counts
- * track HP and temp-HP as volume: they ease toward target each frame so damage
- * drains the pool and heal pours it back in, with a splash on any change. Pauses
- * when the tab is hidden.
+ * track HP and temp-HP as volume (drain on damage, pour on heal, splash on
+ * change). Rebuilds the sim geometry on canvas resize / orientation change, and
+ * pauses when the tab is hidden.
  */
 export function useLiquidEngine(opts: LiquidEngineOpts): void {
   const { canvasRef, gravity, active } = opts;
@@ -45,67 +47,82 @@ export function useLiquidEngine(opts: LiquidEngineOpts): void {
     try {
       renderer = new LiquidRenderer(canvas);
     } catch {
-      return; // caller's fallback handles unsupported WebGL2
+      latest.current.onUnsupported?.(); // flip the caller to its static fallback
+      return;
     }
 
-    const dpr = Math.min(MAX_DPR, window.devicePixelRatio || 1);
-    const cssSize = canvas.clientWidth || 320;
-    const px = Math.round(cssSize * dpr);
-    canvas.width = px;
-    canvas.height = px;
-    renderer.resize(px, px);
+    let sim: Sph | null = null;
+    let pointSize = 0;
+    let lastHp = 0;
+    let lastTemp = 0;
 
-    const radius = px * 0.5;
-    const h = Math.max(8, radius * 0.135);
-    const sim = new Sph({ cx: px / 2, cy: px / 2, radius, params: { h } });
-    const pointSize = h * 3.0;
-    const cap = sim.capacity;
+    const tempTarget = (cap: number) => Math.min(cap, Math.round(latest.current.tempRatio * cap));
+    const hpTarget = (cap: number, temp: number) => Math.min(cap - temp, Math.round(latest.current.ratio * cap));
 
-    // Temp-HP claims its share of the bowl from the top; HP fills below with the
-    // remaining room. So a shielded, full-HP hero shows a cyan cap over the green.
-    const tempTarget = () => Math.min(cap, Math.round(latest.current.tempRatio * cap));
-    const hpTarget = (temp: number) => Math.min(cap - temp, Math.round(latest.current.ratio * cap));
-
-    // seed at the current fill so the first paint is already settled-ish
-    const seedTemp = tempTarget();
-    sim.setTempCount(seedTemp);
-    sim.setCount(hpTarget(seedTemp));
-    for (let i = 0; i < 40; i++) sim.step(SIM_DT, 0, 1);
+    // (Re)build the sim + canvas backing store for the current CSS size. Called
+    // on first layout and whenever the element resizes (rotation, split-view…).
+    const build = () => {
+      const dpr = Math.min(MAX_DPR, window.devicePixelRatio || 1);
+      const cssSize = canvas.clientWidth;
+      if (!cssSize) return; // not laid out yet; the observer will fire again
+      const px = Math.round(cssSize * dpr);
+      if (px === canvas.width && sim) return; // unchanged
+      canvas.width = px;
+      canvas.height = px;
+      renderer.resize(px, px);
+      const radius = px * 0.5;
+      const h = Math.max(8, radius * 0.135);
+      sim = new Sph({ cx: px / 2, cy: px / 2, radius, params: { h } });
+      pointSize = h * 3.0;
+      const cap = sim.capacity;
+      const temp = tempTarget(cap);
+      sim.setTempCount(temp);
+      sim.setCount(hpTarget(cap, temp));
+      for (let i = 0; i < 40; i++) sim.step(SIM_DT, 0, 1);
+      lastHp = sim.countOf(0);
+      lastTemp = sim.countOf(1);
+    };
+    build();
 
     let raf = 0;
     let running = true;
     let time = 0;
-    let lastHp = sim.countOf(0);
-    let lastTemp = seedTemp;
-    const ease = Math.max(1, Math.ceil(cap * 0.05));
 
     const frame = () => {
       if (!running) return;
+      if (!sim) {
+        build();
+        if (!sim) {
+          raf = requestAnimationFrame(frame);
+          return;
+        }
+      }
       time += 1 / 60;
+      const cap = sim.capacity;
+      const ease = Math.max(1, Math.ceil(cap * 0.05));
 
       // temp claims its share first; HP eases into the remaining room
-      const tempWant = tempTarget();
+      const tempWant = tempTarget(cap);
       const haveTemp = sim.countOf(1);
       if (tempWant !== haveTemp) {
         sim.setTempCount(haveTemp + Math.sign(tempWant - haveTemp) * Math.min(ease, Math.abs(tempWant - haveTemp)));
       }
-      const hpWant = hpTarget(tempWant);
+      const hpWant = hpTarget(cap, tempWant);
       const haveHp = sim.countOf(0);
       if (hpWant !== haveHp) {
         sim.setCount(haveHp + Math.sign(hpWant - haveHp) * Math.min(ease, Math.abs(hpWant - haveHp)));
       }
 
       // a jolt of slosh whenever the player's HP/temp target jumps (damage/heal)
-      const dHp = Math.abs(hpWant - lastHp);
-      const dTemp = Math.abs(tempWant - lastTemp);
-      if (dHp + dTemp > 0) {
-        sim.splash(Math.min(420, 90 + (dHp + dTemp) * 6));
+      const delta = Math.abs(hpWant - lastHp) + Math.abs(tempWant - lastTemp);
+      if (delta > 0) {
+        sim.splash(Math.min(420, 90 + delta * 6));
         lastHp = hpWant;
         lastTemp = tempWant;
       }
 
       const g = latest.current.gravity.current;
-      for (let s = 0; s < SUBSTEPS; s++) sim.step(SIM_DT, g.x, g.y);
+      for (let st = 0; st < SUBSTEPS; st++) sim.step(SIM_DT, g.x, g.y);
       renderer.render(sim.particles, {
         color: latest.current.color,
         deep: latest.current.deep,
@@ -126,12 +143,23 @@ export function useLiquidEngine(opts: LiquidEngineOpts): void {
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
+
+    let ro: ResizeObserver | undefined;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => build());
+      ro.observe(canvas);
+    } else {
+      window.addEventListener("resize", build);
+    }
+
     raf = requestAnimationFrame(frame);
 
     return () => {
       running = false;
       cancelAnimationFrame(raf);
       document.removeEventListener("visibilitychange", onVisibility);
+      ro?.disconnect();
+      window.removeEventListener("resize", build);
       renderer.dispose();
     };
   }, [canvasRef, active, gravity]);
