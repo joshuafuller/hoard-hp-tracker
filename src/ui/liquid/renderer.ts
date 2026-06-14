@@ -112,14 +112,21 @@ function compile(gl: WebGL2RenderingContext, type: number, src: string): WebGLSh
 
 function link(gl: WebGL2RenderingContext, vs: string, fs: string): WebGLProgram {
   const p = gl.createProgram()!;
-  gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, vs));
-  gl.attachShader(p, compile(gl, gl.FRAGMENT_SHADER, fs));
+  const v = compile(gl, gl.VERTEX_SHADER, vs);
+  const f = compile(gl, gl.FRAGMENT_SHADER, fs);
+  gl.attachShader(p, v);
+  gl.attachShader(p, f);
   gl.linkProgram(p);
   if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
     const log = gl.getProgramInfoLog(p);
     gl.deleteProgram(p);
     throw new Error(`program link failed: ${log}`);
   }
+  // once linked, the shader objects are no longer needed
+  gl.detachShader(p, v);
+  gl.detachShader(p, f);
+  gl.deleteShader(v);
+  gl.deleteShader(f);
   return p;
 }
 
@@ -136,15 +143,34 @@ export interface RenderOpts {
   time: number;
 }
 
+interface GLState {
+  splatProg: WebGLProgram;
+  shadeProg: WebGLProgram;
+  posBuf: WebGLBuffer;
+  kindBuf: WebGLBuffer;
+  quadBuf: WebGLBuffer;
+  fbo: WebGLFramebuffer;
+  densTex: WebGLTexture;
+  aPos: number;
+  aKind: number;
+  aQuad: number;
+  uRes: WebGLUniformLocation | null;
+  uSize: WebGLUniformLocation | null;
+  uDensity: WebGLUniformLocation | null;
+  uTexel: WebGLUniformLocation | null;
+  uColor: WebGLUniformLocation | null;
+  uDeep: WebGLUniformLocation | null;
+  uTemp: WebGLUniformLocation | null;
+  uIso: WebGLUniformLocation | null;
+  uTime: WebGLUniformLocation | null;
+  posCap: number; // capacity in floats
+  kindCap: number;
+}
+
 export class LiquidRenderer {
   private gl: WebGL2RenderingContext;
-  private splatProg: WebGLProgram;
-  private shadeProg: WebGLProgram;
-  private posBuf: WebGLBuffer;
-  private kindBuf: WebGLBuffer;
-  private quadBuf: WebGLBuffer;
-  private fbo: WebGLFramebuffer;
-  private densTex: WebGLTexture;
+  private canvas: HTMLCanvasElement;
+  private s: GLState;
   private posData: Float32Array = new Float32Array(0);
   private kindData: Float32Array = new Float32Array(0);
   private width = 0;
@@ -152,6 +178,12 @@ export class LiquidRenderer {
   private dw = 0; // density buffer size
   private dh = 0;
   private densityScale = 0.5;
+  private maxPointSize = 1024;
+  /** true while the GPU context is lost — render() becomes a safe no-op */
+  private lost = false;
+  /** most recently requested size; applied on restore if it arrived while lost */
+  private pendingW = 0;
+  private pendingH = 0;
 
   static isSupported(): boolean {
     try {
@@ -166,36 +198,107 @@ export class LiquidRenderer {
     const gl = canvas.getContext("webgl2", { premultipliedAlpha: false, alpha: true, antialias: false });
     if (!gl) throw new Error("webgl2 unavailable");
     this.gl = gl;
-    this.splatProg = link(gl, VERT_SPLAT, FRAG_SPLAT);
-    this.shadeProg = link(gl, VERT_QUAD, FRAG_SHADE);
-    this.posBuf = gl.createBuffer()!;
-    this.kindBuf = gl.createBuffer()!;
-    this.quadBuf = gl.createBuffer()!;
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuf);
+    this.canvas = canvas;
+    canvas.addEventListener("webglcontextlost", this.onContextLost);
+    canvas.addEventListener("webglcontextrestored", this.onContextRestored);
+    this.s = this.buildGL();
+  }
+
+  // GPU context loss (common on mobile when the tab is backgrounded): freeze
+  // rendering, then rebuild every GL object and the density buffer on restore so
+  // the orb comes back instead of staying permanently blank.
+  private onContextLost = (e: Event) => {
+    e.preventDefault();
+    this.lost = true;
+  };
+  private onContextRestored = () => {
+    this.s = this.buildGL();
+    this.width = this.height = 0; // force a fresh allocation
+    this.lost = false;
+    // apply the latest requested size (which may have changed while lost)
+    if (this.pendingW && this.pendingH) this.applyResize();
+  };
+
+  private buildGL(): GLState {
+    const gl = this.gl;
+    const splatProg = link(gl, VERT_SPLAT, FRAG_SPLAT);
+    const shadeProg = link(gl, VERT_QUAD, FRAG_SHADE);
+    const quadBuf = gl.createBuffer()!;
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-    this.fbo = gl.createFramebuffer()!;
-    this.densTex = gl.createTexture()!;
+    const range = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE) as Float32Array | null;
+    if (range && range.length === 2) this.maxPointSize = range[1]!;
+    return {
+      splatProg,
+      shadeProg,
+      posBuf: gl.createBuffer()!,
+      kindBuf: gl.createBuffer()!,
+      quadBuf,
+      fbo: gl.createFramebuffer()!,
+      densTex: gl.createTexture()!,
+      aPos: gl.getAttribLocation(splatProg, "a_pos"),
+      aKind: gl.getAttribLocation(splatProg, "a_kind"),
+      aQuad: gl.getAttribLocation(shadeProg, "a_quad"),
+      uRes: gl.getUniformLocation(splatProg, "u_res"),
+      uSize: gl.getUniformLocation(splatProg, "u_size"),
+      uDensity: gl.getUniformLocation(shadeProg, "u_density"),
+      uTexel: gl.getUniformLocation(shadeProg, "u_texel"),
+      uColor: gl.getUniformLocation(shadeProg, "u_color"),
+      uDeep: gl.getUniformLocation(shadeProg, "u_deep"),
+      uTemp: gl.getUniformLocation(shadeProg, "u_temp"),
+      uIso: gl.getUniformLocation(shadeProg, "u_iso"),
+      uTime: gl.getUniformLocation(shadeProg, "u_time"),
+      posCap: 0,
+      kindCap: 0,
+    };
   }
 
   resize(width: number, height: number): void {
+    // always record the request so a resize during context loss isn't lost
+    this.pendingW = width;
+    this.pendingH = height;
+    if (this.lost) return;
+    this.applyResize();
+  }
+
+  private applyResize(): void {
+    const width = this.pendingW;
+    const height = this.pendingH;
     if (width === this.width && height === this.height) return;
     this.width = width;
     this.height = height;
     this.dw = Math.max(1, Math.round(width * this.densityScale));
     this.dh = Math.max(1, Math.round(height * this.densityScale));
     const gl = this.gl;
-    gl.bindTexture(gl.TEXTURE_2D, this.densTex);
+    gl.bindTexture(gl.TEXTURE_2D, this.s.densTex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG8, this.dw, this.dh, 0, gl.RG, gl.UNSIGNED_BYTE, null);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.densTex, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.s.fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.s.densTex, 0);
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+      console.warn("[hoard] liquid density framebuffer incomplete");
+    }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
 
+  /** Upload into a DYNAMIC buffer, growing (bufferData) only when it must. */
+  private upload(buf: WebGLBuffer, data: Float32Array, used: number, cap: number): number {
+    if (used === 0) return cap; // nothing to upload; never sub-data an empty/unallocated store
+    const gl = this.gl;
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    if (used > cap) {
+      cap = used * 2;
+      gl.bufferData(gl.ARRAY_BUFFER, cap * 4, gl.DYNAMIC_DRAW);
+    }
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, data.subarray(0, used));
+    return cap;
+  }
+
   render(particles: Particle[], opts: RenderOpts): void {
+    if (this.lost || this.width === 0) return;
     const gl = this.gl;
     const n = particles.length;
     if (this.posData.length < n * 2) this.posData = new Float32Array(n * 2);
@@ -206,27 +309,25 @@ export class LiquidRenderer {
       this.posData[i * 2 + 1] = p.y;
       this.kindData[i] = p.kind;
     }
+    const s = this.s;
 
     // pass 1: splat density into the low-res buffer (additive; R=HP, G=temp)
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, s.fbo);
     gl.viewport(0, 0, this.dw, this.dh);
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE);
-    gl.useProgram(this.splatProg);
-    gl.uniform2f(gl.getUniformLocation(this.splatProg, "u_res"), this.width, this.height);
-    gl.uniform1f(gl.getUniformLocation(this.splatProg, "u_size"), opts.pointSize * this.densityScale);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.posBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, this.posData.subarray(0, n * 2), gl.DYNAMIC_DRAW);
-    const aPos = gl.getAttribLocation(this.splatProg, "a_pos");
-    gl.enableVertexAttribArray(aPos);
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.kindBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, this.kindData.subarray(0, n), gl.DYNAMIC_DRAW);
-    const aKind = gl.getAttribLocation(this.splatProg, "a_kind");
-    gl.enableVertexAttribArray(aKind);
-    gl.vertexAttribPointer(aKind, 1, gl.FLOAT, false, 0, 0);
+    gl.useProgram(s.splatProg);
+    gl.uniform2f(s.uRes, this.width, this.height);
+    const size = Math.min(this.maxPointSize, opts.pointSize * this.densityScale);
+    gl.uniform1f(s.uSize, size);
+    s.posCap = this.upload(s.posBuf, this.posData, n * 2, s.posCap);
+    gl.enableVertexAttribArray(s.aPos);
+    gl.vertexAttribPointer(s.aPos, 2, gl.FLOAT, false, 0, 0);
+    s.kindCap = this.upload(s.kindBuf, this.kindData, n, s.kindCap);
+    gl.enableVertexAttribArray(s.aKind);
+    gl.vertexAttribPointer(s.aKind, 1, gl.FLOAT, false, 0, 0);
     gl.drawArrays(gl.POINTS, 0, n);
 
     // pass 2: shade the isosurface to the screen
@@ -235,31 +336,33 @@ export class LiquidRenderer {
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.useProgram(this.shadeProg);
+    gl.useProgram(s.shadeProg);
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.densTex);
-    gl.uniform1i(gl.getUniformLocation(this.shadeProg, "u_density"), 0);
-    gl.uniform2f(gl.getUniformLocation(this.shadeProg, "u_texel"), 1 / this.dw, 1 / this.dh);
-    gl.uniform3fv(gl.getUniformLocation(this.shadeProg, "u_color"), opts.color);
-    gl.uniform3fv(gl.getUniformLocation(this.shadeProg, "u_deep"), opts.deep);
-    gl.uniform3fv(gl.getUniformLocation(this.shadeProg, "u_temp"), opts.temp);
-    gl.uniform1f(gl.getUniformLocation(this.shadeProg, "u_iso"), 0.55);
-    gl.uniform1f(gl.getUniformLocation(this.shadeProg, "u_time"), opts.time);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuf);
-    const aQuad = gl.getAttribLocation(this.shadeProg, "a_quad");
-    gl.enableVertexAttribArray(aQuad);
-    gl.vertexAttribPointer(aQuad, 2, gl.FLOAT, false, 0, 0);
+    gl.bindTexture(gl.TEXTURE_2D, s.densTex);
+    gl.uniform1i(s.uDensity, 0);
+    gl.uniform2f(s.uTexel, 1 / this.dw, 1 / this.dh);
+    gl.uniform3fv(s.uColor, opts.color);
+    gl.uniform3fv(s.uDeep, opts.deep);
+    gl.uniform3fv(s.uTemp, opts.temp);
+    gl.uniform1f(s.uIso, 0.55);
+    gl.uniform1f(s.uTime, opts.time);
+    gl.bindBuffer(gl.ARRAY_BUFFER, s.quadBuf);
+    gl.enableVertexAttribArray(s.aQuad);
+    gl.vertexAttribPointer(s.aQuad, 2, gl.FLOAT, false, 0, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
   dispose(): void {
+    this.canvas.removeEventListener("webglcontextlost", this.onContextLost);
+    this.canvas.removeEventListener("webglcontextrestored", this.onContextRestored);
     const gl = this.gl;
-    gl.deleteProgram(this.splatProg);
-    gl.deleteProgram(this.shadeProg);
-    gl.deleteBuffer(this.posBuf);
-    gl.deleteBuffer(this.kindBuf);
-    gl.deleteBuffer(this.quadBuf);
-    gl.deleteTexture(this.densTex);
-    gl.deleteFramebuffer(this.fbo);
+    const s = this.s;
+    gl.deleteProgram(s.splatProg);
+    gl.deleteProgram(s.shadeProg);
+    gl.deleteBuffer(s.posBuf);
+    gl.deleteBuffer(s.kindBuf);
+    gl.deleteBuffer(s.quadBuf);
+    gl.deleteTexture(s.densTex);
+    gl.deleteFramebuffer(s.fbo);
   }
 }

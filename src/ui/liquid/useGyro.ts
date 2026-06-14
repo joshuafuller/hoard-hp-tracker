@@ -39,8 +39,9 @@ export function useGyro(): { gravity: React.MutableRefObject<Gravity> } {
     };
 
     let attached = false;
+    let live = true; // false after unmount, so a late permission grant is ignored
     const attach = () => {
-      if (attached) return;
+      if (attached || !live) return;
       attached = true;
       window.addEventListener("deviceorientation", onOrient, true);
     };
@@ -68,6 +69,7 @@ export function useGyro(): { gravity: React.MutableRefObject<Gravity> } {
     }
 
     return () => {
+      live = false;
       window.removeEventListener("deviceorientation", onOrient, true);
       window.removeEventListener("pointerdown", onFirstTap);
     };
