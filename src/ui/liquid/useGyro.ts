@@ -39,6 +39,32 @@ export function projectGravity(betaDeg: number, gammaDeg: number): Gravity {
 }
 
 /**
+ * Resolve a raw DeviceOrientation reading (either angle may be `null`) into a
+ * screen-space gravity vector. The single source of truth the `onOrient`
+ * handler delegates to.
+ *
+ * Substituting a fake `beta` into {@link projectGravity} is unsafe: its
+ * `x = cos(beta)·sin(gamma)` projection drives the lateral (roll) component
+ * through `cos(beta)`, so any pitch fallback near 90° silently zeroes roll. So
+ * the partial cases are handled explicitly:
+ *
+ *  - **No usable angle** → rest straight "down" `{0, 1}` (the ref's default).
+ *  - **Roll only (no pitch)** → assume the phone is upright and let the roll
+ *    rotate world-down in the screen plane: `x = sin(gamma)`, `y = cos(gamma)`.
+ *    Roll is preserved, the sign matches {@link projectGravity}'s upright case,
+ *    and the pull never reverses across gamma's spec range [-90°, 90°].
+ *  - **Both present** → the full {@link projectGravity} projection.
+ */
+export function gravityFromOrientation(beta: number | null, gamma: number | null): Gravity {
+  if (beta == null) {
+    if (gamma == null) return { x: 0, y: 1 };
+    const g = (gamma * Math.PI) / 180;
+    return { x: Math.sin(g), y: Math.cos(g) };
+  }
+  return projectGravity(beta, gamma ?? 0);
+}
+
+/**
  * Tracks device tilt and exposes it as a gravity direction the fluid sim can
  * follow, so water pools toward the low edge of the phone. Falls back to plain
  * "down" with no sensor (desktop) or when permission is denied.
@@ -55,9 +81,10 @@ export function useGyro(): { gravity: React.MutableRefObject<Gravity> } {
 
     const onOrient = (e: DeviceOrientationEvent) => {
       if (e.beta == null && e.gamma == null) return;
-      // Project world-down onto the screen plane. The vector is left un-normalized
-      // on purpose — its magnitude tells the sim how upright the phone is.
-      gravity.current = projectGravity(e.beta ?? 90, e.gamma ?? 0);
+      // Resolve world-down onto the screen plane. The vector is left un-normalized
+      // on purpose — its magnitude tells the sim how upright the phone is. Partial
+      // events (notably gamma-only) keep their roll instead of collapsing to "down".
+      gravity.current = gravityFromOrientation(e.beta, e.gamma);
     };
 
     let attached = false;
