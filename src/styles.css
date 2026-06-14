@@ -70,15 +70,18 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  /* Fixed to the dynamic viewport and clipped: the page itself never scrolls,
-     so nothing falls off the bottom and the orb can't drift with scroll. The
-     three rows size/shrink to fit within this height. */
-  height: 100dvh;
-  gap: clamp(0.5rem, 1.5dvh, 1.25rem);
+  /* Fixed to the SMALL viewport (svh = browser chrome shown) and clipped: the
+     page never scrolls, and sizing to svh — not dvh — guarantees the footer
+     stays on-screen even while the URL bar is visible, instead of being clipped
+     behind it. The three rows size/shrink to fit within this height. */
+  height: 100vh; /* legacy fallback */
+  height: 100svh;
+  gap: clamp(0.35rem, 1.2vh, 1rem); /* fallback for browsers without svh */
+  gap: clamp(0.35rem, 1.2svh, 1rem);
   padding:
-    calc(env(safe-area-inset-top) + 1rem)
+    calc(env(safe-area-inset-top) + 0.4rem)
     calc(env(safe-area-inset-right) + 1.25rem)
-    calc(env(safe-area-inset-bottom) + 1rem)
+    calc(env(safe-area-inset-bottom) + 0.4rem)
     calc(env(safe-area-inset-left) + 1.25rem);
   overflow: hidden;
   isolation: isolate;
@@ -324,7 +327,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: clamp(0.5rem, 1.5vh, 1rem); /* fallback for browsers without svh */
+  gap: clamp(0.5rem, 1.5svh, 1rem);
   width: min(100%, 30rem);
 }
 
@@ -354,10 +358,16 @@ body {
 }
 
 .step-button[data-variant="primary"] {
-  width: clamp(72px, 22vw, 96px);
-  height: clamp(72px, 22vw, 96px);
+  /* shrink on short screens too (min of width- and height-based) so the footer
+     compresses instead of clipping; floor keeps it thumb-tappable. vw-only
+     fallback first for browsers without svh. */
+  width: clamp(58px, 22vw, 96px);
+  width: clamp(58px, min(22vw, 10svh), 96px);
+  height: clamp(58px, 22vw, 96px);
+  height: clamp(58px, min(22vw, 10svh), 96px);
   border-radius: 50%;
   font-size: 2.5rem;
+  font-size: clamp(1.8rem, 6svh, 2.5rem);
   background: radial-gradient(circle at 50% 30%, var(--obsidian-600), var(--obsidian-800));
   box-shadow:
     0 8px 24px rgba(0, 0, 0, 0.45),
@@ -366,7 +376,8 @@ body {
 
 .step-button[data-variant="secondary"] {
   min-width: 88px;
-  height: 48px;
+  height: 48px; /* fallback for browsers without svh */
+  height: clamp(38px, 5.5svh, 48px);
   padding: 0 1.25rem;
   border-radius: var(--radius-pill);
   font-size: 1.1rem;
@@ -801,7 +812,8 @@ body {
   justify-content: center;
   gap: 0.15rem;
   min-width: 9.5rem;
-  min-height: 56px;
+  min-height: 56px; /* fallback for browsers without svh */
+  min-height: clamp(42px, 6.5svh, 56px);
   padding: 0.6rem 1.4rem;
   border-radius: var(--radius-lg);
   border: 1px solid var(--obsidian-600);
@@ -854,7 +866,10 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  min-height: 56px;
+  min-height: 56px; /* fallback for browsers without svh */
+  /* height-aware like the rest of the footer; floor at the 44px tap target so
+     the confirm row compresses on short screens instead of clipping */
+  min-height: clamp(44px, 6.5svh, 56px);
   padding: 0.5rem 0.75rem;
   border-radius: var(--radius-lg);
   border: 1px solid color-mix(in oklab, var(--hp-temp) 30%, var(--obsidian-600));
@@ -1045,7 +1060,7 @@ body {
   width: auto;
   max-height: min(76vw, 340px);
   max-width: 76vw;
-  min-height: 7rem;
+  min-height: 4.5rem; /* shrink further on very short screens rather than clip the footer */
   display: grid;
   place-items: center;
   isolation: isolate;
