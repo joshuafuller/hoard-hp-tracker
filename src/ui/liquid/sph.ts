@@ -168,7 +168,11 @@ export class Sph {
    * filling the first N slots produces a settled pool of N particles.
    */
   private buildSlots(): { x: number; y: number }[] {
-    const dx = this.params.h * this.params.slotPack;
+    // Guard the externally-supplied slotPack: a 0 / negative / NaN value would
+    // make the lattice step zero and spin these loops forever. Fall back to the
+    // default lattice spacing rather than hang.
+    const pack = Number.isFinite(this.params.slotPack) && this.params.slotPack > 0 ? this.params.slotPack : 0.62;
+    const dx = this.params.h * pack;
     const dy = dx * 0.866;
     const r = this.radius - dx * 0.5;
     const slots: { x: number; y: number }[] = [];
