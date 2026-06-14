@@ -19,7 +19,7 @@ const FLAT_FLOOR = 0.15;
  * (x right, y DOWN). This is the projection of world "down" onto the screen
  * plane:
  *
- *   x = cos(beta)·sin(gamma)   y = sin(beta)
+ *   x = cos(beta)·sin(gamma)   y = sin(beta) + FLAT_FLOOR
  *
  * Unlike a bare `sin`, this keeps the correct sign through every orientation:
  * tilting past vertical (the screen turning to face the floor) keeps pulling
