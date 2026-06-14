@@ -47,6 +47,11 @@ export interface SphParams {
   restitution: number;
   /** gravity magnitude applied along the (gx,gy) direction */
   gravity: number;
+  /** rest-lattice spacing as a fraction of h. Sets the slot count (capacity).
+   * Tighter than the rest-density calibration on purpose: the pool settles
+   * denser than its zero-gravity lattice, so capacity must over-provision
+   * particles for a full orb to read full. */
+  slotPack: number;
 }
 
 export const DEFAULT_PARAMS: SphParams = {
@@ -61,6 +66,10 @@ export const DEFAULT_PARAMS: SphParams = {
   sCorrN: 4,
   restitution: 0.1,
   gravity: 1200,
+  // 0.53 (tighter than the 0.62 rest-lattice) so a full orb settles to a small
+  // bubble at the top instead of ~1/3 empty: the pool packs denser than its
+  // zero-gravity lattice under gravity, so capacity over-provisions to compensate.
+  slotPack: 0.53,
 };
 
 /** 2D kernel normalization constants for a given smoothing radius. */
@@ -159,7 +168,11 @@ export class Sph {
    * filling the first N slots produces a settled pool of N particles.
    */
   private buildSlots(): { x: number; y: number }[] {
-    const dx = this.params.h * 0.62;
+    // Guard the externally-supplied slotPack: a 0 / negative / NaN value would
+    // make the lattice step zero and spin these loops forever. Fall back to the
+    // default lattice spacing rather than hang.
+    const pack = Number.isFinite(this.params.slotPack) && this.params.slotPack > 0 ? this.params.slotPack : 0.62;
+    const dx = this.params.h * pack;
     const dy = dx * 0.866;
     const r = this.radius - dx * 0.5;
     const slots: { x: number; y: number }[] = [];

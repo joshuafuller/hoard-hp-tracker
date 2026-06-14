@@ -61,6 +61,17 @@ describe("kernel constants", () => {
   });
 });
 
+describe("Sph construction", () => {
+  // Guard: slotPack flows in from external params; a 0 / negative / NaN value
+  // would make the lattice step zero and spin buildSlots forever. A bad value
+  // must fall back to a sane lattice, not hang.
+  it.each([0, -1, NaN])("survives a non-positive/non-finite slotPack (%s)", (bad) => {
+    const sim = new Sph({ cx: 100, cy: 100, radius: 90, params: { slotPack: bad }, rng: mulberry32(42) });
+    expect(sim.capacity).toBeGreaterThan(0);
+    expect(Number.isFinite(sim.capacity)).toBe(true);
+  }, 3000);
+});
+
 describe("Sph.setCount", () => {
   it("grows to the requested count", () => {
     const sim = makeSim(0);
@@ -210,6 +221,19 @@ describe("Sph.step — gravity pools the liquid", () => {
     const floor = Math.max(...ys);
     expect(floor - surface).toBeGreaterThan(sim.radius * 0.5); // real depth
   });
+
+  it("fills a full orb to near the top — reads full, not ~1/3 empty (#14)", () => {
+    // A full orb (count === capacity) must settle to a small bubble at the top.
+    // The pool packs denser than its zero-gravity rest lattice under gravity, so
+    // capacity over-provisions (slotPack < the calibration spacing); a looser
+    // lattice left the surface ~1/3 down the glass and the orb looked half-empty.
+    const sim = makeSim(0);
+    sim.setCount(sim.capacity);
+    settle(sim, 0, 1, 800); // well past the transient bounce — the gap is flat by ~300 steps
+    const top = sim.cy - sim.radius;
+    const surface = Math.min(...sim.particles.map((p) => p.y));
+    expect(surface - top).toBeLessThan(sim.radius * 0.2); // within a small bubble of the top
+  }, 20_000);
 });
 
 describe("DEFAULT_PARAMS", () => {
