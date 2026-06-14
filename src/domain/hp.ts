@@ -1,8 +1,10 @@
 /**
  * Pure HP domain model — the framework-free core (no React, Dexie, or DOM).
  *
- * Every function returns a NEW state and never mutates its input. Invariants
- * `0 <= current <= max`, `temp >= 0`, and `max >= 1` hold after every operation.
+ * Functions never mutate their input. They return a NEW state, except for a
+ * no-op (e.g. non-positive damage/heal), which returns the same reference
+ * unchanged. Invariants `0 <= current <= max`, `temp >= 0`, and `max >= 1` hold
+ * after every operation.
  */
 export interface HpState {
   current: number;

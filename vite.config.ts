@@ -1,6 +1,6 @@
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 import { manifest } from "./src/pwa-manifest";
 
 // Base path: "/" for local dev + the self-hosted Docker build; a subpath (e.g.
@@ -27,7 +27,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
     css: false,
-    // Never discover tests inside Stryker's sandbox copies (or build output).
-    exclude: ["**/node_modules/**", "**/dist/**", "**/.stryker-tmp/**"],
+    // Keep Vitest's defaults (node_modules, dist, etc.) and also never discover
+    // tests inside Stryker's sandbox copies.
+    exclude: [...configDefaults.exclude, "**/.stryker-tmp/**"],
   },
 });
