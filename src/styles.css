@@ -1027,3 +1027,121 @@ body {
 }
 .hp-editor__done:active { transform: scale(0.95); }
 .hp-editor__done:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   LIQUID OBSIDIAN — the glass vessel of living HP (beta redesign)
+   ════════════════════════════════════════════════════════════════════════ */
+.vessel {
+  position: relative;
+  width: min(76vw, 340px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  /* per-tier accent + a glow recomputed from it (the lesson from before) */
+  --accent: var(--hp-healthy);
+  --accent-glow: color-mix(in oklab, var(--accent) 55%, transparent);
+}
+.vessel[data-tier="healthy"]  { --accent: var(--hp-healthy); }
+.vessel[data-tier="bloodied"] { --accent: var(--hp-bloodied); }
+.vessel[data-tier="critical"] { --accent: var(--hp-critical); }
+.vessel[data-tier="down"]     { --accent: var(--hp-down); }
+.vessel[data-tier="healthy"]  { --accent-glow: color-mix(in oklab, var(--hp-healthy) 55%, transparent); }
+.vessel[data-tier="bloodied"] { --accent-glow: color-mix(in oklab, var(--hp-bloodied) 55%, transparent); }
+.vessel[data-tier="critical"] { --accent-glow: color-mix(in oklab, var(--hp-critical) 60%, transparent); }
+.vessel[data-tier="down"]     { --accent-glow: color-mix(in oklab, var(--hp-down) 45%, transparent); }
+
+/* Light-bending aura behind the orb. */
+.vessel__aura {
+  position: absolute;
+  inset: -22%;
+  z-index: -1;
+  background:
+    radial-gradient(45% 45% at 50% 52%, var(--accent-glow) 0%, transparent 70%),
+    conic-gradient(from 0deg, var(--accent-glow), transparent 30%, var(--accent-glow) 60%, transparent 90%, var(--accent-glow));
+  filter: blur(34px);
+  opacity: 0.6;
+  animation: lv-aura 14s ease-in-out infinite, lv-spin 32s linear infinite;
+  transition: background var(--dur-flow) ease;
+}
+@keyframes lv-aura { 0%,100% { opacity: 0.45; } 50% { opacity: 0.7; } }
+@keyframes lv-spin { to { transform: rotate(360deg); } }
+
+.vessel__svg { width: 100%; height: 100%; overflow: visible; display: block; filter: drop-shadow(0 20px 40px rgba(0,0,0,0.55)); }
+.vessel__well { fill: var(--obsidian-800); }
+
+.vessel__liquid {
+  /* the surface spring-settles to its new level on every change */
+  transition: transform 950ms cubic-bezier(0.34, 1.3, 0.5, 1);
+  will-change: transform;
+}
+.vessel__wave { will-change: transform; }
+.vessel__wave--back path  { fill: color-mix(in oklab, var(--accent) 62%, black); opacity: 0.55; }
+.vessel__wave--front path { fill: var(--accent); filter: drop-shadow(0 0 8px var(--accent-glow)); transition: fill var(--dur-flow) ease; }
+.vessel__wave--back  { animation: lv-drift 9s linear infinite; }
+.vessel__wave--front { animation: lv-drift 5.5s linear infinite reverse; }
+@keyframes lv-drift { from { transform: translateX(0); } to { transform: translateX(-40px); } }
+
+.vessel__temp rect {
+  fill: var(--hp-temp);
+  opacity: 0.5;
+  filter: drop-shadow(0 0 6px color-mix(in oklab, var(--hp-temp) 60%, transparent));
+}
+
+/* Glass shell. */
+.vessel__rim {
+  fill: none;
+  stroke: color-mix(in oklab, var(--ink-100) 22%, transparent);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 1px rgba(255,255,255,0.25));
+}
+.vessel__shine { fill: rgba(255,255,255,0.16); filter: blur(3px); }
+
+/* Centered readout, legible over liquid or void. */
+.vessel__readout {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  pointer-events: none;
+}
+.vessel__nums { display: flex; align-items: baseline; gap: 0.4rem; line-height: 1; }
+.vessel__current {
+  font-size: clamp(3.5rem, 22vw, 6rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-100);
+  text-shadow: 0 2px 12px rgba(0,0,0,0.7), 0 0 30px var(--accent-glow);
+}
+.vessel__max { font-size: clamp(1.1rem, 6vw, 1.8rem); font-weight: 600; color: var(--ink-300); text-shadow: 0 2px 8px rgba(0,0,0,0.7); font-variant-numeric: tabular-nums; }
+.vessel__edit { appearance: none; background: none; border: none; padding: 0 0.2rem; border-radius: 14px; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
+@media (hover: hover) { .vessel__edit:hover { background: rgba(255,255,255,0.07); } }
+.vessel__edit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.vessel__temp-badge {
+  pointer-events: auto;
+  appearance: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  padding: 0.15rem 0.7rem; border-radius: var(--radius-pill);
+  font-size: 1rem; font-weight: 700; color: var(--hp-temp);
+  background: color-mix(in oklab, var(--hp-temp) 18%, transparent);
+  border: 1px solid color-mix(in oklab, var(--hp-temp) 40%, transparent);
+  box-shadow: 0 0 16px color-mix(in oklab, var(--hp-temp) 30%, transparent);
+}
+.vessel__temp-badge[data-empty] { opacity: 0.5; }
+.vessel__temp-badge:focus-visible { outline: 2px solid var(--hp-temp); outline-offset: 2px; opacity: 1; }
+
+/* Slosh + flash on change. */
+.vessel[data-flash] .vessel__liquid { animation: lv-slosh 700ms cubic-bezier(0.36, 0.7, 0.2, 1); }
+.vessel[data-flash="damage"] .vessel__current { animation: lv-hit 600ms var(--ease-spring); }
+.vessel[data-flash="heal"] .vessel__current { animation: lv-heal 600ms var(--ease-spring); }
+@keyframes lv-slosh {
+  0% { transform: translateY(var(--lv-y, 0)) rotate(0deg); }
+  30% { rotate: -2.2deg; }
+  60% { rotate: 1.4deg; }
+  100% { rotate: 0deg; }
+}
+@keyframes lv-hit  { 0% { transform: translateX(0);} 25%{transform:translateX(-7px);}50%{transform:translateX(5px);}75%{transform:translateX(-3px);}100%{transform:translateX(0);} }
+@keyframes lv-heal { 0%,100%{transform:scale(1);} 45%{transform:scale(1.09);} }

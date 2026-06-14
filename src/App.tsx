@@ -6,9 +6,9 @@ import { playSfx } from "./sound/sfx";
 import { useHp } from "./store/useHp";
 import { DeathSaves } from "./ui/DeathSaves";
 import { HitDicePanel } from "./ui/HitDicePanel";
-import { HpBar, tierFor } from "./ui/HpBar";
-import { HpDisplay } from "./ui/HpDisplay";
+import { tierFor } from "./ui/HpBar";
 import { HpValueEditor } from "./ui/HpValueEditor";
+import { LiquidVessel } from "./ui/LiquidVessel";
 import { RestControls } from "./ui/RestControls";
 import { SoundToggle } from "./ui/SoundToggle";
 import { StepControls } from "./ui/StepControls";
@@ -82,7 +82,7 @@ export function App() {
         <SoundToggle />
       </div>
       <div className="hp-tracker__stage">
-        <HpDisplay
+        <LiquidVessel
           current={current}
           max={max}
           temp={temp}
@@ -90,7 +90,6 @@ export function App() {
           onEditMax={() => setEditing("max")}
           onEditTemp={() => setEditing("temp")}
         />
-        <HpBar current={current} max={max} temp={temp} />
         {dying ? (
           <DeathSaves
             successes={hp.successes}
