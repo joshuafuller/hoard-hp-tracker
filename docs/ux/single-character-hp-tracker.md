@@ -32,8 +32,8 @@ library, spell-slot/resource tracking. These belong to the larger multi-characte
 
 > "Just tell me my HP and let me change it fast. It's my turn and everyone's waiting."
 
-|  |  |
-|--|--|
+| Attribute | Details |
+|-----------|---------|
 | **Role** | A player running one character; keeps the full sheet on paper or D&D Beyond. |
 | **Context of use** | Phone in one hand or flat on the table, dice in the other, noisy room, his turn is a 15-second window. |
 | **Goals** | Apply an exact damage/heal number instantly; read his HP at a glance from across the table; never do arithmetic in his head. |
@@ -45,8 +45,8 @@ library, spell-slot/resource tracking. These belong to the larger multi-characte
 
 > "I don't remember how death saves work — can the app just handle it?"
 
-|  |  |
-|--|--|
+| Attribute | Details |
+|-----------|---------|
 | **Role** | A newer player, second campaign, still learning the rules. |
 | **Context of use** | Leans on the tool as a safety net so she doesn't have to memorise edge rules mid-game. |
 | **Goals** | Correct behaviour without thinking: death saves at 0, temp HP absorbing first, rests restoring the right amount. |
