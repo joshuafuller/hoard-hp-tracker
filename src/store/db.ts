@@ -79,6 +79,27 @@ export function createHpDb(name: string = HP_DB_NAME): HpDb {
       conMod: 0,
     }),
   );
+
+  // Resilience for the PWA: if another tab/instance (e.g. a freshly-activated
+  // service worker opening a newer DB version) needs to upgrade, our connection
+  // would otherwise block and silently swallow every write. Close it so the
+  // upgrade can proceed, then reload to reconnect cleanly.
+  db.on("versionchange", () => {
+    db.close();
+    // Reload only in a real browser; jsdom (tests) can't navigate and deleting a
+    // DB in a test would otherwise trip "navigation not implemented".
+    const isJsdom = typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom");
+    if (typeof location !== "undefined" && !isJsdom) {
+      try {
+        location.reload();
+      } catch {
+        /* non-browser — nothing to reload */
+      }
+    }
+  });
+  db.on("blocked", () => {
+    console.warn("[hoard] IndexedDB upgrade is blocked by another open tab");
+  });
   return db;
 }
 

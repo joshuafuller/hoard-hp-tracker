@@ -21,6 +21,8 @@ export interface Particle {
   vy: number;
   /** density, recomputed each constraint iteration */
   rho: number;
+  /** 0 = HP fluid, 1 = temp-HP shimmer layer (rendered as a tint on top) */
+  kind: 0 | 1;
 }
 
 export interface SphParams {
@@ -194,25 +196,60 @@ export class Sph {
     return rho;
   }
 
+  /** Set the HP (kind 0) particle count — fills/drains from the bowl bottom. */
   setCount(n: number): Particle[] {
-    n = Math.max(0, Math.min(this.slots.length, Math.round(n)));
-    if (n === this.particles.length) return [];
-    if (n < this.particles.length) {
-      this.particles.sort((a, b) => a.y - b.y);
-      return this.particles.splice(0, this.particles.length - n);
+    return this.adjustKind(0, n);
+  }
+
+  /** Set the temp-HP (kind 1) count — a shimmer layer poured on top of the HP. */
+  setTempCount(n: number): Particle[] {
+    return this.adjustKind(1, n);
+  }
+
+  /** Count of a given kind currently in the bowl. */
+  countOf(kind: 0 | 1): number {
+    let c = 0;
+    for (const p of this.particles) if (p.kind === kind) c++;
+    return c;
+  }
+
+  private adjustKind(kind: 0 | 1, target: number): Particle[] {
+    const cap = this.slots.length;
+    target = Math.max(0, Math.min(cap, Math.round(target)));
+    const mine = this.particles.filter((p) => p.kind === kind);
+    if (target === mine.length) return [];
+    if (target < mine.length) {
+      // drain the topmost of THIS kind (smallest y)
+      mine.sort((a, b) => a.y - b.y);
+      const removed = mine.slice(0, mine.length - target);
+      const rm = new Set(removed);
+      this.particles = this.particles.filter((p) => !rm.has(p));
+      return removed;
     }
-    for (let i = this.particles.length; i < n; i++) {
-      this.particles.push(this.spawn(this.slots[i]!));
+    // grow: HP fills bottom-up; temp pours from the top so it lands on the surface
+    const add = target - mine.length;
+    for (let i = 0; i < add; i++) {
+      const raw = kind === 0 ? mine.length + i : cap - 1 - (mine.length + i);
+      const idx = Math.max(0, Math.min(cap - 1, raw));
+      this.particles.push(this.spawn(this.slots[idx]!, kind));
     }
     return [];
   }
 
+  /** A quick random impulse — a satisfying jolt of slosh on damage / heal. */
+  splash(strength: number): void {
+    for (const p of this.particles) {
+      p.vx += (this.rng() - 0.5) * strength;
+      p.vy += (this.rng() - 0.5) * strength;
+    }
+  }
+
   /** A fresh particle at a rest slot, with a touch of jitter and gentle inflow. */
-  private spawn(slot: { x: number; y: number }): Particle {
+  private spawn(slot: { x: number; y: number }, kind: 0 | 1 = 0): Particle {
     const j = this.params.h * 0.12;
     const x = slot.x + (this.rng() - 0.5) * j;
     const y = slot.y + (this.rng() - 0.5) * j;
-    return { x, y, ox: x, oy: y, vx: (this.rng() - 0.5) * 6, vy: this.rng() * 8, rho: this.params.restDensity };
+    return { x, y, ox: x, oy: y, vx: (this.rng() - 0.5) * 6, vy: this.rng() * 8, rho: this.params.restDensity, kind };
   }
 
   /** Advance the simulation by `dt` seconds under gravity direction (gx, gy). */

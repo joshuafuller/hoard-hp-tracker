@@ -16,6 +16,8 @@ const TIER_RGB: Record<string, [number, number, number]> = {
   down: [0.42, 0.42, 0.47],
 };
 const darken = (c: [number, number, number], f = 0.42): [number, number, number] => [c[0] * f, c[1] * f, c[2] * f];
+// --hp-temp #7dd3fc as 0..1 rgb
+const TEMP_RGB: [number, number, number] = [0.49, 0.827, 0.988];
 
 export interface LiquidVesselProps extends HpState {
   onEditCurrent?: () => void;
@@ -35,7 +37,17 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
   const [useGl] = useState(() => LiquidRenderer.isSupported() && !prefersReducedMotion());
 
   const color: [number, number, number] = TIER_RGB[tier] ?? [0.204, 0.827, 0.6];
-  useLiquidEngine({ canvasRef, ratio, color, deep: darken(color), gravity, active: useGl });
+  const tempRatio = max > 0 ? Math.max(0, Math.min(1, temp / max)) : 0;
+  useLiquidEngine({
+    canvasRef,
+    ratio,
+    tempRatio,
+    color,
+    deep: darken(color),
+    tempColor: TEMP_RGB,
+    gravity,
+    active: useGl,
+  });
 
   return (
     <div className="vessel" data-tier={tier} data-flash={flash ?? undefined}>
