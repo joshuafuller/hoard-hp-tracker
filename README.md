@@ -1,5 +1,9 @@
 # Hoard HP Tracker
 
+### ▶ **[Open the live app →](https://joshuafuller.github.io/hoard-hp-tracker/)**
+
+Installable PWA — open it on your phone and tap **Add to Home Screen** to use it offline at the table.
+
 **A gorgeous, fullscreen, mobile-first HP tracker for tabletop games — installable, offline, and
 self-hostable.** Original open-source code; ships no game content.
 
