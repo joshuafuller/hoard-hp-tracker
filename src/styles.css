@@ -866,7 +866,10 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  min-height: 56px;
+  min-height: 56px; /* fallback for browsers without svh */
+  /* height-aware like the rest of the footer; floor at the 44px tap target so
+     the confirm row compresses on short screens instead of clipping */
+  min-height: clamp(44px, 6.5svh, 56px);
   padding: 0.5rem 0.75rem;
   border-radius: var(--radius-lg);
   border: 1px solid color-mix(in oklab, var(--hp-temp) 30%, var(--obsidian-600));
