@@ -46,6 +46,9 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
-    ]
+    ],
+    "overrides": {
+      "qs@>=6.11.1 <=6.15.1": "6.15.2"
+    }
   }
 }
