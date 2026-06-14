@@ -1,0 +1,483 @@
+import "fake-indexeddb/auto";
+import Dexie from "dexie";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { createHpDb, HP_ID, type HpDb } from "./db";
+import { useHp } from "./useHp";
+
+const DB_NAME = "hoard-hp-test";
+
+let db: HpDb;
+
+beforeEach(async () => {
+  // Delete via Dexie's captured factory so each test starts from a clean store
+  // and the first-run `populate` seed fires deterministically.
+  await Dexie.delete(DB_NAME);
+  db = createHpDb(DB_NAME);
+});
+
+afterEach(() => {
+  db.close();
+});
+
+describe("createHpDb seeding", () => {
+  it("seeds a single 10/10/0 record on first run", async () => {
+    const record = await db.hp.get(HP_ID);
+    expect(record).toEqual({
+      id: HP_ID,
+      current: 10,
+      max: 10,
+      temp: 0,
+      successes: 0,
+      failures: 0,
+      hitDieSize: 8,
+      hitDiceTotal: 1,
+      hitDiceAvailable: 1,
+      conMod: 0,
+    });
+  });
+
+  it("stores exactly one hp record", async () => {
+    const count = await db.hp.count();
+    expect(count).toBe(1);
+  });
+});
+
+describe("useHp", () => {
+  it("exposes the seeded state once loaded", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    expect(result.current).toMatchObject({ current: 10, max: 10, temp: 0 });
+  });
+
+  it("damage delegates to the domain and updates reactively", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+
+    await act(async () => {
+      await result.current.damage(3);
+    });
+
+    await waitFor(() => expect(result.current.current).toBe(7));
+    expect(result.current.temp).toBe(0);
+  });
+
+  it("damage applies temp-absorbs-first RAW via the domain", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+
+    await act(async () => {
+      await result.current.setTemp(5);
+    });
+    await waitFor(() => expect(result.current.temp).toBe(5));
+
+    await act(async () => {
+      await result.current.damage(3);
+    });
+    await waitFor(() => expect(result.current.temp).toBe(2));
+    expect(result.current.current).toBe(10);
+  });
+
+  it("heal delegates to the domain and never exceeds max", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+
+    await act(async () => {
+      await result.current.damage(6);
+    });
+    await waitFor(() => expect(result.current.current).toBe(4));
+
+    await act(async () => {
+      await result.current.heal(100);
+    });
+    await waitFor(() => expect(result.current.current).toBe(10));
+  });
+
+  it("setMax lowers max and clamps current", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+
+    await act(async () => {
+      await result.current.setMax(5);
+    });
+    await waitFor(() => expect(result.current.max).toBe(5));
+    expect(result.current.current).toBe(5);
+  });
+
+  it("setCurrent clamps to range", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+
+    await act(async () => {
+      await result.current.setCurrent(-50);
+    });
+    await waitFor(() => expect(result.current.current).toBe(0));
+  });
+
+  it("serializes rapid concurrent actions without dropping updates", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+
+    // Fire three taps "at once" (a user mashing the button) — each must observe
+    // the previous commit, so all three points of damage persist.
+    await act(async () => {
+      await Promise.all([
+        result.current.damage(1),
+        result.current.damage(1),
+        result.current.damage(1),
+      ]);
+    });
+
+    await waitFor(() => expect(result.current.current).toBe(7));
+  });
+});
+
+describe("useHp death saves", () => {
+  it("reports status and records pips while down", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+
+    await act(async () => {
+      await result.current.setCurrent(0);
+    });
+    await waitFor(() => expect(result.current.status).toBe("dying"));
+
+    await act(async () => {
+      await result.current.setSuccesses(2);
+      await result.current.setFailures(1);
+    });
+    await waitFor(() => expect(result.current.successes).toBe(2));
+    expect(result.current.failures).toBe(1);
+    expect(result.current.status).toBe("dying");
+  });
+
+  it("becomes dead at three failures", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.setCurrent(0);
+      await result.current.setFailures(3);
+    });
+    await waitFor(() => expect(result.current.status).toBe("dead"));
+  });
+
+  it("damage taken while at 0 HP adds a death-save failure (#58)", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.setCurrent(0);
+    });
+    await waitFor(() => expect(result.current.status).toBe("dying"));
+
+    await act(async () => {
+      await result.current.damage(1);
+    });
+    await waitFor(() => expect(result.current.failures).toBe(1));
+    expect(result.current.current).toBe(0);
+    expect(result.current.status).toBe("dying");
+  });
+
+  it("dropping from above 0 to 0 does NOT add a failure (just starts dying)", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.damage(10); // 10 -> 0
+    });
+    await waitFor(() => expect(result.current.status).toBe("dying"));
+    expect(result.current.failures).toBe(0);
+  });
+
+  it("a third damage-at-0 failure is fatal", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.setCurrent(0);
+      await result.current.setFailures(2);
+    });
+    await waitFor(() => expect(result.current.failures).toBe(2));
+    await act(async () => {
+      await result.current.damage(1);
+    });
+    await waitFor(() => expect(result.current.status).toBe("dead"));
+  });
+
+  it("damage while STABLE at 0 HP does not add a failure (#58 AC)", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.setCurrent(0);
+      await result.current.setSuccesses(3); // stabilized
+    });
+    await waitFor(() => expect(result.current.status).toBe("stable"));
+    await act(async () => {
+      await result.current.damage(1);
+    });
+    await waitFor(() => expect(result.current.failures).toBe(0));
+    expect(result.current.status).toBe("stable");
+  });
+
+  it("clears death saves on revive (heal above 0)", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.setCurrent(0);
+      await result.current.setFailures(2);
+    });
+    await waitFor(() => expect(result.current.failures).toBe(2));
+
+    await act(async () => {
+      await result.current.heal(5);
+    });
+    await waitFor(() => expect(result.current.status).toBe("alive"));
+    expect(result.current.failures).toBe(0);
+    expect(result.current.successes).toBe(0);
+  });
+
+  it("rollDeathSave applies an injected roll (nat 1 = two failures, nat 20 revives)", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.setCurrent(0);
+    });
+    await waitFor(() => expect(result.current.status).toBe("dying"));
+
+    await act(async () => {
+      await result.current.rollDeathSave(1);
+    });
+    await waitFor(() => expect(result.current.failures).toBe(2));
+
+    await act(async () => {
+      await result.current.rollDeathSave(20);
+    });
+    await waitFor(() => expect(result.current.current).toBe(1));
+    expect(result.current.failures).toBe(0);
+    expect(result.current.status).toBe("alive");
+  });
+
+  it("ignores death-save pip writes while alive (invariant: saves only at 0 HP)", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.setSuccesses(2);
+      await result.current.setFailures(1);
+    });
+    await waitFor(() => expect(result.current.status).toBe("alive"));
+    expect(result.current.successes).toBe(0);
+    expect(result.current.failures).toBe(0);
+  });
+
+  it("rollDeathSave is a no-op while alive (never drops HP or writes pips)", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.rollDeathSave(20);
+    });
+    await waitFor(() => expect(result.current.current).toBe(10));
+    expect(result.current.successes).toBe(0);
+    expect(result.current.failures).toBe(0);
+  });
+
+  it("rollDeathSave is a no-op once dead (a queued roll can't revive a corpse)", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.setCurrent(0);
+      await result.current.setFailures(3);
+    });
+    await waitFor(() => expect(result.current.status).toBe("dead"));
+    await act(async () => {
+      await result.current.rollDeathSave(20);
+    });
+    await waitFor(() => expect(result.current.status).toBe("dead"));
+    expect(result.current.current).toBe(0);
+  });
+
+  it("persists death saves across a fresh connection", async () => {
+    const { result, unmount } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.setCurrent(0);
+      await result.current.setFailures(2);
+    });
+    await waitFor(() => expect(result.current.failures).toBe(2));
+    unmount();
+    db.close();
+
+    const reopened = createHpDb(DB_NAME);
+    try {
+      const record = await reopened.hp.get(HP_ID);
+      expect(record?.failures).toBe(2);
+      expect(record?.current).toBe(0);
+    } finally {
+      reopened.close();
+    }
+  });
+});
+
+describe("useHp rests", () => {
+  it("short rest spends a hit die and heals by roll + CON", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.setConMod(2);
+      await result.current.setCurrent(4);
+    });
+    await waitFor(() => expect(result.current.current).toBe(4));
+
+    await act(async () => {
+      await result.current.shortRest(3); // injected d8 roll -> heals 3 + 2 = 5
+    });
+    await waitFor(() => expect(result.current.current).toBe(9));
+    expect(result.current.hitDiceAvailable).toBe(0);
+  });
+
+  it("short rest is a no-op with no hit dice available", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.setCurrent(4);
+      await result.current.setHitDiceAvailable(0);
+    });
+    await waitFor(() => expect(result.current.hitDiceAvailable).toBe(0));
+    await act(async () => {
+      await result.current.shortRest(8);
+    });
+    await waitFor(() => expect(result.current.current).toBe(4));
+  });
+
+  it("short rest at 0 HP revives and clears death saves", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.setCurrent(0);
+      await result.current.setFailures(2);
+    });
+    await waitFor(() => expect(result.current.status).toBe("dying"));
+    await act(async () => {
+      await result.current.shortRest(5);
+    });
+    await waitFor(() => expect(result.current.status).toBe("alive"));
+    expect(result.current.current).toBe(5);
+    expect(result.current.failures).toBe(0);
+  });
+
+  it("long rest fully recovers HP, temp, saves, and half the hit dice", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.setHitDiceTotal(4);
+      await result.current.setHitDiceAvailable(1);
+      await result.current.damage(6);
+      await result.current.setTemp(5);
+    });
+    await waitFor(() => expect(result.current.current).toBe(4));
+
+    await act(async () => {
+      await result.current.longRest();
+    });
+    await waitFor(() => expect(result.current.current).toBe(10));
+    expect(result.current.temp).toBe(0);
+    // regain floor(4/2)=2 -> 1 + 2 = 3, capped at 4.
+    expect(result.current.hitDiceAvailable).toBe(3);
+  });
+
+  it("persists hit-dice settings", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.setHitDieSize(12);
+      await result.current.setHitDiceTotal(5);
+      await result.current.setConMod(3);
+    });
+    await waitFor(() => expect(result.current.hitDieSize).toBe(12));
+    expect(result.current.hitDiceTotal).toBe(5);
+    expect(result.current.conMod).toBe(3);
+  });
+});
+
+describe("useHp editor steppers", () => {
+  it("stepCurrent accumulates rapid taps (no lost updates)", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await Promise.all([
+        result.current.stepCurrent(-1),
+        result.current.stepCurrent(-1),
+        result.current.stepCurrent(-1),
+      ]);
+    });
+    await waitFor(() => expect(result.current.current).toBe(7));
+  });
+
+  it("stepMax accumulates rapid taps", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.max).toBe(10));
+    await act(async () => {
+      await Promise.all([result.current.stepMax(1), result.current.stepMax(1)]);
+    });
+    await waitFor(() => expect(result.current.max).toBe(12));
+  });
+
+  it("setTempValue sets an exact lower value (non-stacking setTemp cannot)", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.setTempValue(5);
+    });
+    await waitFor(() => expect(result.current.temp).toBe(5));
+    await act(async () => {
+      await result.current.setTempValue(2);
+    });
+    await waitFor(() => expect(result.current.temp).toBe(2));
+  });
+
+  it("stepTemp lowers temp and floors at 0", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+    await act(async () => {
+      await result.current.setTempValue(2);
+      await result.current.stepTemp(-1);
+    });
+    await waitFor(() => expect(result.current.temp).toBe(1));
+    await act(async () => {
+      await result.current.stepTemp(-5);
+    });
+    await waitFor(() => expect(result.current.temp).toBe(0));
+  });
+});
+
+describe("persistence across reload", () => {
+  it("survives a fresh DB connection to the same store", async () => {
+    const { result, unmount } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.current).toBe(10));
+
+    await act(async () => {
+      await result.current.damage(4);
+      await result.current.setTemp(6);
+    });
+    await waitFor(() => expect(result.current.current).toBe(6));
+
+    unmount();
+    db.close();
+
+    // Simulate a page reload: open a brand-new connection to the same DB name.
+    const reopened = createHpDb(DB_NAME);
+    try {
+      const record = await reopened.hp.get(HP_ID);
+      expect(record).toEqual({
+        id: HP_ID,
+        current: 6,
+        max: 10,
+        temp: 6,
+        successes: 0,
+        failures: 0,
+        hitDieSize: 8,
+        hitDiceTotal: 1,
+        hitDiceAvailable: 1,
+        conMod: 0,
+      });
+    } finally {
+      reopened.close();
+    }
+  });
+});

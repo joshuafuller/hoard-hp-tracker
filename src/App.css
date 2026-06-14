@@ -1,0 +1,33 @@
+/* Layout glue for the composed app shell. The Obsidian theme + component styling
+   live in styles.css (owned by the UI work); this only positions the regions. */
+.hp-tracker__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.25rem;
+  margin: auto 0;
+  width: 100%;
+}
+
+.hp-tracker__editors {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.hp-tracker__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+/* Top-right chrome (sound toggle), clear of the device safe-area inset. */
+.hp-tracker__chrome {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 0.75rem);
+  right: calc(env(safe-area-inset-right) + 0.75rem);
+  z-index: 10;
+}

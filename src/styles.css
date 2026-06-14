@@ -1,0 +1,1029 @@
+/*
+ * Obsidian — the Hoard design language.
+ *
+ * Near-black canvas, luminous accents, a soft radial glow tinted by the current
+ * HP tier. Premium, quiet, focused. This file is the taste-setting reference for
+ * every future Hoard tool: tokens up top, then a thin layer of component styling
+ * keyed off the data-attributes the React components emit (data-tier, data-flash,
+ * data-variant). Motion is opt-in and fully disabled under prefers-reduced-motion.
+ */
+
+:root {
+  /* Canvas — layered near-blacks for depth without hard edges. */
+  --obsidian-900: #0a0a0c;
+  --obsidian-800: #101014;
+  --obsidian-700: #16161c;
+  --obsidian-600: #1f1f27;
+
+  /* Ink — high-contrast white stepping down to quiet labels. */
+  --ink-100: #f4f4f8;
+  --ink-300: #c7c7d2;
+  --ink-500: #8a8a99;
+  --ink-700: #51515e;
+
+  /* Tier accents — the green→amber→red health spectrum + the temp overshield. */
+  --hp-healthy: #34d399;
+  --hp-bloodied: #f5b942;
+  --hp-critical: #f0506a;
+  --hp-down: #6b6b78;
+  --hp-temp: #7dd3fc;
+
+  /* The live accent + its glow, re-pointed per tier by [data-tier]. */
+  --accent: var(--hp-healthy);
+  --accent-glow: color-mix(in oklab, var(--accent) 45%, transparent);
+
+  --radius-lg: 28px;
+  --radius-pill: 999px;
+
+  /* Springy easing shared by every interactive transition. */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 140ms;
+  --dur-flow: 600ms;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--obsidian-900);
+  color: var(--ink-100);
+  font-family:
+    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ── App shell ─────────────────────────────────────────────────────────── */
+/* Fullscreen mobile canvas: controls fall to the thumb, content floats above
+   it, and the whole frame respects the device safe-area insets. */
+.hp-tracker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 100dvh;
+  padding:
+    calc(env(safe-area-inset-top) + 2.5rem)
+    calc(env(safe-area-inset-right) + 1.25rem)
+    calc(env(safe-area-inset-bottom) + 2rem)
+    calc(env(safe-area-inset-left) + 1.25rem);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Soft radial glow tinted by the live accent — the signature Obsidian halo. */
+.hp-tracker::before {
+  content: "";
+  position: absolute;
+  inset: -20% -20% auto -20%;
+  height: 70%;
+  background: radial-gradient(
+    60% 60% at 50% 0%,
+    var(--accent-glow) 0%,
+    transparent 70%
+  );
+  opacity: 0.55;
+  z-index: -1;
+  transition: background var(--dur-flow) ease;
+  pointer-events: none;
+}
+
+/* The tracker re-points --accent from its child bar's tier so the whole frame
+   (halo included) shifts colour together. --accent-glow must be re-declared in
+   the same block: custom properties resolve `var()` at use, but color-mix() is
+   computed where it's declared, so the :root --accent-glow is frozen against
+   healthy green and would never follow the tier. Re-declaring it here forces it
+   to recompute against this block's --accent. */
+.hp-tracker[data-tier="healthy"] {
+  --accent: var(--hp-healthy);
+  --accent-glow: color-mix(in oklab, var(--accent) 45%, transparent);
+}
+.hp-tracker[data-tier="bloodied"] {
+  --accent: var(--hp-bloodied);
+  --accent-glow: color-mix(in oklab, var(--accent) 45%, transparent);
+}
+.hp-tracker[data-tier="critical"] {
+  --accent: var(--hp-critical);
+  --accent-glow: color-mix(in oklab, var(--accent) 45%, transparent);
+}
+.hp-tracker[data-tier="down"] {
+  --accent: var(--hp-down);
+  --accent-glow: color-mix(in oklab, var(--accent) 45%, transparent);
+}
+
+/* ── HP display ────────────────────────────────────────────────────────── */
+.hp-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+/* The readout carries its own tier so the luminous numeral recolors with HP
+   even if it isn't nested under a tier-bearing .hp-tracker ancestor.
+   --accent-glow is re-declared so the numeral's text-shadow glow follows the
+   tier too (see the .hp-tracker tier blocks for why). */
+.hp-display[data-tier="healthy"] {
+  --accent: var(--hp-healthy);
+  --accent-glow: color-mix(in oklab, var(--accent) 45%, transparent);
+}
+.hp-display[data-tier="bloodied"] {
+  --accent: var(--hp-bloodied);
+  --accent-glow: color-mix(in oklab, var(--accent) 45%, transparent);
+}
+.hp-display[data-tier="critical"] {
+  --accent: var(--hp-critical);
+  --accent-glow: color-mix(in oklab, var(--accent) 45%, transparent);
+}
+.hp-display[data-tier="down"] {
+  --accent: var(--hp-down);
+  --accent-glow: color-mix(in oklab, var(--accent) 45%, transparent);
+}
+
+.hp-display__readout {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.5rem;
+  line-height: 1;
+}
+
+.hp-display__current {
+  font-size: clamp(5rem, 30vw, 9rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  /* The luminous core: a tight tinted glow around the numerals. */
+  text-shadow:
+    0 0 24px var(--accent-glow),
+    0 0 60px var(--accent-glow);
+  transition: color var(--dur-flow) ease, text-shadow var(--dur-flow) ease;
+}
+
+.hp-display__max {
+  font-size: clamp(1.5rem, 8vw, 2.25rem);
+  font-weight: 600;
+  color: var(--ink-500);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tappable HP values are <button>s — strip the native chrome (that stray white
+   box) but keep the luminous number styling from __current / __max. */
+.hp-display__edit {
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: none;
+  padding: 0 0.25rem;
+  border-radius: 16px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--dur-fast) ease;
+}
+/* Gate hover behind real hover support so taps don't leave a stuck background
+   on touch devices (mobile-first). */
+@media (hover: hover) {
+  .hp-display__edit:hover {
+    background: color-mix(in oklab, var(--ink-100) 6%, transparent);
+  }
+}
+.hp-display__edit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.hp-display__temp {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--hp-temp);
+  background: color-mix(in oklab, var(--hp-temp) 16%, transparent);
+  border: 1px solid color-mix(in oklab, var(--hp-temp) 40%, transparent);
+  box-shadow: 0 0 18px color-mix(in oklab, var(--hp-temp) 30%, transparent);
+}
+
+/* The temp badge as a button: keep the pill look, drop native chrome. */
+.hp-display__temp--edit {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.hp-display__temp--edit:focus-visible {
+  outline: 2px solid var(--hp-temp);
+  outline-offset: 2px;
+}
+/* Fainter when there is no temp HP yet, but still tappable to add some. */
+.hp-display__temp[data-empty] {
+  opacity: 0.55;
+}
+/* Don't let the faded empty state hide keyboard focus. */
+.hp-display__temp[data-empty]:focus-visible {
+  opacity: 1;
+}
+
+/* Damage / heal flash — a brief full-numeral pulse on change. */
+.hp-display[data-flash="damage"] .hp-display__current {
+  animation: hp-flash-damage var(--dur-flow) var(--ease-spring);
+}
+.hp-display[data-flash="heal"] .hp-display__current {
+  animation: hp-flash-heal var(--dur-flow) var(--ease-spring);
+}
+
+@keyframes hp-flash-damage {
+  0% { color: var(--hp-critical); text-shadow: 0 0 40px var(--hp-critical); transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes hp-flash-heal {
+  0% { color: var(--hp-healthy); text-shadow: 0 0 50px var(--hp-healthy); transform: scale(1); }
+  40% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+/* ── HP bar ────────────────────────────────────────────────────────────── */
+.hp-bar {
+  position: relative;
+  width: min(100%, 34rem);
+  height: 18px;
+  border-radius: var(--radius-pill);
+  background: var(--obsidian-700);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.hp-bar__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--accent) 70%, black) 0%,
+    var(--accent) 100%
+  );
+  box-shadow: 0 0 16px var(--accent-glow);
+  transition: width var(--dur-flow) var(--ease-spring), background var(--dur-flow) ease;
+}
+
+/* --accent-glow re-declared per tier so the fill's box-shadow glow tracks the
+   tier colour (see the .hp-tracker tier blocks for why). */
+.hp-bar[data-tier="healthy"] {
+  --accent: var(--hp-healthy);
+  --accent-glow: color-mix(in oklab, var(--accent) 45%, transparent);
+}
+.hp-bar[data-tier="bloodied"] {
+  --accent: var(--hp-bloodied);
+  --accent-glow: color-mix(in oklab, var(--accent) 45%, transparent);
+}
+.hp-bar[data-tier="critical"] {
+  --accent: var(--hp-critical);
+  --accent-glow: color-mix(in oklab, var(--accent) 45%, transparent);
+}
+.hp-bar[data-tier="down"] {
+  --accent: var(--hp-down);
+  --accent-glow: color-mix(in oklab, var(--accent) 45%, transparent);
+}
+
+/* Overshield — a distinct, hatched temp segment riding over the track. */
+.hp-bar__overshield {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in oklab, var(--hp-temp) 85%, transparent) 0 6px,
+    color-mix(in oklab, var(--hp-temp) 55%, transparent) 6px 12px
+  );
+  box-shadow: 0 0 14px color-mix(in oklab, var(--hp-temp) 45%, transparent);
+  transition: width var(--dur-flow) var(--ease-spring);
+}
+
+/* ── Step controls ─────────────────────────────────────────────────────── */
+.step-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: min(100%, 30rem);
+}
+
+.step-controls__row {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.step-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--ink-100);
+  background: var(--obsidian-600);
+  border: 1px solid var(--obsidian-600);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition:
+    transform var(--dur-fast) var(--ease-spring),
+    background var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease;
+}
+
+.step-button[data-variant="primary"] {
+  width: clamp(72px, 22vw, 96px);
+  height: clamp(72px, 22vw, 96px);
+  border-radius: 50%;
+  font-size: 2.5rem;
+  background: radial-gradient(circle at 50% 30%, var(--obsidian-600), var(--obsidian-800));
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.step-button[data-variant="secondary"] {
+  min-width: 88px;
+  height: 48px;
+  padding: 0 1.25rem;
+  border-radius: var(--radius-pill);
+  font-size: 1.1rem;
+  color: var(--ink-300);
+  background: var(--obsidian-700);
+}
+
+.step-button:active {
+  transform: scale(0.92);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.5),
+    inset 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.step-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* ── Number editor ─────────────────────────────────────────────────────── */
+.number-editor {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.number-editor__label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+
+.number-editor__input {
+  width: 5.5rem;
+  padding: 0.5rem 0.25rem;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-100);
+  background: var(--obsidian-700);
+  border: 1px solid var(--obsidian-600);
+  border-radius: 14px;
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+
+.number-editor__input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Strip the native number spinner — the step buttons are the touch affordance. */
+.number-editor__input::-webkit-outer-spin-button,
+.number-editor__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.number-editor__input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* ── Reduced motion ────────────────────────────────────────────────────── */
+/* Honour the user's preference: drop every transition/animation to an instant
+   cut while keeping the static Obsidian look intact. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Death saves ───────────────────────────────────────────────────────── */
+/* A tense little panel that surfaces only when a hero is down: glowing-green
+   successes, ember-red failures, and a weighty d20. It breathes red while the
+   outcome hangs in the balance, then settles to calm green or stark red. */
+.death-saves {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  width: min(100%, 30rem);
+  padding: 1.25rem 1.25rem 1.4rem;
+  border-radius: var(--radius-lg);
+  background: radial-gradient(120% 90% at 50% 0%, var(--obsidian-700), var(--obsidian-800));
+  border: 1px solid var(--obsidian-600);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.death-saves[data-status="dying"] {
+  animation: ds-breathe 2.6s ease-in-out infinite;
+}
+
+@keyframes ds-breathe {
+  0%, 100% { box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45), 0 0 0 rgba(240, 80, 106, 0); }
+  50% { box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45), 0 0 28px rgba(240, 80, 106, 0.28); }
+}
+
+.death-saves__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.death-saves__title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+
+.death-saves__banner {
+  padding: 0.2rem 0.7rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.death-saves__banner[data-kind="stable"] {
+  color: var(--hp-healthy);
+  background: color-mix(in oklab, var(--hp-healthy) 16%, transparent);
+  box-shadow: 0 0 18px color-mix(in oklab, var(--hp-healthy) 30%, transparent);
+}
+.death-saves__banner[data-kind="dead"] {
+  color: var(--hp-critical);
+  background: color-mix(in oklab, var(--hp-critical) 18%, transparent);
+  box-shadow: 0 0 22px color-mix(in oklab, var(--hp-critical) 36%, transparent);
+}
+
+.death-saves__track {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 22rem;
+}
+.death-saves__track[data-kind="success"] { --ds-accent: var(--hp-healthy); }
+.death-saves__track[data-kind="failure"] { --ds-accent: var(--hp-critical); }
+
+.death-saves__track-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-300);
+}
+
+.death-saves__pips {
+  display: flex;
+  gap: 0.35rem;
+}
+
+/* 44px hit area with a smaller drawn disc: easy taps, small-reading pips. */
+.death-saves__pip {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.death-saves__pip::before {
+  content: "";
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--ink-700);
+  background: var(--obsidian-900);
+  transition:
+    background var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease,
+    transform var(--dur-fast) var(--ease-spring);
+}
+.death-saves__pip[data-filled="true"]::before {
+  background: var(--ds-accent);
+  border-color: var(--ds-accent);
+  box-shadow: 0 0 12px color-mix(in oklab, var(--ds-accent) 60%, transparent);
+}
+.death-saves__pip:active::before { transform: scale(0.85); }
+.death-saves__pip:focus-visible::before {
+  outline: 2px solid var(--ds-accent);
+  outline-offset: 3px;
+}
+.death-saves__pip:disabled { cursor: default; }
+
+.death-saves__roll {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--obsidian-600);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink-100);
+  background: radial-gradient(circle at 50% 25%, var(--obsidian-600), var(--obsidian-800));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast) ease;
+}
+.death-saves__roll:active { transform: scale(0.95); }
+.death-saves__roll:active .death-saves__die { transform: rotate(-32deg); }
+.death-saves__roll:disabled { opacity: 0.45; cursor: default; }
+.death-saves__roll:focus-visible { outline: 2px solid var(--ink-300); outline-offset: 3px; }
+
+.death-saves__die {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--obsidian-900);
+  background: var(--ink-100);
+  /* A faceted d20 silhouette via a hexagon clip. */
+  clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+
+/* ── Hit Dice ──────────────────────────────────────────────────────────── */
+/* The resource panel: a luminous "available / total dX" readout over a quiet
+   row of editors. Tinted by the live --accent so it sits in the same light as
+   the HP frame. */
+.hit-dice {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 30rem);
+  border-radius: var(--radius-lg);
+  background: radial-gradient(120% 90% at 50% 0%, var(--obsidian-700), var(--obsidian-800));
+  border: 1px solid var(--obsidian-600);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+/* The collapsed face: a full-width tap target that keeps the readout glanceable
+   while the editors stay folded away. Reset the native button chrome so it reads
+   as a bar, not a control. */
+.hit-dice__summary {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  min-height: 56px;
+  padding: 0.85rem 1.25rem;
+  background: transparent;
+  border: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--dur-fast) ease;
+}
+
+.hit-dice__summary:hover {
+  background: color-mix(in oklab, var(--accent) 6%, transparent);
+}
+
+.hit-dice__summary:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 4px var(--accent-glow);
+}
+
+/* On the summary the readout sits inline at the centre column. */
+.hit-dice__summary .hit-dice__readout {
+  justify-content: center;
+}
+
+/* A quiet chevron that points down when folded and rotates up when open. */
+.hit-dice__chevron {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-right: 2px solid var(--ink-500);
+  border-bottom: 2px solid var(--ink-500);
+  transform: rotate(45deg);
+  transform-origin: center;
+  transition: transform var(--dur-fast) ease, border-color var(--dur-fast) ease;
+}
+
+.hit-dice__summary[aria-expanded="true"] .hit-dice__chevron {
+  transform: rotate(-135deg);
+  border-color: var(--accent);
+}
+
+/* The revealed body: explainer + editors, set off from the summary by a hairline. */
+.hit-dice__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.25rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--obsidian-600);
+}
+
+.hit-dice__explainer {
+  margin: 0.85rem 0 0;
+  max-width: 26rem;
+  text-align: center;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--ink-500);
+}
+
+.hit-dice__title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+
+.hit-dice__readout {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.hit-dice__available {
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--accent);
+  text-shadow: 0 0 20px var(--accent-glow);
+  transition: color var(--dur-flow) ease, text-shadow var(--dur-flow) ease;
+}
+
+.hit-dice__sep {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--ink-700);
+}
+
+.hit-dice__total {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--ink-500);
+}
+
+.hit-dice__die {
+  margin-left: 0.15rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--ink-300);
+  background: color-mix(in oklab, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--accent) 32%, transparent);
+}
+
+.hit-dice__editors {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 1rem 1.25rem;
+}
+
+/* The size selector borrows the number-editor label rhythm so it reads as one
+   field among the editors. */
+.hit-dice__size {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.hit-dice__size-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+
+.hit-dice__size-select {
+  min-height: 44px;
+  width: 5.5rem;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  text-align-last: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--ink-100);
+  background: var(--obsidian-700);
+  border: 1px solid var(--obsidian-600);
+  border-radius: 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+
+.hit-dice__size-select:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* ── Rest controls ─────────────────────────────────────────────────────── */
+/* A short / long rest pair sized for the thumb. Long Rest swaps into an inline
+   confirm rather than a modal — a quick, reversible "are you sure". */
+.rest-controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  width: min(100%, 30rem);
+}
+
+.rest-controls__btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 9.5rem;
+  min-height: 56px;
+  padding: 0.6rem 1.4rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--obsidian-600);
+  font-weight: 700;
+  color: var(--ink-100);
+  background: radial-gradient(circle at 50% 25%, var(--obsidian-600), var(--obsidian-800));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast) ease;
+}
+
+.rest-controls__btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.rest-controls__btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.rest-controls__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  box-shadow: none;
+}
+
+.rest-controls__btn[data-kind="long"] {
+  border-color: color-mix(in oklab, var(--hp-temp) 28%, var(--obsidian-600));
+}
+
+.rest-controls__label {
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.rest-controls__sub {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+
+/* The confirm step takes the Long Rest button's place: a prompt flanked by a
+   committing Confirm and a backing-out Cancel. */
+.rest-controls__confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 56px;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in oklab, var(--hp-temp) 30%, var(--obsidian-600));
+  background: radial-gradient(120% 120% at 50% 0%, var(--obsidian-700), var(--obsidian-800));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+  /* Spring in when it takes the Long Rest button's place — the one moment of
+     motion in the rest cluster; globally muted under prefers-reduced-motion. */
+  animation: rest-confirm-in var(--dur-fast) var(--ease-spring);
+}
+
+@keyframes rest-confirm-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.rest-controls__confirm-prompt {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-300);
+}
+
+.rest-controls__confirm-btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 1.1rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--obsidian-600);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink-100);
+  background: var(--obsidian-600);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast) ease;
+}
+
+.rest-controls__confirm-btn:active {
+  transform: scale(0.93);
+}
+
+.rest-controls__confirm-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.rest-controls__confirm-btn[data-kind="confirm"] {
+  color: var(--obsidian-900);
+  background: var(--hp-temp);
+  border-color: var(--hp-temp);
+  box-shadow: 0 0 18px color-mix(in oklab, var(--hp-temp) 40%, transparent);
+}
+
+.rest-controls__confirm-btn[data-kind="cancel"] {
+  color: var(--ink-300);
+  background: var(--obsidian-700);
+}
+
+/* ── HP value editor (pill modal) ──────────────────────────────────────── */
+/* Tap a value to open a focused sheet: one pill — minus | type | plus. */
+.hp-editor {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: color-mix(in oklab, var(--obsidian-900) 72%, transparent);
+  backdrop-filter: blur(6px);
+  animation: hp-editor-fade var(--dur-fast) ease;
+}
+
+@keyframes hp-editor-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.hp-editor__sheet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: min(100%, 24rem);
+  padding: 2rem 1.5rem;
+  border-radius: var(--radius-lg);
+  background: radial-gradient(130% 100% at 50% 0%, var(--obsidian-700), var(--obsidian-800));
+  border: 1px solid var(--obsidian-600);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  animation: hp-editor-rise var(--dur-flow) var(--ease-spring);
+}
+
+@keyframes hp-editor-rise {
+  from { transform: translateY(12px) scale(0.98); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.hp-editor__title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+
+/* The pill: rounded track with a typable number flanked by big ± halves. */
+.hp-editor__pill {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  width: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--obsidian-900);
+  border: 1px solid var(--obsidian-600);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.hp-editor__step {
+  width: 4.25rem;
+  height: 4.25rem;
+  border: none;
+  background: transparent;
+  color: var(--ink-100);
+  font-size: 2.25rem;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--dur-fast) ease, transform var(--dur-fast) var(--ease-spring);
+}
+.hp-editor__step[data-side="minus"] { border-right: 1px solid var(--obsidian-700); }
+.hp-editor__step[data-side="plus"] { border-left: 1px solid var(--obsidian-700); }
+.hp-editor__step:active {
+  transform: scale(0.9);
+  background: color-mix(in oklab, var(--accent) 22%, transparent);
+}
+.hp-editor__step:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
+
+.hp-editor__value {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: clamp(2.5rem, 14vw, 3.5rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  color: var(--ink-100);
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.hp-editor__value:focus-visible { outline: none; }
+.hp-editor__value::selection {
+  background: color-mix(in oklab, var(--accent) 40%, transparent);
+  color: var(--ink-100);
+}
+.hp-editor__value::-webkit-outer-spin-button,
+.hp-editor__value::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.hp-editor__done {
+  padding: 0.6rem 2.5rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--obsidian-600);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--obsidian-900);
+  background: var(--ink-100);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+.hp-editor__done:active { transform: scale(0.95); }
+.hp-editor__done:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }

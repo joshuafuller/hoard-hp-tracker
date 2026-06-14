@@ -1,0 +1,55 @@
+/*
+ * Sound toggle (#56) — a quiet, round Obsidian control for muting/unmuting the
+ * optional SFX. Uses the shared design tokens from styles.css (obsidian/ink
+ * scale, accent, spring easing) so it sits in the same light as the HP frame.
+ * Its own file: never edit styles.css for this.
+ */
+.sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--obsidian-600);
+  color: var(--ink-300);
+  background: var(--obsidian-700);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition:
+    transform var(--dur-fast) var(--ease-spring),
+    color var(--dur-fast) ease,
+    background var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease;
+}
+
+/* When sound is on, tint with the live accent and give it a faint glow. */
+.sound-toggle[data-enabled="true"] {
+  color: var(--accent);
+  box-shadow: 0 0 14px var(--accent-glow);
+}
+
+/* Muted reads quieter. */
+.sound-toggle[data-enabled="false"] {
+  color: var(--ink-500);
+}
+
+@media (hover: hover) {
+  .sound-toggle:hover {
+    background: var(--obsidian-600);
+  }
+}
+
+.sound-toggle:active {
+  transform: scale(0.92);
+}
+
+.sound-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.sound-toggle__icon {
+  display: block;
+}

@@ -1,0 +1,8 @@
+services:
+  hp-tracker:
+    build: .
+    image: hoard-hp
+    container_name: hoard-hp
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
