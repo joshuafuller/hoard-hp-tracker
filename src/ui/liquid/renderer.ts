@@ -181,6 +181,9 @@ export class LiquidRenderer {
   private maxPointSize = 1024;
   /** true while the GPU context is lost — render() becomes a safe no-op */
   private lost = false;
+  /** most recently requested size; applied on restore if it arrived while lost */
+  private pendingW = 0;
+  private pendingH = 0;
 
   static isSupported(): boolean {
     try {
@@ -210,11 +213,10 @@ export class LiquidRenderer {
   };
   private onContextRestored = () => {
     this.s = this.buildGL();
-    const w = this.width;
-    const h = this.height;
-    this.width = this.height = 0; // force resize() to re-run
-    this.lost = false; // must clear BEFORE resize(), which early-returns while lost
-    if (w && h) this.resize(w, h);
+    this.width = this.height = 0; // force a fresh allocation
+    this.lost = false;
+    // apply the latest requested size (which may have changed while lost)
+    if (this.pendingW && this.pendingH) this.applyResize();
   };
 
   private buildGL(): GLState {
@@ -252,7 +254,17 @@ export class LiquidRenderer {
   }
 
   resize(width: number, height: number): void {
-    if ((width === this.width && height === this.height) || this.lost) return;
+    // always record the request so a resize during context loss isn't lost
+    this.pendingW = width;
+    this.pendingH = height;
+    if (this.lost) return;
+    this.applyResize();
+  }
+
+  private applyResize(): void {
+    const width = this.pendingW;
+    const height = this.pendingH;
+    if (width === this.width && height === this.height) return;
     this.width = width;
     this.height = height;
     this.dw = Math.max(1, Math.round(width * this.densityScale));

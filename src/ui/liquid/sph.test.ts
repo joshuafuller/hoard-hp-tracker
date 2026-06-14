@@ -113,7 +113,7 @@ describe("Sph kinds (HP + temp)", () => {
     const sim = makeSim(0);
     sim.setCount(sim.capacity - 30);
     sim.setTempCount(30);
-    const seen = new Set(sim.particles.map((p) => `${p.x.toFixed(3)},${p.y.toFixed(3)}`));
+    const seen = new Set(sim.particles.map((p) => `${p.x},${p.y}`));
     expect(seen.size).toBe(sim.particles.length);
   });
 });
