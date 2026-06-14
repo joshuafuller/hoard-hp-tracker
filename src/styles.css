@@ -69,12 +69,16 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  min-height: 100dvh;
+  justify-content: flex-start;
+  /* Fixed to the dynamic viewport and clipped: the page itself never scrolls,
+     so nothing falls off the bottom and the orb can't drift with scroll. The
+     three rows size/shrink to fit within this height. */
+  height: 100dvh;
+  gap: clamp(0.5rem, 1.5dvh, 1.25rem);
   padding:
-    calc(env(safe-area-inset-top) + 2.5rem)
+    calc(env(safe-area-inset-top) + 1rem)
     calc(env(safe-area-inset-right) + 1.25rem)
-    calc(env(safe-area-inset-bottom) + 2rem)
+    calc(env(safe-area-inset-bottom) + 1rem)
     calc(env(safe-area-inset-left) + 1.25rem);
   overflow: hidden;
   isolation: isolate;
@@ -1033,11 +1037,21 @@ body {
    ════════════════════════════════════════════════════════════════════════ */
 .vessel {
   position: relative;
-  width: min(76vw, 340px);
+  /* Square that fits BOTH the width budget and the stage height: it fills the
+     stage's height (driven by aspect-ratio) but never exceeds the width cap, so
+     it shrinks gracefully on short screens instead of pushing content off. */
   aspect-ratio: 1;
+  height: 100%;
+  width: auto;
+  max-height: min(76vw, 340px);
+  max-width: 76vw;
+  min-height: 7rem;
   display: grid;
   place-items: center;
   isolation: isolate;
+  /* Size container so the readout scales with the ORB, not the viewport — the
+     numerals stay inside the glass even when the orb shrinks on short screens. */
+  container-type: size;
   /* per-tier accent + a glow recomputed from it (the lesson from before) */
   --accent: var(--hp-healthy);
   --accent-glow: color-mix(in oklab, var(--accent) 55%, transparent);
@@ -1125,14 +1139,14 @@ body {
 }
 .vessel__nums { display: flex; align-items: baseline; gap: 0.4rem; line-height: 1; }
 .vessel__current {
-  font-size: clamp(3.5rem, 22vw, 6rem);
+  font-size: clamp(2rem, 32cqmin, 6rem);
   font-weight: 800;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
   color: var(--ink-100);
   text-shadow: 0 2px 12px rgba(0,0,0,0.7), 0 0 30px var(--accent-glow);
 }
-.vessel__max { font-size: clamp(1.1rem, 6vw, 1.8rem); font-weight: 600; color: var(--ink-300); text-shadow: 0 2px 8px rgba(0,0,0,0.7); font-variant-numeric: tabular-nums; }
+.vessel__max { font-size: clamp(0.9rem, 11cqmin, 1.8rem); font-weight: 600; color: var(--ink-300); text-shadow: 0 2px 8px rgba(0,0,0,0.7); font-variant-numeric: tabular-nums; }
 .vessel__edit { appearance: none; background: none; border: none; padding: 0 0.2rem; border-radius: 14px; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
 @media (hover: hover) { .vessel__edit:hover { background: rgba(255,255,255,0.07); } }
 .vessel__edit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
