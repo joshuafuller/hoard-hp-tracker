@@ -1,8 +1,11 @@
 name: Deploy to GitHub Pages
 
+# Production (main) is served at the site root; the optional `beta` branch is
+# served at /beta/. Pages replaces the whole site on each deploy, so every run
+# rebuilds BOTH, regardless of which branch triggered it.
 on:
   push:
-    branches: [main]
+    branches: [main, beta]
   workflow_dispatch:
 
 permissions:
@@ -19,20 +22,39 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: Build for the Pages subpath
-        run: pnpm build
-        env:
-          HOARD_BASE: /hoard-hp-tracker/
+
+      - name: Build production (main) → site root
+        run: |
+          pnpm install --frozen-lockfile
+          HOARD_BASE=/hoard-hp-tracker/ pnpm build
+          mkdir -p _site
+          cp -r dist/. _site/
+
+      - name: Build beta (if the branch exists) → /beta/
+        run: |
+          if git ls-remote --exit-code --heads origin beta >/dev/null 2>&1; then
+            git fetch origin beta
+            git checkout beta
+            pnpm install --frozen-lockfile
+            HOARD_BASE=/hoard-hp-tracker/beta/ pnpm build
+            mkdir -p _site/beta
+            cp -r dist/. _site/beta/
+            echo "Built beta → /beta/"
+          else
+            echo "No 'beta' branch; deploying production only."
+          fi
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: _site
 
   deploy:
     needs: build

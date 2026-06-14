@@ -10,6 +10,13 @@ import { manifest } from "./src/pwa-manifest";
 declare const process: { env: Record<string, string | undefined> };
 const base = process.env.HOARD_BASE ?? "/";
 
+// The prod build is served at the site root and its service worker's scope
+// covers the whole site — including the /beta/ sub-app. Stop prod's SW from
+// serving its SPA fallback for /beta/ routes so the beta app loads from network
+// (and registers its own, more-specific SW). The beta build must NOT denylist
+// its own paths, so this only applies when we're not the beta build.
+const isBeta = base.includes("/beta/");
+
 export default defineConfig({
   base,
   plugins: [
@@ -19,6 +26,7 @@ export default defineConfig({
       manifest,
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,ico,webp,woff2}"],
+        ...(isBeta ? {} : { navigateFallbackDenylist: [/\/beta\//] }),
       },
     }),
   ],
