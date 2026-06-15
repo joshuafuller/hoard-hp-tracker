@@ -32,6 +32,7 @@ import { longRest } from "../domain/longRest";
 /** The last undoable HP change, surfaced to the UI for the Undo pill. */
 export interface HpLastChange {
   kind: "damage" | "heal" | "set" | "temp";
+  /** The operand passed to the action — a delta for damage/heal, an absolute value for set/temp. */
   amount: number;
   /** The HP-bearing fields as they were *before* the action, for undo. */
   before: Pick<HpRecord, "current" | "temp" | "successes" | "failures">;
@@ -69,7 +70,7 @@ export interface UseHpResult extends HpState {
   shortRest: (roll?: number) => Promise<void>;
   longRest: () => Promise<void>;
   undo: () => Promise<void>;
-  /** Clear the last-change pill without reverting. */
+  /** Clear the last-change pill without reverting. Synchronous; no DB write. */
   dismissLastChange: () => void;
   lastChange: HpLastChange | null;
 }
@@ -249,6 +250,7 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
     conMod: state.conMod,
     damage: undoable("damage", damageAction),
     heal: undoable("heal", applyHp(heal)),
+    // setTemp is the domain non-stacking path; not undoable (the keypad uses setTempValue).
     setTemp: applyHp(setTemp),
     setMax: applyHp(setMax),
     setCurrent: undoable("set", applyHp(setCurrent)),

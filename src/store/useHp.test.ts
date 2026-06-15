@@ -467,6 +467,7 @@ describe("undo", () => {
     await waitFor(() => expect(result.current.current).toBe(7));
     await act(() => result.current.undo()); // back to 2
     await waitFor(() => expect(result.current.current).toBe(2));
+    expect(result.current.lastChange).toBeNull();
   });
 
   it("reverts the last temp set", async () => {
