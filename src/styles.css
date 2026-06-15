@@ -1286,6 +1286,12 @@ body {
   opacity: 0.85;
 }
 
+/* Editing state: the fixed 1.5rem height is relaxed so the accent-bordered
+   input fits without clipping. The input itself drives the row height. */
+.character-name--editing {
+  height: auto;
+}
+
 /* Inline text input while editing — minimal, matches the obsidian palette. */
 .character-name__input {
   width: min(100%, 16rem);

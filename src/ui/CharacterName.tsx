@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 export interface CharacterNameProps {
   /** The current persisted name, blank when unset. */
   name: string;
-  /** Called with the new name (trimmed); store handles the 24-char cap. */
+  /** Called with the new name, trimmed here before passing. Store handles the 24-char cap. */
   onSetName: (s: string) => void;
 }
 
@@ -31,7 +31,7 @@ export function CharacterName({ name, onSetName }: CharacterNameProps) {
   }, [editing]);
 
   function commit() {
-    onSetName(draft);
+    onSetName(draft.trim());
     setEditing(false);
   }
 
