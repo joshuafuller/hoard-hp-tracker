@@ -1335,12 +1335,6 @@ body {
    label — the same hue used for gp dots and the total readout. */
 .coin-button {
   appearance: none;
-/* ── Concentration toggle (#30) ─────────────────────────────────────────── */
-/* Sits in the chrome row alongside SoundToggle. A purple/violet tint separates
-   it clearly from the green/amber/red HP accent family so "concentrating" reads
-   as a distinct state at a glance. The violet-400 (#a78bfa) is used inline as
-   a literal rather than a token — concentration is a one-off state, not a tier. */
-.concentration-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1351,8 +1345,6 @@ body {
   font-size: 1.2rem;
   font-weight: 800;
   color: var(--coin-gold);
-  border: 1px solid var(--obsidian-600);
-  color: var(--ink-500);
   background: var(--obsidian-700);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -1505,6 +1497,27 @@ body {
    (critical red — spending reads as a loss, same as damage). */
 .keypad__apply[data-kind="add"]   { background: color-mix(in oklab, var(--coin-gold) 80%, black); color: var(--obsidian-900); }
 .keypad__apply[data-kind="spend"] { background: color-mix(in oklab, var(--hp-critical) 75%, black); color: #fff; }
+
+/* ── Concentration toggle (#30) ─────────────────────────────────────────── */
+/* Sits in the chrome row alongside SoundToggle. A purple/violet tint separates
+   it clearly from the green/amber/red HP accent family so "concentrating" reads
+   as a distinct state at a glance. The violet-400 (#a78bfa) is used inline as
+   a literal rather than a token — concentration is a one-off state, not a tier. */
+.concentration-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--obsidian-600);
+  color: var(--ink-500);
+  background: var(--obsidian-700);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition:
+    transform var(--dur-fast) var(--ease-spring),
     color var(--dur-fast) ease,
     background var(--dur-fast) ease,
     box-shadow var(--dur-fast) ease;
