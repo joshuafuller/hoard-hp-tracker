@@ -1229,3 +1229,37 @@ body {
 @keyframes undo-pill-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .undo-pill__label { font-size: 0.85rem; color: var(--ink-200); }
 .undo-pill__btn { appearance: none; background: none; border: none; color: var(--hp-temp); font-weight: 800; font-size: 0.85rem; cursor: pointer; }
+
+/* ── Coin button (chrome) ───────────────────────────────────────────────── */
+.coin-button {
+  appearance: none; width: 38px; height: 38px; border-radius: 50%;
+  background: var(--obsidian-700); border: 1px solid var(--obsidian-600);
+  color: #e8c763; font-weight: 800; font-size: 1.1rem; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.coin-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Coin sheet ─────────────────────────────────────────────────────────── */
+.coins { width: min(100%, 23rem); display: flex; flex-direction: column; gap: 0.5rem; align-items: stretch; }
+.coins__head { display: flex; justify-content: space-between; align-items: baseline; }
+.coins__label { font-size: 0.72rem; letter-spacing: 0.14em; color: var(--ink-300); }
+.coins__total { font-size: 0.95rem; font-weight: 700; color: #e8c763; }
+.coins__row {
+  appearance: none; display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: 0.9rem 0.85rem; border-radius: 14px;
+  background: var(--obsidian-700); border: 1px solid var(--obsidian-600);
+  color: var(--ink-100); cursor: pointer; min-height: 56px; -webkit-tap-highlight-color: transparent;
+}
+.coins__row:active { transform: scale(0.99); }
+.coins__row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.coins__name { display: flex; align-items: center; gap: 0.55rem; font-weight: 700; }
+.coins__unit { color: var(--ink-300); font-size: 0.8rem; font-weight: 500; }
+.coins__count { font-size: 1.4rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.coins__dot { width: 22px; height: 22px; border-radius: 50%; display: inline-block; }
+.coins__row[data-kind="gp"] .coins__dot { background: #e8c763; }
+.coins__row[data-kind="sp"] .coins__dot { background: #cbd5d1; }
+.coins__row[data-kind="cp"] .coins__dot { background: #c47a4a; }
+
+/* Add/Spend keypad tones reuse the keypad apply buttons. */
+.keypad__apply[data-kind="add"] { background: var(--hp-healthy); color: #06281f; }
+.keypad__apply[data-kind="spend"] { background: color-mix(in oklab, var(--hp-critical) 75%, black); color: #fff; }
