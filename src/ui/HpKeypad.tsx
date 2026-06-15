@@ -73,7 +73,7 @@ export function HpKeypad({
   // Mount once: focus the first control so the dialog has the keyboard.
   useEffect(() => {
     sheetRef.current
-      ?.querySelector<HTMLElement>('button, input, [tabindex]:not([tabindex="-1"])')
+      ?.querySelector<HTMLElement>('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])')
       ?.focus();
   }, []);
 
@@ -84,7 +84,7 @@ export function HpKeypad({
       const sheet = sheetRef.current;
       if (!sheet) return;
       const focusable = sheet.querySelectorAll<HTMLElement>(
-        'button, input, [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
       );
       const first = focusable[0];
       const last = focusable[focusable.length - 1];

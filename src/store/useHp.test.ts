@@ -498,6 +498,27 @@ describe("undo", () => {
     await act(() => result.current.undo());
     await waitFor(() => expect(result.current.current).toBe(10));
   });
+
+  it("clamps the restored current to the current max", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.damage(4)); // 10 -> 6
+    await waitFor(() => expect(result.current.current).toBe(6));
+    await act(() => result.current.setMax(5)); // max 10 -> 5, current clamps to 5
+    await waitFor(() => expect(result.current.max).toBe(5));
+    await act(() => result.current.undo()); // before.current was 10; must clamp to new max 5
+    await waitFor(() => expect(result.current.current).toBe(5));
+  });
+
+  it("snapshots each undoable action from its own transaction (concurrent taps)", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    // two damages fired without an intervening render
+    await act(async () => { await Promise.all([result.current.damage(2), result.current.damage(3)]); });
+    await waitFor(() => expect(result.current.current).toBe(5)); // 10 - 2 - 3
+    await act(() => result.current.undo()); // must revert only the LAST applied action (by 3 -> back to 8), not both
+    await waitFor(() => expect(result.current.current).toBe(8));
+  });
 });
 
 describe("persistence across reload", () => {

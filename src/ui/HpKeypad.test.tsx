@@ -135,4 +135,15 @@ describe("HpKeypad", () => {
     await userEvent.tab();
     expect(first).toHaveFocus();
   });
+
+  it("Tab from the last enabled key wraps to first focusable when all action buttons are disabled", async () => {
+    setup();
+    // With no digits typed, Damage/Heal/Set/Temp are all disabled.
+    // The last enabled focusable is ⌫ (Backspace). Tab from it must wrap to "1".
+    const backspace = screen.getByRole("button", { name: /backspace/i });
+    const first = screen.getByRole("button", { name: "1" });
+    backspace.focus();
+    await userEvent.tab();
+    expect(first).toHaveFocus();
+  });
 });
