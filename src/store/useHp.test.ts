@@ -34,6 +34,9 @@ describe("createHpDb seeding", () => {
       hitDiceTotal: 1,
       hitDiceAvailable: 1,
       conMod: 0,
+      gp: 0,
+      sp: 0,
+      cp: 0,
     });
   });
 
@@ -550,6 +553,9 @@ describe("persistence across reload", () => {
         hitDiceTotal: 1,
         hitDiceAvailable: 1,
         conMod: 0,
+        gp: 0,
+        sp: 0,
+        cp: 0,
       });
     } finally {
       reopened.close();

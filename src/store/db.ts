@@ -33,6 +33,10 @@ export interface HpRecord {
   hitDiceTotal: number;
   hitDiceAvailable: number;
   conMod: number;
+  /** Tracked coin (optional — absent on legacy records, read as 0). */
+  gp?: number;
+  sp?: number;
+  cp?: number;
 }
 
 /** A Dexie database holding exactly one `hp` table. */
@@ -91,6 +95,9 @@ export function createHpDb(name: string = HP_DB_NAME): HpDb {
       hitDiceTotal: 1,
       hitDiceAvailable: 1,
       conMod: 0,
+      gp: 0,
+      sp: 0,
+      cp: 0,
     }),
   );
 
