@@ -8,6 +8,7 @@ import type { HpLastChange } from "./store/useHp";
 import { DeathSaves } from "./ui/DeathSaves";
 import { HitDicePanel } from "./ui/HitDicePanel";
 import { tierFor } from "./ui/HpBar";
+import { glowCss, hpColor, rgbCss } from "./ui/hpColor";
 import { HpKeypad } from "./ui/HpKeypad";
 import { HpValueEditor } from "./ui/HpValueEditor";
 import { LiquidVessel } from "./ui/LiquidVessel";
@@ -63,8 +64,14 @@ export function App() {
     : lc.kind === "temp" ? `Temp ${lc.amount}`
     : `Set to ${lc.amount}`;
 
+  // Continuous HP colour drives the signature halo / accent so the whole frame
+  // fades with HP instead of snapping at the tier thresholds (the data-tier
+  // attribute stays as a no-JS fallback).
+  const accent = hpColor(current, max);
+  const accentStyle = { "--accent": rgbCss(accent), "--accent-glow": glowCss(accent) } as React.CSSProperties;
+
   return (
-    <main className="hp-tracker" data-tier={tierFor(current, max)}>
+    <main className="hp-tracker" data-tier={tierFor(current, max)} style={accentStyle}>
       <div className="hp-tracker__chrome">
         <SoundToggle />
       </div>
