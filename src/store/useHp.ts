@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db as defaultDb, HP_ID, type HpDb, type HpRecord, isReloading } from "./db";
 import {
@@ -27,6 +28,14 @@ import {
   spendHitDie,
 } from "../domain/hitDice";
 import { longRest } from "../domain/longRest";
+
+/** The last undoable HP change, surfaced to the UI for the Undo pill. */
+export interface HpLastChange {
+  kind: "damage" | "heal" | "set" | "temp";
+  amount: number;
+  /** The HP-bearing fields as they were *before* the action, for undo. */
+  before: Pick<HpRecord, "current" | "temp" | "successes" | "failures">;
+}
 
 /** Reactive HP + death-save state plus the actions that mutate it. */
 export interface UseHpResult extends HpState {
@@ -59,6 +68,10 @@ export interface UseHpResult extends HpState {
   setConMod: (n: number) => Promise<void>;
   shortRest: (roll?: number) => Promise<void>;
   longRest: () => Promise<void>;
+  undo: () => Promise<void>;
+  /** Clear the last-change pill without reverting. */
+  dismissLastChange: () => void;
+  lastChange: HpLastChange | null;
 }
 
 const SEED: HpRecord = {
@@ -94,6 +107,8 @@ const hpOf = (r: HpRecord): HpState => ({
 export function useHp(db: HpDb = defaultDb): UseHpResult {
   const record = useLiveQuery(() => db.hp.get(HP_ID), [db]);
   const state: HpRecord = record ?? SEED;
+
+  const [lastChange, setLastChange] = useState<HpLastChange | null>(null);
 
   const runTxn = (fn: (r: HpRecord) => HpRecord) =>
     db.transaction("rw", db.hp, async () => {
@@ -192,6 +207,34 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
       return { ...r, ...next, ...reconcile(next.current, savesOf(r)) };
     })();
 
+  // Wrap a mutating action so the pre-action HP fields are captured for a
+  // single-level undo. `state` is the rendered record at tap time — fine for a
+  // deliberate keypad action (no concurrent write storm).
+  const undoable =
+    (kind: HpLastChange["kind"], action: (n: number) => Promise<void>) =>
+    async (n: number) => {
+      const before = {
+        current: state.current,
+        temp: state.temp,
+        successes: state.successes,
+        failures: state.failures,
+      };
+      await action(n);
+      setLastChange({ kind, amount: n, before });
+    };
+
+  // Restore only the HP-bearing fields, so an unrelated change (e.g. hit dice)
+  // between the action and the undo is preserved.
+  const undo = async () => {
+    const lc = lastChange;
+    if (!lc) return;
+    setLastChange(null);
+    await write((r) => ({ ...r, ...lc.before }))();
+  };
+
+  // Dismiss the pill (timeout / next action) without reverting.
+  const dismissLastChange = () => setLastChange(null);
+
   return {
     current: state.current,
     max: state.max,
@@ -204,15 +247,15 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
     hitDiceTotal: state.hitDiceTotal,
     hitDiceAvailable: state.hitDiceAvailable,
     conMod: state.conMod,
-    damage: damageAction,
-    heal: applyHp(heal),
+    damage: undoable("damage", damageAction),
+    heal: undoable("heal", applyHp(heal)),
     setTemp: applyHp(setTemp),
     setMax: applyHp(setMax),
-    setCurrent: applyHp(setCurrent),
+    setCurrent: undoable("set", applyHp(setCurrent)),
     setSuccesses: applySaves(dsSetSuccesses),
     setFailures: applySaves(dsSetFailures),
     rollDeathSave,
-    setTempValue,
+    setTempValue: undoable("temp", setTempValue),
     stepCurrent: stepHp(setCurrent, (s) => s.current),
     stepMax: stepHp(setMax, (s) => s.max),
     stepTemp,
@@ -237,5 +280,8 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
           hitDiceAvailable: r.hitDiceAvailable,
         }),
       }))(),
+    undo,
+    dismissLastChange,
+    lastChange,
   };
 }
