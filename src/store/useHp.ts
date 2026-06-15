@@ -159,9 +159,10 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
   };
 
   // If the resulting HP is 0, concentration must drop (per 5e AC).
-  // Returns a partial record update that clears concentrating when appropriate.
-  const dropConcentrationIfDown = (nextCurrent: number): Pick<HpRecord, "concentrating"> | object =>
-    nextCurrent <= 0 ? { concentrating: false } : {};
+  // Only sets concentrating:false when the record was actually concentrating,
+  // avoiding a spurious DB write (and Dexie re-notification) when already false.
+  const dropConcentrationIfDown = (r: HpRecord, nextCurrent: number): Pick<HpRecord, "concentrating"> | object =>
+    nextCurrent <= 0 && r.concentrating ? { concentrating: false } : {};
 
   // HP ops run the pure HP function, then reconcile death saves (saves only
   // exist at 0 HP, so any move above 0 clears them) and drop concentration
@@ -170,7 +171,7 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
     (op: (s: HpState, n: number) => HpState) => (n: number) =>
       write((r) => {
         const hp = op(hpOf(r), n);
-        return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)), ...dropConcentrationIfDown(hp.current) };
+        return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)), ...dropConcentrationIfDown(r, hp.current) };
       })();
 
   // Pip writes are reconciled against current HP: death saves only exist at 0 HP,
@@ -187,7 +188,7 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
     (delta: number) =>
       write((r) => {
         const hp = op(hpOf(r), read(hpOf(r)) + delta);
-        return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)), ...dropConcentrationIfDown(hp.current) };
+        return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)), ...dropConcentrationIfDown(r, hp.current) };
       })();
 
   // Relative temp stepper — not undoable (the keypad's setTempValue is undoable
@@ -297,17 +298,21 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
           if (n > 0 && r.current === 0 && statusFor(r.current, saves) === "dying") {
             saves = addFailure(saves, 1);
           }
-          return { ...r, ...hp, ...saves, ...dropConcentrationIfDown(hp.current) };
+          return { ...r, ...hp, ...saves, ...dropConcentrationIfDown(r, hp.current) };
         })().then(() => {
           if (before) setLastChange({ kind, amount: n, before });
           // Show concentration check only when: was concentrating, damage > 0,
           // and the hit didn't drop the character (dropping clears concentration, no save needed).
-          if (wasConcentrating && n > 0 && !resultedInDown) {
-            setConcentrationCheck({ dc: concentrationDC(n), damage: n });
-          } else {
-            // Clear any stale check (e.g. character was dropped)
-            setConcentrationCheck(null);
+          if (wasConcentrating && n > 0) {
+            if (resultedInDown) {
+              // Character dropped to 0 — concentration auto-clears, no save prompt.
+              setConcentrationCheck(null);
+            } else {
+              setConcentrationCheck({ dc: concentrationDC(n), damage: n });
+            }
           }
+          // If not concentrating, leave any existing check state alone (it was already
+          // dismissed or never set).
         });
       };
     })(),
@@ -320,7 +325,7 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
     setMax: applyHp(setMax),
     setCurrent: undoable("set", (r, n) => {
       const hp = setCurrent(hpOf(r), n);
-      return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)), ...dropConcentrationIfDown(hp.current) };
+      return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)), ...dropConcentrationIfDown(r, hp.current) };
     }),
     setSuccesses: applySaves(dsSetSuccesses),
     setFailures: applySaves(dsSetFailures),

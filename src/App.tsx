@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { playSfx } from "./sound/sfx";
 import { useHp } from "./store/useHp";
 import type { HpLastChange } from "./store/useHp";
+import { ConcentrationToggle } from "./ui/ConcentrationToggle";
+import { ConcentrationPrompt } from "./ui/ConcentrationPrompt";
 import { DeathSaves } from "./ui/DeathSaves";
 import { HitDicePanel } from "./ui/HitDicePanel";
 import { tierFor } from "./ui/HpBar";
@@ -74,6 +76,10 @@ export function App() {
     <main className="hp-tracker" data-tier={tierFor(current, max)} style={accentStyle}>
       <div className="hp-tracker__chrome">
         <SoundToggle />
+        <ConcentrationToggle
+          concentrating={hp.concentrating}
+          onToggle={() => hp.setConcentrating(!hp.concentrating)}
+        />
       </div>
       <div className="hp-tracker__stage">
         <LiquidVessel
@@ -168,6 +174,17 @@ export function App() {
           label={undoLabel(hp.lastChange)}
           onUndo={hp.undo}
           onDismiss={hp.dismissLastChange}
+        />
+      )}
+
+      {hp.concentrationCheck && (
+        <ConcentrationPrompt
+          dc={hp.concentrationCheck.dc}
+          onDismiss={hp.dismissConcentrationCheck}
+          onDrop={() => {
+            hp.dismissConcentrationCheck();
+            hp.setConcentrating(false);
+          }}
         />
       )}
     </main>
