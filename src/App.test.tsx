@@ -190,4 +190,16 @@ describe("App (integration)", () => {
     await userEvent.click(screen.getByRole("button", { name: /^temp/i }));
     await waitFor(() => expect(screen.getByTestId("hp-temp-badge")).toHaveTextContent("9"));
   });
+
+  it("opens the coin sheet from the chrome and adds gold", async () => {
+    render(<App />);
+    await screen.findByText("10");
+    await userEvent.click(screen.getByRole("button", { name: /^coins$/i }));
+    expect(await screen.findByRole("dialog", { name: /coins/i })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /gold/i }));
+    await userEvent.click(screen.getByRole("button", { name: "8" }));
+    await userEvent.click(screen.getByRole("button", { name: /^add$/i }));
+    // committing returns to the rows; the Gold row now shows 8 (seed 0 → 8)
+    await waitFor(() => expect(screen.getByRole("button", { name: /gold — 8 gp/i })).toBeInTheDocument());
+  });
 });
