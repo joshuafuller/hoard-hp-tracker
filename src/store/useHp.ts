@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db as defaultDb, HP_ID, type HpDb, type HpRecord, isReloading } from "./db";
 import {
@@ -27,6 +28,15 @@ import {
   spendHitDie,
 } from "../domain/hitDice";
 import { longRest } from "../domain/longRest";
+
+/** The last undoable HP change, surfaced to the UI for the Undo pill. */
+export interface HpLastChange {
+  kind: "damage" | "heal" | "set" | "temp";
+  /** The operand passed to the action — a delta for damage/heal, an absolute value for set/temp. */
+  amount: number;
+  /** The HP-bearing fields as they were *before* the action, for undo. */
+  before: Pick<HpRecord, "current" | "temp" | "successes" | "failures">;
+}
 
 /** Reactive HP + death-save state plus the actions that mutate it. */
 export interface UseHpResult extends HpState {
@@ -59,6 +69,10 @@ export interface UseHpResult extends HpState {
   setConMod: (n: number) => Promise<void>;
   shortRest: (roll?: number) => Promise<void>;
   longRest: () => Promise<void>;
+  undo: () => Promise<void>;
+  /** Clear the last-change pill without reverting. Synchronous; no DB write. */
+  dismissLastChange: () => void;
+  lastChange: HpLastChange | null;
 }
 
 const SEED: HpRecord = {
@@ -95,6 +109,8 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
   const record = useLiveQuery(() => db.hp.get(HP_ID), [db]);
   const state: HpRecord = record ?? SEED;
 
+  const [lastChange, setLastChange] = useState<HpLastChange | null>(null);
+
   const runTxn = (fn: (r: HpRecord) => HpRecord) =>
     db.transaction("rw", db.hp, async () => {
       const current = (await db.hp.get(HP_ID)) ?? SEED;
@@ -129,19 +145,6 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
         return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)) };
       })();
 
-  // Damage is an HP op, plus the 5e rule: taking damage while ALREADY dying
-  // (at 0 HP) is a death-save failure (the third is fatal). Dropping from >0 to
-  // 0 just starts dying — no failure.
-  const damageAction = (n: number) =>
-    write((r) => {
-      const hp = damage(hpOf(r), n);
-      let saves = reconcile(hp.current, savesOf(r));
-      if (n > 0 && r.current === 0 && statusFor(r.current, saves) === "dying") {
-        saves = addFailure(saves, 1);
-      }
-      return { ...r, ...hp, ...saves };
-    })();
-
   // Pip writes are reconciled against current HP: death saves only exist at 0 HP,
   // so a write while alive is dropped (keeps the invariant; avoids hidden pips).
   const applySaves =
@@ -158,10 +161,8 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
         return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)) };
       })();
 
-  // Temp HP set to an exact value (clamped >=0) for the editor — distinct from the
-  // domain's non-stacking `setTemp`, which can't lower temp.
-  const setTempValue = (n: number) =>
-    write((r) => ({ ...r, temp: Math.max(0, Math.trunc(n)) }))();
+  // Relative temp stepper — not undoable (the keypad's setTempValue is undoable
+  // via the producer in the return object below).
   const stepTemp = (delta: number) =>
     write((r) => ({ ...r, temp: Math.max(0, r.temp + delta) }))();
 
@@ -192,6 +193,38 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
       return { ...r, ...next, ...reconcile(next.current, savesOf(r)) };
     })();
 
+  // Run a mutating record-producer through write(), capturing the pre-image of the
+  // HP-bearing fields from the SAME fresh transaction record — so rapid taps each
+  // snapshot their own correct `before` (no shared stale snapshot).
+  const undoable =
+    (kind: HpLastChange["kind"], producer: (r: HpRecord, n: number) => HpRecord) =>
+    (n: number) => {
+      let before: HpLastChange["before"] | null = null;
+      return write((r) => {
+        before = { current: r.current, temp: r.temp, successes: r.successes, failures: r.failures };
+        return producer(r, n);
+      })().then(() => {
+        if (before) setLastChange({ kind, amount: n, before });
+      });
+    };
+
+  // Restore only the HP-bearing fields, so an unrelated change (e.g. hit dice)
+  // between the action and the undo is preserved. Clamp the restored current to
+  // the current max in case max was lowered after the action was taken.
+  const undo = async () => {
+    const lc = lastChange;
+    if (!lc) return;
+    setLastChange(null);
+    await write((r) => ({
+      ...r,
+      ...lc.before,
+      current: Math.min(r.max, lc.before.current),
+    }))();
+  };
+
+  // Dismiss the pill (timeout / next action) without reverting.
+  const dismissLastChange = () => setLastChange(null);
+
   return {
     current: state.current,
     max: state.max,
@@ -204,15 +237,29 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
     hitDiceTotal: state.hitDiceTotal,
     hitDiceAvailable: state.hitDiceAvailable,
     conMod: state.conMod,
-    damage: damageAction,
-    heal: applyHp(heal),
+    damage: undoable("damage", (r, n) => {
+      const hp = damage(hpOf(r), n);
+      let saves = reconcile(hp.current, savesOf(r));
+      if (n > 0 && r.current === 0 && statusFor(r.current, saves) === "dying") {
+        saves = addFailure(saves, 1);
+      }
+      return { ...r, ...hp, ...saves };
+    }),
+    heal: undoable("heal", (r, n) => {
+      const hp = heal(hpOf(r), n);
+      return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)) };
+    }),
+    // setTemp is the domain non-stacking path; not undoable (the keypad uses setTempValue).
     setTemp: applyHp(setTemp),
     setMax: applyHp(setMax),
-    setCurrent: applyHp(setCurrent),
+    setCurrent: undoable("set", (r, n) => {
+      const hp = setCurrent(hpOf(r), n);
+      return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)) };
+    }),
     setSuccesses: applySaves(dsSetSuccesses),
     setFailures: applySaves(dsSetFailures),
     rollDeathSave,
-    setTempValue,
+    setTempValue: undoable("temp", (r, n) => ({ ...r, temp: Math.max(0, Math.trunc(n)) })),
     stepCurrent: stepHp(setCurrent, (s) => s.current),
     stepMax: stepHp(setMax, (s) => s.max),
     stepTemp,
@@ -237,5 +284,8 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
           hitDiceAvailable: r.hitDiceAvailable,
         }),
       }))(),
+    undo,
+    dismissLastChange,
+    lastChange,
   };
 }
