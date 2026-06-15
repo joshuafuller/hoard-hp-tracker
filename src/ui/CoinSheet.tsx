@@ -28,7 +28,7 @@ export function CoinSheet({ gp, sp, cp, total, onAdd, onSpend, onSet, onClose }:
       <AmountKeypad
         ariaLabel={`${row.label} coins`}
         context={`${row.label} — ${counts[editing]} ${row.unit}`}
-        closeOnCommit={false}
+        closeOnCommit
         primary={[
           { label: () => "Add", ariaLabel: "Add", tone: "add", gate: "positive", onCommit: (n) => onAdd(editing, n) },
           { label: () => "Spend", ariaLabel: "Spend", tone: "spend", gate: "positive", onCommit: (n) => onSpend(editing, n) },
