@@ -49,6 +49,8 @@ export interface UseHpResult extends HpState {
   hitDiceTotal: number;
   hitDiceAvailable: number;
   conMod: number;
+  /** The optional character name, blank by default. */
+  name: string;
   damage: (n: number) => Promise<void>;
   heal: (n: number) => Promise<void>;
   setTemp: (n: number) => Promise<void>;
@@ -67,6 +69,8 @@ export interface UseHpResult extends HpState {
   setHitDiceTotal: (n: number) => Promise<void>;
   setHitDiceAvailable: (n: number) => Promise<void>;
   setConMod: (n: number) => Promise<void>;
+  /** Set the character name; trimmed to ≤24 chars. Empty string clears the name. */
+  setName: (s: string) => Promise<void>;
   shortRest: (roll?: number) => Promise<void>;
   longRest: () => Promise<void>;
   undo: () => Promise<void>;
@@ -89,6 +93,7 @@ const SEED: HpRecord = {
   gp: 0,
   sp: 0,
   cp: 0,
+  name: "",
 };
 
 const d20 = () => Math.floor(Math.random() * 20) + 1;
@@ -240,6 +245,8 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
     hitDiceTotal: state.hitDiceTotal,
     hitDiceAvailable: state.hitDiceAvailable,
     conMod: state.conMod,
+    // Existing records (upgraded from v3) may have name === undefined; treat as "".
+    name: state.name ?? "",
     damage: undoable("damage", (r, n) => {
       const hp = damage(hpOf(r), n);
       let saves = reconcile(hp.current, savesOf(r));
@@ -270,6 +277,7 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
     setHitDiceTotal: setHd<number>(setHitDiceTotal),
     setHitDiceAvailable: setHd<number>(setHitDiceAvailable),
     setConMod: setHd<number>(setConMod),
+    setName: (s: string) => write((r) => ({ ...r, name: s.trim().slice(0, 24) }))(),
     shortRest,
     // Pass longRest a fresh literal of just the fields it acts on (object literals
     // satisfy RestState's index signature), then spread the recovered fields back

@@ -37,6 +37,7 @@ describe("createHpDb seeding", () => {
       gp: 0,
       sp: 0,
       cp: 0,
+      name: "",
     });
   });
 
@@ -556,7 +557,74 @@ describe("persistence across reload", () => {
         gp: 0,
         sp: 0,
         cp: 0,
+        name: "",
       });
+    } finally {
+      reopened.close();
+    }
+  });
+});
+
+describe("useHp character name", () => {
+  it("exposes an empty name by default", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    expect(result.current.name).toBe("");
+  });
+
+  it("setName persists a trimmed name", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+
+    await act(async () => {
+      await result.current.setName("  Aria Nighthollow  ");
+    });
+
+    await waitFor(() => expect(result.current.name).toBe("Aria Nighthollow"));
+  });
+
+  it("setName caps the name at 24 characters", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+
+    await act(async () => {
+      await result.current.setName("A".repeat(30));
+    });
+
+    await waitFor(() => expect(result.current.name).toBe("A".repeat(24)));
+  });
+
+  it("setName clears the name when given an empty string", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+
+    await act(async () => {
+      await result.current.setName("Gandalf");
+    });
+    await waitFor(() => expect(result.current.name).toBe("Gandalf"));
+
+    await act(async () => {
+      await result.current.setName("");
+    });
+    await waitFor(() => expect(result.current.name).toBe(""));
+  });
+
+  it("setName survives a fresh DB connection (persists)", async () => {
+    const { result, unmount } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+
+    await act(async () => {
+      await result.current.setName("Thorn Blackveil");
+    });
+    await waitFor(() => expect(result.current.name).toBe("Thorn Blackveil"));
+
+    unmount();
+    db.close();
+
+    const reopened = createHpDb(DB_NAME);
+    try {
+      const record = await reopened.hp.get(HP_ID);
+      expect(record?.name).toBe("Thorn Blackveil");
     } finally {
       reopened.close();
     }
