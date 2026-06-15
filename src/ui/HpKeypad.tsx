@@ -1,13 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 
 export interface HpKeypadProps {
+  /** Current HP — shown as context above the pad (e.g. "current 24 / 30"). */
   current: number;
+  /** Max HP — shown as context alongside current. */
   max: number;
+  /** Temporary HP — shown as context when present. */
   temp: number;
+  /** Apply the typed amount as damage. */
   onDamage: (n: number) => void;
+  /** Apply the typed amount as healing. */
   onHeal: (n: number) => void;
+  /** Set current HP directly to the typed amount (0 allowed → death saves). */
   onSetCurrent: (n: number) => void;
+  /** Set temporary HP to the typed amount (0 allowed → clear the ward). */
   onSetTemp: (n: number) => void;
+  /** Dismiss the keypad. */
   onClose: () => void;
 }
 
@@ -32,7 +40,11 @@ export function HpKeypad({
   onCloseRef.current = onClose;
   const [digits, setDigits] = useState("");
   const amount = digits === "" ? 0 : parseInt(digits, 10);
+  // hasAmount gates the maths-only actions (0 damage/heal is meaningless);
+  // typed gates the direct-set actions (an explicit 0 is valid — death saves,
+  // clearing a ward).
   const hasAmount = amount > 0;
+  const typed = digits !== "";
 
   const push = (d: string) => {
     haptic();
@@ -40,8 +52,8 @@ export function HpKeypad({
   };
   const back = () => { haptic(); setDigits((cur) => cur.slice(0, -1)); };
   const clear = () => { haptic(); setDigits(""); };
-  const commit = (fn: (n: number) => void) => {
-    if (!hasAmount) return;
+  const commit = (fn: (n: number) => void, ok: boolean) => {
+    if (!ok) return;
     haptic();
     fn(amount);
     onClose();
@@ -53,6 +65,41 @@ export function HpKeypad({
       if (e.key === "Escape") return onCloseRef.current();
       if (e.key >= "0" && e.key <= "9") return push(e.key);
       if (e.key === "Backspace") return back();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Mount once: focus the first control so the dialog has the keyboard.
+  useEffect(() => {
+    sheetRef.current
+      ?.querySelector<HTMLElement>('button, input, [tabindex]:not([tabindex="-1"])')
+      ?.focus();
+  }, []);
+
+  // Mount once: trap Tab within the dialog (honours aria-modal; matches HpValueEditor).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const sheet = sheetRef.current;
+      if (!sheet) return;
+      const focusable = sheet.querySelectorAll<HTMLElement>(
+        'button, input, [tabindex]:not([tabindex="-1"])',
+      );
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+      const active = document.activeElement;
+      if (!sheet.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      } else if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -88,12 +135,12 @@ export function HpKeypad({
         </div>
 
         <div className="keypad__actions">
-          <button type="button" className="keypad__apply" data-kind="damage" aria-label="Damage" disabled={!hasAmount} onClick={() => commit(onDamage)}>– Damage</button>
-          <button type="button" className="keypad__apply" data-kind="heal" aria-label="Heal" disabled={!hasAmount} onClick={() => commit(onHeal)}>+ Heal</button>
+          <button type="button" className="keypad__apply" data-kind="damage" aria-label="Damage" disabled={!hasAmount} onClick={() => commit(onDamage, hasAmount)}>– Damage</button>
+          <button type="button" className="keypad__apply" data-kind="heal" aria-label="Heal" disabled={!hasAmount} onClick={() => commit(onHeal, hasAmount)}>+ Heal</button>
         </div>
         <div className="keypad__secondary">
-          <button type="button" className="keypad__minor" disabled={!hasAmount} onClick={() => commit(onSetCurrent)}>Set to {amount}</button>
-          <button type="button" className="keypad__minor" data-kind="temp" disabled={!hasAmount} onClick={() => commit(onSetTemp)}>Temp = {amount}</button>
+          <button type="button" className="keypad__minor" disabled={!typed} onClick={() => commit(onSetCurrent, typed)}>Set to {amount}</button>
+          <button type="button" className="keypad__minor" data-kind="temp" disabled={!typed} onClick={() => commit(onSetTemp, typed)}>Temp = {amount}</button>
         </div>
       </div>
     </div>
