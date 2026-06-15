@@ -38,18 +38,28 @@ describe("HpKeypad", () => {
     expect(p.onClose).toHaveBeenCalled();
   });
 
-  it("applies heal with the typed amount", async () => {
+  it("applies heal with the typed amount and closes", async () => {
     const p = setup();
     await tap("7");
     await tap(/^heal/i);
     expect(p.onHeal).toHaveBeenCalledWith(7);
+    expect(p.onClose).toHaveBeenCalled();
   });
 
-  it("applies set with the typed amount", async () => {
+  it("applies set with the typed amount and closes", async () => {
     const p = setup();
     await tap("5");
     await tap(/^set /i);
     expect(p.onSetCurrent).toHaveBeenCalledWith(5);
+    expect(p.onClose).toHaveBeenCalled();
+  });
+
+  it("applies temp with the typed amount and closes", async () => {
+    const p = setup();
+    await tap("8");
+    await tap(/^temp/i);
+    expect(p.onSetTemp).toHaveBeenCalledWith(8);
+    expect(p.onClose).toHaveBeenCalled();
   });
 
   it("does nothing when the amount is empty", async () => {
