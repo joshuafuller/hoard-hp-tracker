@@ -1,0 +1,46 @@
+import { describe, expect, it } from "vitest";
+import { hpColor, type Rgb, rgbCss } from "./hpColor";
+
+// Anchor colors (the existing --hp-* tokens), sRGB 0..1.
+const GREEN: Rgb = [0x34 / 255, 0xd3 / 255, 0x99 / 255];
+const AMBER: Rgb = [0xf5 / 255, 0xb9 / 255, 0x42 / 255];
+const RED: Rgb = [0xf0 / 255, 0x50 / 255, 0x6a / 255];
+const DOWN: Rgb = [0x6b / 255, 0x6b / 255, 0x78 / 255];
+
+const CHANNELS = [0, 1, 2] as const;
+const near = (a: Rgb, b: Rgb, p = 1) => CHANNELS.forEach((i) => expect(a[i]).toBeCloseTo(b[i], p));
+const dist = (a: Rgb, b: Rgb) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+
+describe("hpColor", () => {
+  it("is the healthy green at full HP", () => near(hpColor(10, 10), GREEN));
+  it("is bloodied amber at exactly half", () => near(hpColor(5, 10), AMBER));
+  it("is critical red at exactly a quarter", () => near(hpColor(25, 100), RED));
+  it("holds red below a quarter", () => near(hpColor(5, 100), RED));
+  it("is the grey down color at 0 or below", () => {
+    near(hpColor(0, 10), DOWN);
+    near(hpColor(-3, 10), DOWN);
+  });
+
+  it("interpolates between anchors (70% sits between amber and green)", () => {
+    const c = hpColor(7, 10);
+    CHANNELS.forEach((i) => {
+      const lo = Math.min(AMBER[i], GREEN[i]);
+      const hi = Math.max(AMBER[i], GREEN[i]);
+      expect(c[i]).toBeGreaterThanOrEqual(lo - 1e-6);
+      expect(c[i]).toBeLessThanOrEqual(hi + 1e-6);
+    });
+    expect(c).not.toEqual(AMBER);
+    expect(c).not.toEqual(GREEN);
+  });
+
+  it("is continuous across the tier thresholds (no visible jump)", () => {
+    const step = (r: number) => hpColor(Math.round(r * 1000), 1000);
+    for (const t of [0.5, 0.25]) {
+      expect(dist(step(t - 0.005), step(t + 0.005))).toBeLessThan(0.06); // smooth, not a step
+    }
+  });
+
+  it("rgbCss formats a CSS color", () => {
+    expect(rgbCss([1, 0, 0.5])).toBe("rgb(255 0 128)");
+  });
+});
