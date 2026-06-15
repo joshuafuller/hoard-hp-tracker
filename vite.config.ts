@@ -36,8 +36,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
     css: false,
-    // Keep Vitest's defaults (node_modules, dist, etc.) and also never discover
-    // tests inside Stryker's sandbox copies.
-    exclude: [...configDefaults.exclude, "**/.stryker-tmp/**"],
+    // Keep Vitest's defaults (node_modules, dist, etc.), exclude Playwright e2e
+    // specs (they import @playwright/test which is incompatible with jsdom), and
+    // never discover tests inside Stryker's sandbox copies.
+    exclude: [...configDefaults.exclude, "e2e/**", "**/.stryker-tmp/**"],
   },
 });
