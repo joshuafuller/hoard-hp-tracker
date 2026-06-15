@@ -1335,6 +1335,12 @@ body {
    label — the same hue used for gp dots and the total readout. */
 .coin-button {
   appearance: none;
+/* ── Concentration toggle (#30) ─────────────────────────────────────────── */
+/* Sits in the chrome row alongside SoundToggle. A purple/violet tint separates
+   it clearly from the green/amber/red HP accent family so "concentrating" reads
+   as a distinct state at a glance. The violet-400 (#a78bfa) is used inline as
+   a literal rather than a token — concentration is a one-off state, not a tier. */
+.concentration-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1345,6 +1351,8 @@ body {
   font-size: 1.2rem;
   font-weight: 800;
   color: var(--coin-gold);
+  border: 1px solid var(--obsidian-600);
+  color: var(--ink-500);
   background: var(--obsidian-700);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -1497,3 +1505,83 @@ body {
    (critical red — spending reads as a loss, same as damage). */
 .keypad__apply[data-kind="add"]   { background: color-mix(in oklab, var(--coin-gold) 80%, black); color: var(--obsidian-900); }
 .keypad__apply[data-kind="spend"] { background: color-mix(in oklab, var(--hp-critical) 75%, black); color: #fff; }
+    color var(--dur-fast) ease,
+    background var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease;
+}
+
+.concentration-toggle[data-concentrating="true"] {
+  color: #a78bfa;
+  border-color: color-mix(in oklab, #a78bfa 40%, var(--obsidian-600));
+  box-shadow: 0 0 14px color-mix(in oklab, #a78bfa 30%, transparent);
+}
+
+.concentration-toggle[data-concentrating="false"] {
+  color: var(--ink-500);
+}
+
+@media (hover: hover) {
+  .concentration-toggle:hover {
+    background: var(--obsidian-600);
+  }
+}
+
+.concentration-toggle:active {
+  transform: scale(0.92);
+}
+
+.concentration-toggle:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 3px;
+}
+
+.concentration-toggle__icon {
+  display: block;
+}
+
+/* ── Concentration prompt (#30) ─────────────────────────────────────────── */
+/* Stacks above the undo pill so both can coexist on-screen. The violet tint
+   signals "spell save needed" without competing with the HP accent palette. */
+.concentration-prompt {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  /* Ride above the undo pill: pill sits at 0.75rem, add ~2.75rem for its height */
+  bottom: calc(env(safe-area-inset-bottom) + 3.75rem); z-index: 21;
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  background: color-mix(in oklab, #a78bfa 12%, var(--obsidian-700));
+  border: 1px solid color-mix(in oklab, #a78bfa 40%, var(--obsidian-600));
+  border-radius: 999px; padding: 0.45rem 0.75rem;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.45), 0 0 20px color-mix(in oklab, #a78bfa 20%, transparent);
+  animation: undo-pill-in var(--dur-fast) var(--ease-spring);
+}
+
+.concentration-prompt__label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #a78bfa;
+  white-space: nowrap;
+}
+
+.concentration-prompt__btn {
+  appearance: none;
+  border: none;
+  border-radius: var(--radius-pill);
+  font-weight: 800;
+  font-size: 0.78rem;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0.2rem 0.6rem;
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+
+.concentration-prompt__btn:active { transform: scale(0.9); }
+.concentration-prompt__btn:focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; }
+
+.concentration-prompt__btn--keep {
+  background: color-mix(in oklab, #a78bfa 22%, var(--obsidian-600));
+  color: #a78bfa;
+}
+
+.concentration-prompt__btn--drop {
+  background: color-mix(in oklab, var(--hp-critical) 20%, var(--obsidian-700));
+  color: var(--hp-critical);
+}

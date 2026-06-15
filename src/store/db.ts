@@ -21,7 +21,7 @@ function isTestEnv(): boolean {
 /** The single HP record lives at this fixed primary key. */
 export const HP_ID = 1 as const;
 
-/** Persisted shape of the one HP record (HP + death saves + Hit Dice + name). */
+/** Persisted shape of the one HP record (HP + death saves + Hit Dice + coin + name + concentration). */
 export interface HpRecord {
   id: number;
   current: number;
@@ -39,6 +39,8 @@ export interface HpRecord {
   cp?: number;
   /** Optional character name, blank by default. */
   name: string;
+  /** Whether the character is currently concentrating on a spell. */
+  concentrating: boolean;
 }
 
 /** A Dexie database holding exactly one `hp` table. */
@@ -112,6 +114,7 @@ export function createHpDb(name: string = HP_DB_NAME): HpDb {
       sp: 0,
       cp: 0,
       name: "",
+      concentrating: false,
     }),
   );
 

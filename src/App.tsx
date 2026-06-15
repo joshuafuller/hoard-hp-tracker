@@ -7,6 +7,8 @@ import { useHp } from "./store/useHp";
 import type { HpLastChange } from "./store/useHp";
 import { useCoins } from "./store/useCoins";
 import { CharacterName } from "./ui/CharacterName";
+import { ConcentrationToggle } from "./ui/ConcentrationToggle";
+import { ConcentrationPrompt } from "./ui/ConcentrationPrompt";
 import { DeathSaves } from "./ui/DeathSaves";
 import { HitDicePanel } from "./ui/HitDicePanel";
 import { tierFor } from "./ui/HpBar";
@@ -81,6 +83,10 @@ export function App() {
       <div className="hp-tracker__chrome">
         <CoinButton onOpen={() => { setKeypadOpen(false); setEditingMax(false); setCoinsOpen(true); }} />
         <SoundToggle />
+        <ConcentrationToggle
+          concentrating={hp.concentrating}
+          onToggle={() => hp.setConcentrating(!hp.concentrating)}
+        />
       </div>
       <CharacterName name={hp.name} onSetName={hp.setName} />
       <div className="hp-tracker__stage">
@@ -184,6 +190,17 @@ export function App() {
           label={undoLabel(hp.lastChange)}
           onUndo={hp.undo}
           onDismiss={hp.dismissLastChange}
+        />
+      )}
+
+      {hp.concentrationCheck && (
+        <ConcentrationPrompt
+          dc={hp.concentrationCheck.dc}
+          onDismiss={hp.dismissConcentrationCheck}
+          onDrop={() => {
+            hp.dismissConcentrationCheck();
+            hp.setConcentrating(false);
+          }}
         />
       )}
     </main>
