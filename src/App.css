@@ -48,10 +48,14 @@
   width: 100%;
 }
 
-/* Top-right chrome (sound toggle), clear of the device safe-area inset. */
+/* Top-right chrome (coin button + sound toggle), clear of the device safe-area inset.
+   Row of icon controls; gap keeps them from touching. */
 .hp-tracker__chrome {
   position: absolute;
   top: calc(env(safe-area-inset-top) + 0.75rem);
   right: calc(env(safe-area-inset-right) + 0.75rem);
   z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }

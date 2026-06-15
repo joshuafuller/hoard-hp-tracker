@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { playSfx } from "./sound/sfx";
 import { useHp } from "./store/useHp";
 import type { HpLastChange } from "./store/useHp";
+import { useCoins } from "./store/useCoins";
 import { DeathSaves } from "./ui/DeathSaves";
 import { HitDicePanel } from "./ui/HitDicePanel";
 import { tierFor } from "./ui/HpBar";
@@ -16,6 +17,8 @@ import { RestControls } from "./ui/RestControls";
 import { SoundToggle } from "./ui/SoundToggle";
 import { StepControls } from "./ui/StepControls";
 import { UndoPill } from "./ui/UndoPill";
+import { CoinButton } from "./ui/CoinButton";
+import { CoinSheet } from "./ui/CoinSheet";
 
 /**
  * The composed HP Tracker: reactive state from `useHp` flows into the
@@ -29,6 +32,8 @@ export function App() {
   const dying = hp.status !== "alive";
   const [editingMax, setEditingMax] = useState(false);
   const [keypadOpen, setKeypadOpen] = useState(false);
+  const coins = useCoins();
+  const [coinsOpen, setCoinsOpen] = useState(false);
 
   // The panel slot is a shared scroll container for Hit Dice and Death Saves.
   // Reset its scroll whenever the two swap, so the incoming panel starts at the
@@ -73,6 +78,7 @@ export function App() {
   return (
     <main className="hp-tracker" data-tier={tierFor(current, max)} style={accentStyle}>
       <div className="hp-tracker__chrome">
+        <CoinButton onOpen={() => { setKeypadOpen(false); setEditingMax(false); setCoinsOpen(true); }} />
         <SoundToggle />
       </div>
       <div className="hp-tracker__stage">
@@ -80,9 +86,9 @@ export function App() {
           current={current}
           max={max}
           temp={temp}
-          onEditCurrent={() => { setEditingMax(false); setKeypadOpen(true); }}
-          onEditMax={() => { setKeypadOpen(false); setEditingMax(true); }}
-          onEditTemp={() => { setEditingMax(false); setKeypadOpen(true); }}
+          onEditCurrent={() => { setEditingMax(false); setCoinsOpen(false); setKeypadOpen(true); }}
+          onEditMax={() => { setKeypadOpen(false); setCoinsOpen(false); setEditingMax(true); }}
+          onEditTemp={() => { setEditingMax(false); setCoinsOpen(false); setKeypadOpen(true); }}
         />
       </div>
       {/* The swappable panel lives in its own fixed-height slot so the
@@ -160,6 +166,14 @@ export function App() {
           onIncrement={() => hp.stepMax(1)}
           onSet={hp.setMax}
           onClose={() => setEditingMax(false)}
+        />
+      )}
+
+      {coinsOpen && (
+        <CoinSheet
+          gp={coins.gp} sp={coins.sp} cp={coins.cp} total={coins.total}
+          onAdd={coins.add} onSpend={coins.spend} onSet={coins.set}
+          onClose={() => setCoinsOpen(false)}
         />
       )}
 
