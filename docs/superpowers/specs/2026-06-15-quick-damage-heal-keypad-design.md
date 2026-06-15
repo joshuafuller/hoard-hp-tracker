@@ -48,9 +48,12 @@ A bottom-sheet modal. Presentational; all state in/out via props.
   `C` clears. With an empty/zero amount the action buttons are disabled (no-op).
   Tapping an action calls the matching callback with the parsed integer, then
   `onClose()`. Dismiss on backdrop tap / Escape / a close control.
-- **A11y:** focus-trapped dialog (`role="dialog"`, labelled), keypad buttons are
-  real `<button>`s, hardware keyboard digits/Enter/Backspace also work, the
-  amount display is an `aria-live` readout. Matches the existing
+- **A11y:** focus-trapped dialog (`role="dialog"`, labelled, skips disabled
+  controls), keypad buttons are real `<button>`s, hardware keyboard digits and
+  Backspace drive entry; there is intentionally NO global Enter-to-commit (with
+  two primary actions, Damage vs Heal, a default is ambiguous and risks the
+  wrong commit — keyboard users Tab to the action and press Enter/Space, native
+  button activation). The amount display is an `aria-live` readout. Matches the existing
   `HpValueEditor` modal conventions.
 
 ### `UndoPill` (new) — `src/ui/UndoPill.tsx`
