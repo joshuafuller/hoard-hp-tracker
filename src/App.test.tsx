@@ -141,4 +141,34 @@ describe("App (integration)", () => {
       expect(screen.queryByLabelText(/death saving throws/i)).not.toBeInTheDocument(),
     );
   });
+
+  it("opens the keypad from the HP number and applies typed damage", async () => {
+    render(<App />);
+    await screen.findByText("10");
+    await userEvent.click(screen.getByRole("button", { name: /edit current hp/i }));
+    const dialog = await screen.findByRole("dialog", { name: /amount|hp/i });
+    expect(dialog).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "6" }));
+    await userEvent.click(screen.getByRole("button", { name: /^damage/i }));
+    expect(await screen.findByText("4")).toBeInTheDocument(); // 10 - 6
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /amount|hp/i })).not.toBeInTheDocument());
+  });
+
+  it("shows an Undo pill after a change and reverts it", async () => {
+    render(<App />);
+    await screen.findByText("10");
+    await userEvent.click(screen.getByRole("button", { name: /edit current hp/i }));
+    await userEvent.click(screen.getByRole("button", { name: "6" }));
+    await userEvent.click(screen.getByRole("button", { name: /^damage/i }));
+    await screen.findByText("4");
+    await userEvent.click(await screen.findByRole("button", { name: /undo/i }));
+    expect(await screen.findByText("10")).toBeInTheDocument();
+  });
+
+  it("still opens the set-max editor from the /max number", async () => {
+    render(<App />);
+    await screen.findByText("10");
+    await userEvent.click(screen.getByRole("button", { name: /edit maximum hp/i }));
+    expect(await screen.findByRole("dialog", { name: /set max hp/i })).toBeInTheDocument();
+  });
 });
