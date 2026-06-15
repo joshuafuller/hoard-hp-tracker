@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { playSfx } from "./sound/sfx";
 import { useHp } from "./store/useHp";
 import type { HpLastChange } from "./store/useHp";
+import { CharacterName } from "./ui/CharacterName";
 import { DeathSaves } from "./ui/DeathSaves";
 import { HitDicePanel } from "./ui/HitDicePanel";
 import { tierFor } from "./ui/HpBar";
@@ -75,6 +76,7 @@ export function App() {
       <div className="hp-tracker__chrome">
         <SoundToggle />
       </div>
+      <CharacterName name={hp.name} onSetName={hp.setName} />
       <div className="hp-tracker__stage">
         <LiquidVessel
           current={current}
