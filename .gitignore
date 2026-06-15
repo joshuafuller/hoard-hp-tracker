@@ -16,3 +16,6 @@ dev-dist/
 # Mutation testing
 .stryker-tmp/
 reports/
+
+# brainstorming visual companion artifacts
+.superpowers/
