@@ -180,4 +180,14 @@ describe("App (integration)", () => {
     await userEvent.click(screen.getByRole("button", { name: /edit maximum hp/i }));
     expect(await screen.findByRole("dialog", { name: /set max hp/i })).toBeInTheDocument();
   });
+
+  it("sets temp HP via the keypad from the temp badge (US-5)", async () => {
+    render(<App />);
+    await screen.findByText("10");
+    await userEvent.click(screen.getByRole("button", { name: /edit temporary hp/i }));
+    await screen.findByRole("dialog", { name: /amount|hp/i });
+    await userEvent.click(screen.getByRole("button", { name: "9" }));
+    await userEvent.click(screen.getByRole("button", { name: /^temp/i }));
+    await waitFor(() => expect(screen.getByTestId("hp-temp-badge")).toHaveTextContent("9"));
+  });
 });

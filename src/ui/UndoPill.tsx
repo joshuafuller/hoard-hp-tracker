@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export interface UndoPillProps {
   /** Short description of the last change, e.g. "Healed +9". */
@@ -13,10 +13,12 @@ export interface UndoPillProps {
 
 /** A transient pill announcing the last HP change with a single Undo. */
 export function UndoPill({ label, onUndo, onDismiss, timeout = 4000 }: UndoPillProps) {
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
   useEffect(() => {
-    const t = setTimeout(onDismiss, timeout);
+    const t = setTimeout(() => onDismissRef.current(), timeout);
     return () => clearTimeout(t);
-  }, [label, onDismiss, timeout]);
+  }, [label, timeout]);
 
   return (
     <div className="undo-pill" role="status">

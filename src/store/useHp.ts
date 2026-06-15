@@ -209,8 +209,11 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
     })();
 
   // Wrap a mutating action so the pre-action HP fields are captured for a
-  // single-level undo. `state` is the rendered record at tap time — fine for a
-  // deliberate keypad action (no concurrent write storm).
+  // single-level undo. `before` is the rendered `state` at tap time, which is
+  // correct for a deliberate keypad action. Known limitation: two undoable
+  // actions fired within one render frame (e.g. a rapid ±1 stepper burst) share
+  // a snapshot, so undo over-reverts — practically unreachable (onClick only).
+  // TODO: capture `before` inside the write transaction if that ever matters.
   const undoable =
     (kind: HpLastChange["kind"], action: (n: number) => Promise<void>) =>
     async (n: number) => {
