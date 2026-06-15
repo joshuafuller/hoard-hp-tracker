@@ -73,9 +73,9 @@ export function App() {
           current={current}
           max={max}
           temp={temp}
-          onEditCurrent={() => setKeypadOpen(true)}
-          onEditMax={() => setEditingMax(true)}
-          onEditTemp={() => setKeypadOpen(true)}
+          onEditCurrent={() => { setEditingMax(false); setKeypadOpen(true); }}
+          onEditMax={() => { setKeypadOpen(false); setEditingMax(true); }}
+          onEditTemp={() => { setEditingMax(false); setKeypadOpen(true); }}
         />
       </div>
       {/* The swappable panel lives in its own fixed-height slot so the
@@ -139,8 +139,8 @@ export function App() {
           temp={temp}
           onDamage={(n) => { playSfx("damage"); return hp.damage(n); }}
           onHeal={(n) => { playSfx("heal"); return hp.heal(n); }}
-          onSetCurrent={hp.setCurrent}
-          onSetTemp={hp.setTempValue}
+          onSetCurrent={hp.setCurrent}   // no sfx — direct set is a secondary action
+          onSetTemp={hp.setTempValue}    // no sfx — idem
           onClose={() => setKeypadOpen(false)}
         />
       )}

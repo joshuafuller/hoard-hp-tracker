@@ -165,6 +165,15 @@ describe("App (integration)", () => {
     expect(await screen.findByText("10")).toBeInTheDocument();
   });
 
+  it("labels the undo pill for a heal", async () => {
+    render(<App />);
+    await screen.findByText("10");
+    await userEvent.click(screen.getByRole("button", { name: /edit current hp/i }));
+    await userEvent.click(screen.getByRole("button", { name: "3" }));
+    await userEvent.click(screen.getByRole("button", { name: /^heal/i }));
+    expect(await screen.findByText(/healed \+3/i)).toBeInTheDocument();
+  });
+
   it("still opens the set-max editor from the /max number", async () => {
     render(<App />);
     await screen.findByText("10");
