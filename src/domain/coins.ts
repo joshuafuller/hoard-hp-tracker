@@ -106,3 +106,24 @@ export function spendCoin(c: Coins, kind: CoinKind, n: number): Coins {
 export function totalGp(c: Coins): number {
   return totalCp(c) / CP_VALUE.gp;
 }
+
+/**
+ * Collapse the purse into the fewest coins of the highest denominations,
+ * conserving total wealth: take as many of each kind as the remaining copper
+ * allows, from pp down to cp. The result is the unique minimal-coin form, so
+ * `distill` is idempotent. e.g. 123 cp ⇒ 1 gp, 2 sp, 3 cp.
+ */
+export function distill(c: Coins): Coins {
+  let rem = totalCp(c);
+  const out: Coins = { pp: 0, gp: 0, sp: 0, cp: 0 };
+  for (const k of KINDS) {
+    out[k] = Math.trunc(rem / CP_VALUE[k]);
+    rem -= out[k] * CP_VALUE[k];
+  }
+  return out;
+}
+
+/** Structural equality across all four denominations. */
+export function coinsEqual(a: Coins, b: Coins): boolean {
+  return a.pp === b.pp && a.gp === b.gp && a.sp === b.sp && a.cp === b.cp;
+}

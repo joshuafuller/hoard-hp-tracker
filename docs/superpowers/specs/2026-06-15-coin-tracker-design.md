@@ -91,6 +91,43 @@ nothing. Two changes landed since:
   rather than going negative. Existing coins are **not** auto-normalised
   (12 sp stays 12 sp, not 1 gp 2 sp). `addCoin`/`setCoin` are unchanged.
 
+## Follow-up (2026-06-19): spend bug fix + auto-distill & sheet rethink
+
+### `spendCoin` — break the smallest *sufficient* higher coin
+The "smallest sufficient higher" step consumed insufficient higher coins
+greedily before checking a larger one: spending 15 sp while holding 1 gp + 1 pp
+broke the gp (100 cp < 150 cp owed) *and* the pp, leaving 0 gp + 95 sp. Now the
+step first looks for the smallest single higher coin whose value covers what's
+still owed and breaks just that one (→ 1 gp + 85 sp, gp preserved); only when no
+single higher coin is enough does it chip from the largest available until the
+remainder fits in one break. Wealth is still conserved; an unaffordable spend is
+still a no-op.
+
+### Auto-distill (`distill`)
+New pure `distill(coins)`: collapse the purse into the fewest coins of the
+highest denominations, conserving total wealth (greedy in copper, pp→cp). e.g.
+123 cp ⇒ 1 gp 2 sp 3 cp; 2pp 41gp 12sp 30cp ⇒ 6pp 2gp 5sp 0cp. Idempotent, so
+the sheet can detect an already-minimal purse (`coinsEqual`). Uses platinum (the
+true minimal-coin form). `useCoins` gains `distill()` plus an **ephemeral undo**
+(`lastDistill` snapshot + `undoDistill`/`dismissDistill`), mirroring the HP
+hook's `lastChange`.
+
+### Coin sheet rethink (UI/UX)
+The passive list of counts becomes an actionable sheet:
+- **Hero total** at the top (the gold-equivalent wealth, large).
+- **`CoinRow`** per denomination with inline **−/+ steppers** (single-coin
+  nudges; − disabled at 0) and a **tap-to-edit count** that still opens the
+  shared `AmountKeypad` (Add/Spend/Set) for larger amounts.
+- **Footer Distill action** ("Distill to fewest coins"), disabled and labelled
+  "Already distilled" when the purse is minimal.
+- **`DistillConfirm`** modal: a per-denomination **before→after diff** (changed
+  rows highlighted, unchanged rows receded) and a **"total unchanged"** line
+  proving wealth is conserved — so accepting is never a leap of faith. Escape /
+  backdrop / Cancel dismiss; Distill commits.
+- **In-sheet undo**: after distilling, the footer shows "Distilled · ↶ Undo"
+  for ~5s. (This supersedes the original "no coin undo" non-goal, scoped to the
+  bulk distill action.)
+
 ## Rollout
 Feature branch → PR into `beta` → verify on `/beta/` (and on a real phone) →
 promote `beta` → `main`. TDD red→green; bot review findings handled in-thread.

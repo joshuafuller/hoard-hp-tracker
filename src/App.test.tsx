@@ -196,10 +196,10 @@ describe("App (integration)", () => {
     await screen.findByText("10");
     await userEvent.click(screen.getByRole("button", { name: /^coins$/i }));
     expect(await screen.findByRole("dialog", { name: /coins/i })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: /gold/i }));
+    await userEvent.click(screen.getByRole("button", { name: /gold — 0 gp, edit/i }));
     await userEvent.click(screen.getByRole("button", { name: "8" }));
     await userEvent.click(screen.getByRole("button", { name: /^add$/i }));
     // committing returns to the rows; the Gold row now shows 8 (seed 0 → 8)
-    await waitFor(() => expect(screen.getByRole("button", { name: /gold — 8 gp/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("button", { name: /gold — 8 gp, edit/i })).toBeInTheDocument());
   });
 });

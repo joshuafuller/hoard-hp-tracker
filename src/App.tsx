@@ -181,7 +181,11 @@ export function App() {
         <CoinSheet
           pp={coins.pp} gp={coins.gp} sp={coins.sp} cp={coins.cp} total={coins.total}
           onAdd={coins.add} onSpend={coins.spend} onSet={coins.set}
-          onClose={() => setCoinsOpen(false)}
+          onDistill={coins.distill}
+          lastDistill={coins.lastDistill}
+          onUndoDistill={coins.undoDistill}
+          onDismissDistill={coins.dismissDistill}
+          onClose={() => { coins.dismissDistill(); setCoinsOpen(false); }}
         />
       )}
 

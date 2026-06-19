@@ -1,12 +1,26 @@
-import { useState } from "react";
-import type { CoinKind } from "../domain/coins";
+import { useEffect, useRef, useState } from "react";
+import { type CoinKind, type Coins, coinsEqual, distill } from "../domain/coins";
 import { AmountKeypad } from "./AmountKeypad";
+import { CoinRow } from "./CoinRow";
+import { DistillConfirm } from "./DistillConfirm";
 
 export interface CoinSheetProps {
-  pp: number; gp: number; sp: number; cp: number; total: number;
+  pp: number;
+  gp: number;
+  sp: number;
+  cp: number;
+  total: number;
   onAdd: (kind: CoinKind, n: number) => void;
   onSpend: (kind: CoinKind, n: number) => void;
   onSet: (kind: CoinKind, n: number) => void;
+  /** Collapse the purse into the fewest coins. */
+  onDistill: () => void;
+  /** The pre-distill purse, or null. When set, the footer offers an undo. */
+  lastDistill: Coins | null;
+  /** Revert the last distill. */
+  onUndoDistill: () => void;
+  /** Clear the distill-undo affordance without reverting. */
+  onDismissDistill: () => void;
   onClose: () => void;
 }
 
@@ -17,12 +31,43 @@ const ROWS: { kind: CoinKind; label: string; unit: string }[] = [
   { kind: "cp", label: "Copper", unit: "cp" },
 ];
 
-/** Bottom-sheet coin tracker. Rows show each count; tapping one opens the shared
- * keypad (Add/Spend/Set) for that denomination. Spending converts across
- * denominations automatically (see `spendCoin`). Presentational. */
-export function CoinSheet({ pp, gp, sp, cp, total, onAdd, onSpend, onSet, onClose }: CoinSheetProps) {
+const fmtGp = (n: number) => n.toFixed(2).replace(/\.?0+$/, "");
+
+/**
+ * The coin tracker bottom sheet. A hero total tops a list of denomination rows,
+ * each with inline −/+ steppers and a tap-to-edit count (the shared keypad for
+ * Add/Spend/Set). The footer hosts auto-distill — collapse the purse into the
+ * fewest coins — gated behind a visual before→after confirmation, with a
+ * one-tap undo after it runs. Presentational; reuses the `.hp-editor` shell.
+ */
+export function CoinSheet({
+  pp,
+  gp,
+  sp,
+  cp,
+  total,
+  onAdd,
+  onSpend,
+  onSet,
+  onDistill,
+  lastDistill,
+  onUndoDistill,
+  onDismissDistill,
+  onClose,
+}: CoinSheetProps) {
   const counts: Record<CoinKind, number> = { pp, gp, sp, cp };
+  const coins: Coins = { pp, gp, sp, cp };
   const [editing, setEditing] = useState<CoinKind | null>(null);
+  const [confirming, setConfirming] = useState(false);
+
+  // Auto-dismiss the undo affordance after a beat, mirroring the HP undo pill.
+  const onDismissRef = useRef(onDismissDistill);
+  onDismissRef.current = onDismissDistill;
+  useEffect(() => {
+    if (!lastDistill) return;
+    const t = setTimeout(() => onDismissRef.current(), 5000);
+    return () => clearTimeout(t);
+  }, [lastDistill]);
 
   if (editing) {
     const row = ROWS.find((r) => r.kind === editing)!;
@@ -41,19 +86,70 @@ export function CoinSheet({ pp, gp, sp, cp, total, onAdd, onSpend, onSet, onClos
     );
   }
 
+  if (confirming) {
+    return <DistillConfirm coins={coins} onConfirm={onDistill} onClose={() => setConfirming(false)} />;
+  }
+
+  // Distilling only does something when the purse isn't already minimal.
+  const canDistill = !coinsEqual(coins, distill(coins));
+
   return (
     <div className="hp-editor" data-testid="coin-backdrop" onClick={onClose}>
-      <div className="hp-editor__sheet coins" role="dialog" aria-modal="true" aria-label="Coins" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="hp-editor__sheet coins"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Coins"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="coins__head">
-          <span className="coins__label">COINS</span>
-          <span className="coins__total">≈ {total.toFixed(2).replace(/\.?0+$/, "")} gp</span>
-        </div>
-        {ROWS.map((r) => (
-          <button key={r.kind} type="button" className="coins__row" data-kind={r.kind} aria-label={`${r.label} — ${counts[r.kind]} ${r.unit}, edit`} onClick={() => setEditing(r.kind)}>
-            <span className="coins__name"><span className="coins__dot" /> {r.label} <span className="coins__unit">{r.unit}</span></span>
-            <span className="coins__count">{counts[r.kind]}</span>
+          <span className="coins__label">HOARD</span>
+          <button type="button" className="coins__close" aria-label="Close" onClick={onClose}>
+            ✕
           </button>
-        ))}
+        </div>
+        <div className="coins__hero">
+          <span className="coins__total" data-testid="coins-total">
+            {fmtGp(total)} gp
+          </span>
+          <span className="coins__hero-cap">total wealth</span>
+        </div>
+        <div className="coins__rows">
+          {ROWS.map((r) => (
+            <CoinRow
+              key={r.kind}
+              kind={r.kind}
+              label={r.label}
+              unit={r.unit}
+              count={counts[r.kind]}
+              onAdd={() => onAdd(r.kind, 1)}
+              onSpend={() => onSpend(r.kind, 1)}
+              onEdit={() => setEditing(r.kind)}
+            />
+          ))}
+        </div>
+        <div className="coins__footer">
+          {lastDistill ? (
+            <div className="coins__undo" role="status">
+              <span className="coins__undo-label">Distilled</span>
+              <button type="button" className="coins__undo-btn" onClick={onUndoDistill}>
+                ↶ Undo
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="coins__distill"
+              disabled={!canDistill}
+              onClick={() => setConfirming(true)}
+            >
+              <span className="coins__distill-glyph" aria-hidden="true">
+                ⚗
+              </span>
+              {canDistill ? "Distill to fewest coins" : "Already distilled"}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
