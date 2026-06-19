@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addCoin, type Coins, setCoin, spendCoin, totalCp, totalGp } from "./coins";
+import { addCoin, coinsEqual, type Coins, distill, setCoin, spendCoin, totalCp, totalGp } from "./coins";
 
 const C = (pp: number, gp: number, sp: number, cp: number): Coins => ({ pp, gp, sp, cp });
 
@@ -41,6 +41,24 @@ describe("coins", () => {
       expect(spendCoin(C(1, 1, 0, 0), "sp", 1)).toEqual(C(1, 0, 9, 0));
     });
 
+    it("skips a higher coin that can't cover the spend and breaks the next sufficient one, preserving the smaller coin", () => {
+      // 1 gp + 1 pp, spend 15 sp (150 cp): the gp (100 cp) alone can't cover it,
+      // so break the pp directly and keep the gp — leaving 1 gp + 85 sp, not 95 sp.
+      expect(spendCoin(C(1, 1, 0, 0), "sp", 15)).toEqual(C(0, 1, 85, 0));
+    });
+
+    it("breaks a higher coin worth exactly the spend, with no change", () => {
+      // 1 gp + 1 pp, spend 10 sp (=100 cp = exactly 1 gp): break the gp for zero
+      // change rather than the pp — leaving just the pp.
+      expect(spendCoin(C(1, 1, 0, 0), "sp", 10)).toEqual(C(1, 0, 0, 0));
+    });
+
+    it("chips the largest coins only when no single higher coin is enough", () => {
+      // 3 pp, spend 250 sp (2500 cp): no single pp covers it, so break pp one at a
+      // time until 500 cp remains, then break the last pp for 50 sp change.
+      expect(spendCoin(C(3, 0, 0, 0), "sp", 250)).toEqual(C(0, 0, 50, 0));
+    });
+
     it("combines lower coins to cover a shortfall in a higher denomination", () => {
       // No gp, but 15 sp → spending 1 gp consumes 10 sp.
       expect(spendCoin(C(0, 0, 15, 0), "gp", 1)).toEqual(C(0, 0, 5, 0));
@@ -62,6 +80,52 @@ describe("coins", () => {
     it("ignores non-positive spends", () => {
       expect(spendCoin(C(0, 1, 1, 1), "gp", 0)).toEqual(C(0, 1, 1, 1));
       expect(spendCoin(C(0, 1, 1, 1), "gp", -3)).toEqual(C(0, 1, 1, 1));
+    });
+  });
+
+  describe("distill (collapse into the fewest coins)", () => {
+    it("rolls copper up into the proper denominations", () => {
+      // 123 cp ⇒ 1 gp, 2 sp, 3 cp (the canonical example).
+      expect(distill(C(0, 0, 0, 123))).toEqual(C(0, 1, 2, 3));
+    });
+
+    it("maximizes the highest denomination (uses platinum)", () => {
+      // 2pp 41gp 12sp 30cp = 6250 cp ⇒ 6pp 2gp 5sp 0cp.
+      expect(distill(C(2, 41, 12, 30))).toEqual(C(6, 2, 5, 0));
+    });
+
+    it("conserves total wealth", () => {
+      const c = C(1, 3, 27, 244);
+      expect(totalCp(distill(c))).toBe(totalCp(c));
+    });
+
+    it("is idempotent — an already-minimal purse is unchanged", () => {
+      const c = C(6, 2, 5, 0);
+      expect(distill(c)).toEqual(c);
+      expect(distill(distill(c))).toEqual(distill(c));
+    });
+
+    it("handles an empty purse", () => {
+      expect(distill(C(0, 0, 0, 0))).toEqual(C(0, 0, 0, 0));
+    });
+
+    it("does not mutate its input", () => {
+      const c = C(0, 0, 0, 123);
+      distill(c);
+      expect(c).toEqual(C(0, 0, 0, 123));
+    });
+  });
+
+  describe("coinsEqual", () => {
+    it("is true only when every denomination matches", () => {
+      expect(coinsEqual(C(1, 2, 3, 4), C(1, 2, 3, 4))).toBe(true);
+    });
+
+    it("is false when any single denomination differs", () => {
+      expect(coinsEqual(C(1, 2, 3, 4), C(9, 2, 3, 4))).toBe(false); // pp
+      expect(coinsEqual(C(1, 2, 3, 4), C(1, 9, 3, 4))).toBe(false); // gp
+      expect(coinsEqual(C(1, 2, 3, 4), C(1, 2, 9, 4))).toBe(false); // sp
+      expect(coinsEqual(C(1, 2, 3, 4), C(1, 2, 3, 9))).toBe(false); // cp
     });
   });
 

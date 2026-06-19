@@ -55,19 +55,40 @@ export function spendCoin(c: Coins, kind: CoinKind, n: number): Coins {
   out[kind] -= fromKind;
   let owedCp = (want - fromKind) * CP_VALUE[kind]; // value still to remove
 
-  // 2. Break higher coins, smallest sufficient first; the change comes back as `kind`.
-  for (let i = KINDS.indexOf(kind) - 1; i >= 0 && owedCp > 0; i--) {
-    const hk = KINDS[i]!;
-    while (out[hk] > 0 && owedCp > 0) {
-      out[hk] -= 1;
-      const gained = CP_VALUE[hk];
-      if (gained >= owedCp) {
-        out[kind] += (gained - owedCp) / CP_VALUE[kind]; // exact: kind divides every higher coin
+  // 2. Break higher coins; the change comes back as `kind`. Prefer the smallest
+  //    *single* higher coin that on its own covers what's still owed, so a
+  //    sufficient larger coin is broken without first disturbing the smaller
+  //    higher coins (spending 15 sp from 1 gp + 1 pp breaks the pp and keeps the
+  //    gp — leaving 1 gp + 85 sp, not 95 sp). Only when no single higher coin is
+  //    enough do we chip away from the largest available coin, which shrinks the
+  //    debt fastest until the remainder fits in one break.
+  const higher = KINDS.slice(0, KINDS.indexOf(kind)); // [highest … just above `kind`]
+  while (owedCp > 0) {
+    // Smallest (closest to `kind`) higher coin whose single value covers the debt.
+    let broke = false;
+    for (let i = higher.length - 1; i >= 0; i--) {
+      const hk = higher[i]!;
+      if (out[hk] > 0 && CP_VALUE[hk] >= owedCp) {
+        out[hk] -= 1;
+        out[kind] += (CP_VALUE[hk] - owedCp) / CP_VALUE[kind]; // exact: kind divides every higher coin
         owedCp = 0;
-      } else {
-        owedCp -= gained;
+        broke = true;
+        break;
       }
     }
+    if (broke) break;
+    // No single higher coin suffices — break one of the largest available.
+    let chipped = false;
+    for (let i = 0; i < higher.length; i++) {
+      const hk = higher[i]!;
+      if (out[hk] > 0) {
+        out[hk] -= 1;
+        owedCp -= CP_VALUE[hk];
+        chipped = true;
+        break;
+      }
+    }
+    if (!chipped) break; // no higher coins left — fall through to combining lower coins
   }
 
   // 3. Combine lower coins, largest first, to cover any remaining shortfall.
@@ -84,4 +105,27 @@ export function spendCoin(c: Coins, kind: CoinKind, n: number): Coins {
 /** Total wealth expressed in gold: 1 pp = 10 gp, 10 sp = 1 gp, 100 cp = 1 gp. */
 export function totalGp(c: Coins): number {
   return totalCp(c) / CP_VALUE.gp;
+}
+
+/**
+ * Collapse the purse into the fewest coins of the highest denominations,
+ * conserving total wealth: take as many of each kind as the remaining copper
+ * allows, from pp down to cp. The result is the unique minimal-coin form, so
+ * `distill` is idempotent. e.g. 123 cp ⇒ 1 gp, 2 sp, 3 cp.
+ */
+export function distill(c: Coins): Coins {
+  let rem = totalCp(c);
+  // Take as many of `k` as the remaining copper allows, then deduct it. Called in
+  // denomination order (pp→cp) so the object below fills highest-first.
+  const take = (k: CoinKind): number => {
+    const n = Math.trunc(rem / CP_VALUE[k]);
+    rem -= n * CP_VALUE[k];
+    return n;
+  };
+  return { pp: take("pp"), gp: take("gp"), sp: take("sp"), cp: take("cp") };
+}
+
+/** Structural equality across all four denominations. */
+export function coinsEqual(a: Coins, b: Coins): boolean {
+  return a.pp === b.pp && a.gp === b.gp && a.sp === b.sp && a.cp === b.cp;
 }

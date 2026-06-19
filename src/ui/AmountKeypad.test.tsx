@@ -30,4 +30,10 @@ describe("AmountKeypad", () => {
     await tap("3"); await tap(/^add$/i);
     expect(onClose).toHaveBeenCalled();
   });
+
+  it("renders an optional header above the amount", () => {
+    render(<AmountKeypad ariaLabel="x" context="x" header={<div>switcher-slot</div>}
+      primary={[{ label: () => "Add", gate: "positive", onCommit: vi.fn() }]} onClose={vi.fn()} />);
+    expect(screen.getByText("switcher-slot")).toBeInTheDocument();
+  });
 });
