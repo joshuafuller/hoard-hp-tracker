@@ -28,6 +28,9 @@
   --hp-down: #6b6b78;
   --hp-temp: #7dd3fc;
 
+  /* Coin gold — the shared hue for gp, the coin-button chrome, and the total readout. */
+  --coin-gold: #e8c763;
+
   /* The live accent + its glow, re-pointed per tier by [data-tier]. */
   --accent: var(--hp-healthy);
   --accent-glow: color-mix(in oklab, var(--accent) 45%, transparent);
@@ -1217,6 +1220,101 @@ body {
 .keypad__minor[data-kind="temp"] { color: var(--hp-temp); border-color: color-mix(in oklab, var(--hp-temp) 30%, var(--obsidian-600)); }
 .keypad__minor:disabled { opacity: 0.4; }
 
+/* ── Character name ─────────────────────────────────────────────────────── */
+/* A single short line above the orb stage. Blank shows a faint interactive
+   affordance so the name is discoverable but never forced. Sits as an in-flow
+   flex row in .hp-tracker (column), capped at 1.5rem so the orb stage below
+   keeps its fill-available space and never clips the footer. */
+.character-name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.5rem; /* fixed height keeps the orb from shifting when name/blank swap */
+  width: 100%;
+}
+
+/* The shared display button — strips all native chrome. */
+.character-name__display {
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: none;
+  padding: 0.1rem 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: background var(--dur-fast) ease, opacity var(--dur-fast) ease;
+}
+
+/* Set name: reads at a glance, matches the ink palette. */
+.character-name__display--set {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink-300);
+}
+@media (hover: hover) {
+  .character-name__display--set:hover {
+    background: color-mix(in oklab, var(--ink-100) 6%, transparent);
+  }
+}
+.character-name__display--set:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Empty placeholder: visible but faint so it doesn't compete with the orb.
+   The button has no text (aria-label provides the accessible name); the ::after
+   pseudo draws a ghost pill so there is a tactile target to tap. */
+.character-name__display--empty {
+  width: 4.5rem;
+  height: 1.25rem;
+  border-radius: 99px;
+  background: color-mix(in oklab, var(--ink-700) 30%, transparent);
+  opacity: 0.45;
+}
+@media (hover: hover) {
+  .character-name__display--empty:hover {
+    opacity: 0.75;
+    background: color-mix(in oklab, var(--ink-500) 25%, transparent);
+  }
+}
+.character-name__display--empty:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  opacity: 0.85;
+}
+
+/* Editing state: the fixed 1.5rem height is relaxed so the accent-bordered
+   input fits without clipping. The input itself drives the row height. */
+.character-name--editing {
+  height: auto;
+}
+
+/* Inline text input while editing — minimal, matches the obsidian palette. */
+.character-name__input {
+  width: min(100%, 16rem);
+  padding: 0.15rem 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: center;
+  color: var(--ink-100);
+  background: var(--obsidian-700);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  outline: none;
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+.character-name__input::placeholder {
+  color: var(--ink-700);
+}
+
 /* ── Undo pill ──────────────────────────────────────────────────────────── */
 .undo-pill {
   position: fixed; left: 50%; transform: translateX(-50%);
@@ -1229,3 +1327,274 @@ body {
 @keyframes undo-pill-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .undo-pill__label { font-size: 0.85rem; color: var(--ink-200); }
 .undo-pill__btn { appearance: none; background: none; border: none; color: var(--hp-temp); font-weight: 800; font-size: 0.85rem; cursor: pointer; }
+
+/* ── Coin button (chrome) ───────────────────────────────────────────────── */
+/* The ¢ trigger in the top-right chrome. Matches the SoundToggle's 44px pill
+   in tap-target and border radius so the two controls read as a matched pair.
+   Tinted gold (--coin-gold) so it's immediately legible as "wealth" without a
+   label — the same hue used for gp dots and the total readout. */
+.coin-button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in oklab, var(--coin-gold) 28%, var(--obsidian-600));
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--coin-gold);
+  background: var(--obsidian-700);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition:
+    transform var(--dur-fast) var(--ease-spring),
+    background var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease;
+}
+@media (hover: hover) {
+  .coin-button:hover {
+    background: var(--obsidian-600);
+  }
+}
+.coin-button:active {
+  transform: scale(0.92);
+}
+.coin-button:focus-visible {
+  outline: 2px solid var(--coin-gold);
+  outline-offset: 3px;
+}
+
+/* ── Coin sheet ─────────────────────────────────────────────────────────── */
+/* The coin sheet reuses the .hp-editor backdrop and .hp-editor__sheet shell
+   (already defined above). The .coins modifier overrides alignment and padding
+   so the sheet can host a stacked list of denomination rows instead of centered
+   modal content. */
+.hp-editor__sheet.coins {
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  width: min(100%, 26rem);
+}
+
+/* Header: "COINS" label on the left, gold-equivalent total on the right. */
+.coins__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.25rem 0.85rem;
+  border-bottom: 1px solid var(--obsidian-600);
+}
+
+.coins__label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+
+.coins__total {
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  color: var(--coin-gold);
+}
+
+/* Denomination rows — full-width tap targets. Strip the native button chrome
+   then layer the Obsidian hover / active / focus treatment. A hairline divides
+   each row from the next; the last row's divider is dropped. */
+.coins__row {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 56px;
+  padding: 0.85rem 1.25rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--obsidian-600);
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--dur-fast) ease;
+}
+.coins__row:last-child {
+  border-bottom: none;
+}
+@media (hover: hover) {
+  .coins__row:hover {
+    background: color-mix(in oklab, var(--ink-100) 4%, transparent);
+  }
+}
+.coins__row:active {
+  background: color-mix(in oklab, var(--ink-100) 7%, transparent);
+}
+.coins__row:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 4px var(--accent-glow);
+}
+
+/* Name column: colored dot + text label + denomination abbreviation. */
+.coins__name {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink-100);
+}
+
+.coins__dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Each denomination gets its own coin colour and a matching soft glow. */
+.coins__row[data-kind="gp"] .coins__dot {
+  background: var(--coin-gold);
+  box-shadow: 0 0 8px color-mix(in oklab, var(--coin-gold) 55%, transparent);
+}
+.coins__row[data-kind="sp"] .coins__dot {
+  background: #cbd5d1;
+  box-shadow: 0 0 6px color-mix(in oklab, #cbd5d1 45%, transparent);
+}
+.coins__row[data-kind="cp"] .coins__dot {
+  background: #c47a4a;
+  box-shadow: 0 0 6px color-mix(in oklab, #c47a4a 45%, transparent);
+}
+
+/* Denomination abbreviation label — quieter than the name. */
+.coins__unit {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+
+/* Count — luminous tabular numeral, right-aligned. */
+.coins__count {
+  font-size: 1.4rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--ink-100);
+  min-width: 3ch;
+  text-align: right;
+}
+
+/* ── AmountKeypad coin tones ────────────────────────────────────────────── */
+/* The shared keypad borrows .keypad__apply[data-kind] for colour. Coins use
+   "add" (gold — matches the gp dot and the chrome button) and "spend"
+   (critical red — spending reads as a loss, same as damage). */
+.keypad__apply[data-kind="add"]   { background: color-mix(in oklab, var(--coin-gold) 80%, black); color: var(--obsidian-900); }
+.keypad__apply[data-kind="spend"] { background: color-mix(in oklab, var(--hp-critical) 75%, black); color: #fff; }
+
+/* ── Concentration toggle (#30) ─────────────────────────────────────────── */
+/* Sits in the chrome row alongside SoundToggle. A purple/violet tint separates
+   it clearly from the green/amber/red HP accent family so "concentrating" reads
+   as a distinct state at a glance. The violet-400 (#a78bfa) is used inline as
+   a literal rather than a token — concentration is a one-off state, not a tier. */
+.concentration-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--obsidian-600);
+  color: var(--ink-500);
+  background: var(--obsidian-700);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition:
+    transform var(--dur-fast) var(--ease-spring),
+    color var(--dur-fast) ease,
+    background var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease;
+}
+
+.concentration-toggle[data-concentrating="true"] {
+  color: #a78bfa;
+  border-color: color-mix(in oklab, #a78bfa 40%, var(--obsidian-600));
+  box-shadow: 0 0 14px color-mix(in oklab, #a78bfa 30%, transparent);
+}
+
+.concentration-toggle[data-concentrating="false"] {
+  color: var(--ink-500);
+}
+
+@media (hover: hover) {
+  .concentration-toggle:hover {
+    background: var(--obsidian-600);
+  }
+}
+
+.concentration-toggle:active {
+  transform: scale(0.92);
+}
+
+.concentration-toggle:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 3px;
+}
+
+.concentration-toggle__icon {
+  display: block;
+}
+
+/* ── Concentration prompt (#30) ─────────────────────────────────────────── */
+/* Stacks above the undo pill so both can coexist on-screen. The violet tint
+   signals "spell save needed" without competing with the HP accent palette. */
+.concentration-prompt {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  /* Ride above the undo pill: pill sits at 0.75rem, add ~2.75rem for its height */
+  bottom: calc(env(safe-area-inset-bottom) + 3.75rem); z-index: 21;
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  background: color-mix(in oklab, #a78bfa 12%, var(--obsidian-700));
+  border: 1px solid color-mix(in oklab, #a78bfa 40%, var(--obsidian-600));
+  border-radius: 999px; padding: 0.45rem 0.75rem;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.45), 0 0 20px color-mix(in oklab, #a78bfa 20%, transparent);
+  animation: undo-pill-in var(--dur-fast) var(--ease-spring);
+}
+
+.concentration-prompt__label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #a78bfa;
+  white-space: nowrap;
+}
+
+.concentration-prompt__btn {
+  appearance: none;
+  border: none;
+  border-radius: var(--radius-pill);
+  font-weight: 800;
+  font-size: 0.78rem;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0.2rem 0.6rem;
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+
+.concentration-prompt__btn:active { transform: scale(0.9); }
+.concentration-prompt__btn:focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; }
+
+.concentration-prompt__btn--keep {
+  background: color-mix(in oklab, #a78bfa 22%, var(--obsidian-600));
+  color: #a78bfa;
+}
+
+.concentration-prompt__btn--drop {
+  background: color-mix(in oklab, var(--hp-critical) 20%, var(--obsidian-700));
+  color: var(--hp-critical);
+}
