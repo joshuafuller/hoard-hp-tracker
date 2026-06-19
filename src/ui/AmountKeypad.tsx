@@ -13,6 +13,8 @@ export interface AmountKeypadProps {
   context: ReactNode;
   /** Optional content rendered above the amount — e.g. a denomination switcher. */
   header?: ReactNode;
+  /** Optional content rendered below the actions — e.g. a distill/undo control. */
+  footer?: ReactNode;
   primary: KeypadAction[];
   secondary?: KeypadAction[];
   closeOnCommit?: boolean;
@@ -24,7 +26,7 @@ function haptic() {
 }
 const MAX_DIGITS = 4;
 
-export function AmountKeypad({ ariaLabel, context, header, primary, secondary = [], closeOnCommit = true, onClose }: AmountKeypadProps) {
+export function AmountKeypad({ ariaLabel, context, header, footer, primary, secondary = [], closeOnCommit = true, onClose }: AmountKeypadProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -103,6 +105,7 @@ export function AmountKeypad({ ariaLabel, context, header, primary, secondary = 
             ))}
           </div>
         )}
+        {footer}
       </div>
     </div>
   );

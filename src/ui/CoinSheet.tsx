@@ -69,6 +69,15 @@ export function CoinSheet({
     return () => clearTimeout(t);
   }, [lastDistill]);
 
+  // Distilling only does something when the purse isn't already minimal.
+  const canDistill = !coinsEqual(coins, distill(coins));
+
+  // The confirmation is reached from the console's distill action; cancelling or
+  // committing returns to the console (the keypad stays open underneath).
+  if (confirming) {
+    return <DistillConfirm coins={coins} onConfirm={onDistill} onClose={() => setConfirming(false)} />;
+  }
+
   if (editing) {
     const row = ROWS.find((r) => r.kind === editing)!;
     // One keypad, retargetable: the strip switches which denomination the digits
@@ -95,11 +104,29 @@ export function CoinSheet({
         ))}
       </div>
     );
+    // Distill + its undo live ON the console — part of the coin calculator, not a
+    // detached/floating pill. After distilling, the same slot offers the undo.
+    const distillFooter = lastDistill ? (
+      <div className="coins__undo" role="status">
+        <span className="coins__undo-label">Distilled</span>
+        <button type="button" className="coins__undo-btn" onClick={onUndoDistill}>
+          ↶ Undo
+        </button>
+      </div>
+    ) : (
+      <button type="button" className="coins__distill" disabled={!canDistill} onClick={() => setConfirming(true)}>
+        <span className="coins__distill-glyph" aria-hidden="true">
+          ⚗
+        </span>
+        {canDistill ? "Distill to fewest coins" : "Already distilled"}
+      </button>
+    );
     return (
       <AmountKeypad
         ariaLabel="Coins"
         header={switcher}
         context={`${row.label} — ${counts[editing]} ${row.unit}`}
+        footer={distillFooter}
         closeOnCommit={false}
         primary={[
           { label: () => "Add", ariaLabel: "Add", tone: "add", gate: "positive", onCommit: (n) => onAdd(editing, n) },
@@ -110,13 +137,6 @@ export function CoinSheet({
       />
     );
   }
-
-  if (confirming) {
-    return <DistillConfirm coins={coins} onConfirm={onDistill} onClose={() => setConfirming(false)} />;
-  }
-
-  // Distilling only does something when the purse isn't already minimal.
-  const canDistill = !coinsEqual(coins, distill(coins));
 
   return (
     <div className="hp-editor" data-testid="coin-backdrop" onClick={onClose}>
@@ -137,7 +157,7 @@ export function CoinSheet({
           <span className="coins__total" data-testid="coins-total">
             {fmtGp(total)} gp
           </span>
-          <span className="coins__hero-cap">total wealth</span>
+          <span className="coins__hero-cap">total wealth · tap a coin to edit</span>
         </div>
         <div className="coins__rows">
           {ROWS.map((r) => (
@@ -152,28 +172,6 @@ export function CoinSheet({
               onEdit={() => setEditing(r.kind)}
             />
           ))}
-        </div>
-        <div className="coins__footer">
-          {lastDistill ? (
-            <div className="coins__undo" role="status">
-              <span className="coins__undo-label">Distilled</span>
-              <button type="button" className="coins__undo-btn" onClick={onUndoDistill}>
-                ↶ Undo
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="coins__distill"
-              disabled={!canDistill}
-              onClick={() => setConfirming(true)}
-            >
-              <span className="coins__distill-glyph" aria-hidden="true">
-                ⚗
-              </span>
-              {canDistill ? "Distill to fewest coins" : "Already distilled"}
-            </button>
-          )}
         </div>
       </div>
     </div>

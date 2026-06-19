@@ -125,15 +125,17 @@ The passive list of counts becomes an actionable sheet:
   typed amount persists across switches (`closeOnCommit={false}`), so "type 10,
   add to gold, switch to silver, add 10" is one fluid gesture. This replaces the
   original denomination-first "open a keypad bound to one coin" flow.
-- **Footer Distill action** ("Distill to fewest coins"), disabled and labelled
-  "Already distilled" when the purse is minimal.
+- **Distill lives ON the console** (the keypad's footer slot), not on a separate
+  sheet footer or a floating pill — "Distill to fewest coins", disabled and
+  labelled "Already distilled" when the purse is minimal.
 - **`DistillConfirm`** modal: a per-denomination **before→after diff** (changed
   rows highlighted, unchanged rows receded) and a **"total unchanged"** line
   proving wealth is conserved — so accepting is never a leap of faith. Escape /
   backdrop / Cancel dismiss; Distill commits.
-- **In-sheet undo**: after distilling, the footer shows "Distilled · ↶ Undo"
-  for ~5s. (This supersedes the original "no coin undo" non-goal, scoped to the
-  bulk distill action.)
+- **Undo ON the console**: after distilling, the console's distill slot becomes
+  "Distilled · ↶ Undo" for ~5s — integrated into the coin calculator itself, not
+  a separate/floating element like the HP undo pill. (This supersedes the
+  original "no coin undo" non-goal, scoped to the bulk distill action.)
 
 ## Rollout
 Feature branch → PR into `beta` → verify on `/beta/` (and on a real phone) →

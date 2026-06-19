@@ -66,8 +66,9 @@ describe("CoinSheet", () => {
     expect(p.onAdd).not.toHaveBeenCalled();
   });
 
-  it("confirms before distilling and shows the before→after preview", async () => {
+  it("distills from the console, behind a before→after confirmation", async () => {
     const p = setup();
+    await userEvent.click(screen.getByRole("button", { name: /gold — 41 gp, edit/i })); // open the console
     await userEvent.click(screen.getByRole("button", { name: /distill to fewest coins/i }));
     const dialog = screen.getByRole("dialog", { name: /distill coins/i });
     expect(dialog).toBeInTheDocument();
@@ -77,22 +78,27 @@ describe("CoinSheet", () => {
     expect(p.onDistill).toHaveBeenCalledTimes(1);
   });
 
-  it("does not call distill if the confirmation is cancelled", async () => {
+  it("does not call distill if the confirmation is cancelled, returning to the console", async () => {
     const p = setup();
+    await userEvent.click(screen.getByRole("button", { name: /gold — 41 gp, edit/i }));
     await userEvent.click(screen.getByRole("button", { name: /distill to fewest coins/i }));
     await userEvent.click(screen.getByRole("button", { name: /cancel/i }));
     expect(p.onDistill).not.toHaveBeenCalled();
-    // Back on the rows.
-    expect(screen.getByRole("button", { name: /gold — 41 gp, edit/i })).toBeInTheDocument();
+    // Back on the console (the switcher is present).
+    expect(screen.getByRole("tab", { name: /gold — 41 gp/i })).toBeInTheDocument();
   });
 
-  it("disables distill when the purse is already minimal", () => {
+  it("disables the console distill when the purse is already minimal", async () => {
     setup({ pp: 6, gp: 2, sp: 5, cp: 0, total: 62.5 });
+    await userEvent.click(screen.getByRole("button", { name: /gold — 2 gp, edit/i }));
     expect(screen.getByRole("button", { name: /already distilled/i })).toBeDisabled();
   });
 
-  it("offers an undo after a distill and reverts on tap", async () => {
+  it("offers the undo ON the console after a distill and reverts on tap", async () => {
     const p = setup({ lastDistill: { pp: 0, gp: 0, sp: 0, cp: 123 } });
+    // No undo on the overview — it lives on the console.
+    expect(screen.queryByRole("button", { name: /undo/i })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /gold — 41 gp, edit/i }));
     const undo = screen.getByRole("button", { name: /undo/i });
     expect(undo).toBeInTheDocument();
     await userEvent.click(undo);
