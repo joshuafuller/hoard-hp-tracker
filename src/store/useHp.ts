@@ -110,6 +110,7 @@ const SEED: HpRecord = {
   hitDiceTotal: 1,
   hitDiceAvailable: 1,
   conMod: 0,
+  pp: 0,
   gp: 0,
   sp: 0,
   cp: 0,

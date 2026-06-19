@@ -74,9 +74,22 @@ tap ¢  → open CoinSheet
 - `App` integration: ¢ opens the sheet; add gp → count + total update; sheet is off the HP page.
 
 ## Non-goals (this PR)
-- Platinum / electrum; configurable denominations.
-- Conversion / exchange between denominations.
+- Electrum; configurable denominations.
 - Coin history / undo (HP undo is separate; coins are low-stakes).
+
+## Follow-up (2026-06-19): platinum + auto-conversion
+The first cut tracked gp/sp/cp with no conversion — spending a denomination
+just clamped that one count at 0, so "spend 1 sp" while holding only 1 gp did
+nothing. Two changes landed since:
+- **Platinum (pp)** added as a fourth denomination (1 pp = 10 gp). DB `version(5)`
+  backfills existing records with `pp: 0`.
+- **`spendCoin` now converts across denominations** ("break only when needed"):
+  pay from the spent kind first, otherwise break the smallest sufficient higher
+  coin (change returns as the spent kind — e.g. spend 1 sp from 1 gp ⇒ 9 sp), and
+  failing that combine lower coins to cover the rest. Total wealth is conserved
+  (computed in copper via `totalCp`); a spend the purse can't afford is a no-op
+  rather than going negative. Existing coins are **not** auto-normalised
+  (12 sp stays 12 sp, not 1 gp 2 sp). `addCoin`/`setCoin` are unchanged.
 
 ## Rollout
 Feature branch → PR into `beta` → verify on `/beta/` (and on a real phone) →

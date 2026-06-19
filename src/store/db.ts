@@ -34,6 +34,7 @@ export interface HpRecord {
   hitDiceAvailable: number;
   conMod: number;
   /** Tracked coin (optional — absent on legacy records, read as 0). */
+  pp?: number;
   gp?: number;
   sp?: number;
   cp?: number;
@@ -96,6 +97,17 @@ export function createHpDb(name: string = HP_DB_NAME): HpDb {
           r.name ??= "";
         }),
     );
+  // v5 adds platinum (pp) alongside the existing gp/sp/cp; backfill existing records with 0.
+  db.version(5)
+    .stores({ hp: "id" })
+    .upgrade((tx) =>
+      tx
+        .table<HpRecord, number>("hp")
+        .toCollection()
+        .modify((r) => {
+          r.pp ??= 0;
+        }),
+    );
   // Return the add() promise so the seed write completes inside the populate
   // transaction before the database open resolves (avoids a timing-dependent seed).
   db.on("populate", () =>
@@ -110,6 +122,7 @@ export function createHpDb(name: string = HP_DB_NAME): HpDb {
       hitDiceTotal: 1,
       hitDiceAvailable: 1,
       conMod: 0,
+      pp: 0,
       gp: 0,
       sp: 0,
       cp: 0,

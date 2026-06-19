@@ -1458,6 +1458,10 @@ body {
 }
 
 /* Each denomination gets its own coin colour and a matching soft glow. */
+.coins__row[data-kind="pp"] .coins__dot {
+  background: #dfe7ee;
+  box-shadow: 0 0 8px color-mix(in oklab, #dfe7ee 50%, transparent);
+}
 .coins__row[data-kind="gp"] .coins__dot {
   background: var(--coin-gold);
   box-shadow: 0 0 8px color-mix(in oklab, var(--coin-gold) 55%, transparent);
