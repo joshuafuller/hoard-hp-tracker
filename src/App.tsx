@@ -179,7 +179,7 @@ export function App() {
 
       {coinsOpen && (
         <CoinSheet
-          gp={coins.gp} sp={coins.sp} cp={coins.cp} total={coins.total}
+          pp={coins.pp} gp={coins.gp} sp={coins.sp} cp={coins.cp} total={coins.total}
           onAdd={coins.add} onSpend={coins.spend} onSet={coins.set}
           onClose={() => setCoinsOpen(false)}
         />

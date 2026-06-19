@@ -10,7 +10,7 @@ export interface UseCoinsResult extends Coins {
   set: (kind: CoinKind, n: number) => Promise<void>;
 }
 
-const coinsOf = (r: HpRecord): Coins => ({ gp: r.gp ?? 0, sp: r.sp ?? 0, cp: r.cp ?? 0 });
+const coinsOf = (r: HpRecord): Coins => ({ pp: r.pp ?? 0, gp: r.gp ?? 0, sp: r.sp ?? 0, cp: r.cp ?? 0 });
 
 /** Reactive coin state over the single persisted record. Reuses the same resilient
  * read-fresh-inside-txn write the HP hook uses, so rapid taps never clobber. */
@@ -37,7 +37,7 @@ export function useCoins(db: HpDb = defaultDb): UseCoinsResult {
     }
   };
 
-  const coins = record ? coinsOf(record) : { gp: 0, sp: 0, cp: 0 };
+  const coins = record ? coinsOf(record) : { pp: 0, gp: 0, sp: 0, cp: 0 };
   return {
     ...coins,
     total: totalGp(coins),

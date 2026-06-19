@@ -3,7 +3,7 @@ import type { CoinKind } from "../domain/coins";
 import { AmountKeypad } from "./AmountKeypad";
 
 export interface CoinSheetProps {
-  gp: number; sp: number; cp: number; total: number;
+  pp: number; gp: number; sp: number; cp: number; total: number;
   onAdd: (kind: CoinKind, n: number) => void;
   onSpend: (kind: CoinKind, n: number) => void;
   onSet: (kind: CoinKind, n: number) => void;
@@ -11,15 +11,17 @@ export interface CoinSheetProps {
 }
 
 const ROWS: { kind: CoinKind; label: string; unit: string }[] = [
+  { kind: "pp", label: "Platinum", unit: "pp" },
   { kind: "gp", label: "Gold", unit: "gp" },
   { kind: "sp", label: "Silver", unit: "sp" },
   { kind: "cp", label: "Copper", unit: "cp" },
 ];
 
-/** Bottom-sheet coin tracker. Rows show the three counts; tapping one opens the
- * shared keypad (Add/Spend/Set) for that denomination. Presentational. */
-export function CoinSheet({ gp, sp, cp, total, onAdd, onSpend, onSet, onClose }: CoinSheetProps) {
-  const counts: Record<CoinKind, number> = { gp, sp, cp };
+/** Bottom-sheet coin tracker. Rows show each count; tapping one opens the shared
+ * keypad (Add/Spend/Set) for that denomination. Spending converts across
+ * denominations automatically (see `spendCoin`). Presentational. */
+export function CoinSheet({ pp, gp, sp, cp, total, onAdd, onSpend, onSet, onClose }: CoinSheetProps) {
+  const counts: Record<CoinKind, number> = { pp, gp, sp, cp };
   const [editing, setEditing] = useState<CoinKind | null>(null);
 
   if (editing) {

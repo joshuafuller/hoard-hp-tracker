@@ -4,16 +4,17 @@ import { describe, expect, it, vi } from "vitest";
 import { CoinSheet } from "./CoinSheet";
 
 function setup(over = {}) {
-  const props = { gp: 41, sp: 12, cp: 30, total: 42.5, onAdd: vi.fn(), onSpend: vi.fn(), onSet: vi.fn(), onClose: vi.fn(), ...over };
+  const props = { pp: 2, gp: 41, sp: 12, cp: 30, total: 62.5, onAdd: vi.fn(), onSpend: vi.fn(), onSet: vi.fn(), onClose: vi.fn(), ...over };
   render(<CoinSheet {...props} />);
   return props;
 }
 
 describe("CoinSheet", () => {
-  it("shows the three denominations and the gold total", () => {
+  it("shows the four denominations and the gold total", () => {
     setup();
     expect(screen.getByRole("dialog", { name: /coins/i })).toBeInTheDocument();
-    expect(screen.getByText(/42\.5/)).toBeInTheDocument();
+    expect(screen.getByText(/62\.5/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /platinum/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /gold/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /silver/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /copper/i })).toBeInTheDocument();
