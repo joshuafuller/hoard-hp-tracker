@@ -41,6 +41,18 @@ describe("coins", () => {
       expect(spendCoin(C(1, 1, 0, 0), "sp", 1)).toEqual(C(1, 0, 9, 0));
     });
 
+    it("skips a higher coin that can't cover the spend and breaks the next sufficient one, preserving the smaller coin", () => {
+      // 1 gp + 1 pp, spend 15 sp (150 cp): the gp (100 cp) alone can't cover it,
+      // so break the pp directly and keep the gp — leaving 1 gp + 85 sp, not 95 sp.
+      expect(spendCoin(C(1, 1, 0, 0), "sp", 15)).toEqual(C(0, 1, 85, 0));
+    });
+
+    it("chips the largest coins only when no single higher coin is enough", () => {
+      // 3 pp, spend 250 sp (2500 cp): no single pp covers it, so break pp one at a
+      // time until 500 cp remains, then break the last pp for 50 sp change.
+      expect(spendCoin(C(3, 0, 0, 0), "sp", 250)).toEqual(C(0, 0, 50, 0));
+    });
+
     it("combines lower coins to cover a shortfall in a higher denomination", () => {
       // No gp, but 15 sp → spending 1 gp consumes 10 sp.
       expect(spendCoin(C(0, 0, 15, 0), "gp", 1)).toEqual(C(0, 0, 5, 0));
