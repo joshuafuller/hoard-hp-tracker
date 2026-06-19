@@ -115,12 +115,14 @@ export function totalGp(c: Coins): number {
  */
 export function distill(c: Coins): Coins {
   let rem = totalCp(c);
-  const out: Coins = { pp: 0, gp: 0, sp: 0, cp: 0 };
-  for (const k of KINDS) {
-    out[k] = Math.trunc(rem / CP_VALUE[k]);
-    rem -= out[k] * CP_VALUE[k];
-  }
-  return out;
+  // Take as many of `k` as the remaining copper allows, then deduct it. Called in
+  // denomination order (pp→cp) so the object below fills highest-first.
+  const take = (k: CoinKind): number => {
+    const n = Math.trunc(rem / CP_VALUE[k]);
+    rem -= n * CP_VALUE[k];
+    return n;
+  };
+  return { pp: take("pp"), gp: take("gp"), sp: take("sp"), cp: take("cp") };
 }
 
 /** Structural equality across all four denominations. */

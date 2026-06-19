@@ -47,6 +47,12 @@ describe("coins", () => {
       expect(spendCoin(C(1, 1, 0, 0), "sp", 15)).toEqual(C(0, 1, 85, 0));
     });
 
+    it("breaks a higher coin worth exactly the spend, with no change", () => {
+      // 1 gp + 1 pp, spend 10 sp (=100 cp = exactly 1 gp): break the gp for zero
+      // change rather than the pp — leaving just the pp.
+      expect(spendCoin(C(1, 1, 0, 0), "sp", 10)).toEqual(C(1, 0, 0, 0));
+    });
+
     it("chips the largest coins only when no single higher coin is enough", () => {
       // 3 pp, spend 250 sp (2500 cp): no single pp covers it, so break pp one at a
       // time until 500 cp remains, then break the last pp for 50 sp change.
@@ -113,8 +119,13 @@ describe("coins", () => {
   describe("coinsEqual", () => {
     it("is true only when every denomination matches", () => {
       expect(coinsEqual(C(1, 2, 3, 4), C(1, 2, 3, 4))).toBe(true);
-      expect(coinsEqual(C(1, 2, 3, 4), C(1, 2, 3, 5))).toBe(false);
-      expect(coinsEqual(C(0, 0, 0, 0), C(0, 0, 0, 1))).toBe(false);
+    });
+
+    it("is false when any single denomination differs", () => {
+      expect(coinsEqual(C(1, 2, 3, 4), C(9, 2, 3, 4))).toBe(false); // pp
+      expect(coinsEqual(C(1, 2, 3, 4), C(1, 9, 3, 4))).toBe(false); // gp
+      expect(coinsEqual(C(1, 2, 3, 4), C(1, 2, 9, 4))).toBe(false); // sp
+      expect(coinsEqual(C(1, 2, 3, 4), C(1, 2, 3, 9))).toBe(false); // cp
     });
   });
 
