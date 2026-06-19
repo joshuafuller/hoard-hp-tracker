@@ -59,7 +59,7 @@ describe("CoinSheet", () => {
     const p = setup();
     await userEvent.click(screen.getByRole("button", { name: /gold — 41 gp, edit/i }));
     // Switch to silver without closing, then spend.
-    await userEvent.click(screen.getByRole("tab", { name: /silver — 12 sp/i }));
+    await userEvent.click(screen.getByRole("button", { name: /silver — 12 sp/i }));
     await userEvent.click(screen.getByRole("button", { name: "3" }));
     await userEvent.click(screen.getByRole("button", { name: /^spend$/i }));
     expect(p.onSpend).toHaveBeenCalledWith("sp", 3);
@@ -85,7 +85,7 @@ describe("CoinSheet", () => {
     await userEvent.click(screen.getByRole("button", { name: /cancel/i }));
     expect(p.onDistill).not.toHaveBeenCalled();
     // Back on the console (the switcher is present).
-    expect(screen.getByRole("tab", { name: /gold — 41 gp/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /gold — 41 gp/i })).toBeInTheDocument();
   });
 
   it("disables the console distill when the purse is already minimal", async () => {

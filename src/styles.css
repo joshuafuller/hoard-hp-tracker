@@ -1831,7 +1831,7 @@ body {
   -webkit-tap-highlight-color: transparent;
   transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease;
 }
-.coin-switcher__tab[aria-selected="true"] {
+.coin-switcher__tab[aria-pressed="true"] {
   border-color: color-mix(in oklab, var(--coin-gold) 55%, var(--obsidian-600));
   background: color-mix(in oklab, var(--coin-gold) 14%, var(--obsidian-700));
   color: var(--ink-100);

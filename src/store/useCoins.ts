@@ -82,14 +82,23 @@ export function useCoins(db: HpDb = defaultDb): UseCoinsResult {
     await write(() => snap)();
   };
 
+  // Any direct edit invalidates the distill-undo snapshot: undoing afterwards
+  // would otherwise overwrite the whole purse and silently drop the later edit.
+  // So add/spend/set drop the undo first (scopes it to the distill, like HP's
+  // lastChange). setLastDistill(null) is a no-op re-render when already null.
+  const edit = (fn: (c: Coins) => Coins) => () => {
+    setLastDistill(null);
+    return write(fn)();
+  };
+
   const coins = record ? coinsOf(record) : { pp: 0, gp: 0, sp: 0, cp: 0 };
   return {
     ...coins,
     total: totalGp(coins),
     hydrated: record !== undefined,
-    add: (kind, n) => write((c) => addCoin(c, kind, n))(),
-    spend: (kind, n) => write((c) => spendCoin(c, kind, n))(),
-    set: (kind, n) => write((c) => setCoin(c, kind, n))(),
+    add: (kind, n) => edit((c) => addCoin(c, kind, n))(),
+    spend: (kind, n) => edit((c) => spendCoin(c, kind, n))(),
+    set: (kind, n) => edit((c) => setCoin(c, kind, n))(),
     distill,
     lastDistill,
     undoDistill,

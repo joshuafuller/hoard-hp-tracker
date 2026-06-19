@@ -83,15 +83,14 @@ export function CoinSheet({
     // One keypad, retargetable: the strip switches which denomination the digits
     // and Add/Spend/Set act on, without closing the keypad. Counts stay live.
     const switcher = (
-      <div className="coin-switcher" role="tablist" aria-label="Denomination">
+      <div className="coin-switcher" role="group" aria-label="Denomination">
         {ROWS.map((r) => (
           <button
             key={r.kind}
             type="button"
-            role="tab"
             className="coin-switcher__tab"
             data-kind={r.kind}
-            aria-selected={r.kind === editing}
+            aria-pressed={r.kind === editing}
             aria-label={`${r.label} — ${counts[r.kind]} ${r.unit}`}
             onClick={() => setEditing(r.kind)}
           >
