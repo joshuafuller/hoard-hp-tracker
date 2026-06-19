@@ -21,7 +21,7 @@ function isTestEnv(): boolean {
 /** The single HP record lives at this fixed primary key. */
 export const HP_ID = 1 as const;
 
-/** Persisted shape of the one HP record (HP + death saves + Hit Dice + key). */
+/** Persisted shape of the one HP record (HP + death saves + Hit Dice + coin + name + concentration). */
 export interface HpRecord {
   id: number;
   current: number;
@@ -33,6 +33,15 @@ export interface HpRecord {
   hitDiceTotal: number;
   hitDiceAvailable: number;
   conMod: number;
+  /** Tracked coin (optional — absent on legacy records, read as 0). */
+  pp?: number;
+  gp?: number;
+  sp?: number;
+  cp?: number;
+  /** Optional character name, blank by default. */
+  name: string;
+  /** Whether the character is currently concentrating on a spell. */
+  concentrating: boolean;
 }
 
 /** A Dexie database holding exactly one `hp` table. */
@@ -77,6 +86,28 @@ export function createHpDb(name: string = HP_DB_NAME): HpDb {
           r.conMod ??= 0;
         }),
     );
+  // v4 adds optional character name; backfill existing records with an empty string.
+  db.version(4)
+    .stores({ hp: "id" })
+    .upgrade((tx) =>
+      tx
+        .table<HpRecord, number>("hp")
+        .toCollection()
+        .modify((r) => {
+          r.name ??= "";
+        }),
+    );
+  // v5 adds platinum (pp) alongside the existing gp/sp/cp; backfill existing records with 0.
+  db.version(5)
+    .stores({ hp: "id" })
+    .upgrade((tx) =>
+      tx
+        .table<HpRecord, number>("hp")
+        .toCollection()
+        .modify((r) => {
+          r.pp ??= 0;
+        }),
+    );
   // Return the add() promise so the seed write completes inside the populate
   // transaction before the database open resolves (avoids a timing-dependent seed).
   db.on("populate", () =>
@@ -91,6 +122,12 @@ export function createHpDb(name: string = HP_DB_NAME): HpDb {
       hitDiceTotal: 1,
       hitDiceAvailable: 1,
       conMod: 0,
+      pp: 0,
+      gp: 0,
+      sp: 0,
+      cp: 0,
+      name: "",
+      concentrating: false,
     }),
   );
 

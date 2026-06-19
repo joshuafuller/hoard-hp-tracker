@@ -9,6 +9,7 @@ import {
   setTemp,
   type HpState,
 } from "../domain/hp";
+import { concentrationDC } from "../domain/concentration";
 import {
   addFailure,
   applyDeathRoll,
@@ -28,6 +29,17 @@ import {
   spendHitDie,
 } from "../domain/hitDice";
 import { longRest } from "../domain/longRest";
+
+/**
+ * A transient concentration check prompt. Surfaced when damage is taken while
+ * concentrating; the UI shows the DC and the player resolves it (keeps/drops).
+ */
+export interface ConcentrationCheck {
+  /** The Constitution save DC (max(10, floor(damage/2))). */
+  dc: number;
+  /** The damage that triggered the check. */
+  damage: number;
+}
 
 /** The last undoable HP change, surfaced to the UI for the Undo pill. */
 export interface HpLastChange {
@@ -49,6 +61,12 @@ export interface UseHpResult extends HpState {
   hitDiceTotal: number;
   hitDiceAvailable: number;
   conMod: number;
+  /** The optional character name, blank by default. */
+  name: string;
+  /** Whether the character is currently concentrating on a spell. */
+  concentrating: boolean;
+  /** Transient prompt shown after taking damage while concentrating. Null otherwise. */
+  concentrationCheck: ConcentrationCheck | null;
   damage: (n: number) => Promise<void>;
   heal: (n: number) => Promise<void>;
   setTemp: (n: number) => Promise<void>;
@@ -67,12 +85,18 @@ export interface UseHpResult extends HpState {
   setHitDiceTotal: (n: number) => Promise<void>;
   setHitDiceAvailable: (n: number) => Promise<void>;
   setConMod: (n: number) => Promise<void>;
+  /** Set the character name; trimmed to ≤24 chars. Empty string clears the name. */
+  setName: (s: string) => Promise<void>;
+  /** Enable or disable concentration. Enabling at 0 HP is a no-op. */
+  setConcentrating: (on: boolean) => Promise<void>;
   shortRest: (roll?: number) => Promise<void>;
   longRest: () => Promise<void>;
   undo: () => Promise<void>;
   /** Clear the last-change pill without reverting. Synchronous; no DB write. */
   dismissLastChange: () => void;
   lastChange: HpLastChange | null;
+  /** Dismiss the concentration check prompt without dropping concentration. Synchronous; no DB write. */
+  dismissConcentrationCheck: () => void;
 }
 
 const SEED: HpRecord = {
@@ -86,6 +110,12 @@ const SEED: HpRecord = {
   hitDiceTotal: 1,
   hitDiceAvailable: 1,
   conMod: 0,
+  pp: 0,
+  gp: 0,
+  sp: 0,
+  cp: 0,
+  name: "",
+  concentrating: false,
 };
 
 const d20 = () => Math.floor(Math.random() * 20) + 1;
@@ -110,6 +140,7 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
   const state: HpRecord = record ?? SEED;
 
   const [lastChange, setLastChange] = useState<HpLastChange | null>(null);
+  const [concentrationCheck, setConcentrationCheck] = useState<ConcentrationCheck | null>(null);
 
   const runTxn = (fn: (r: HpRecord) => HpRecord) =>
     db.transaction("rw", db.hp, async () => {
@@ -136,13 +167,20 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
     }
   };
 
+  // If the resulting HP is 0, concentration must drop (per 5e AC).
+  // Only sets concentrating:false when the record was actually concentrating,
+  // avoiding a spurious DB write (and Dexie re-notification) when already false.
+  const dropConcentrationIfDown = (r: HpRecord, nextCurrent: number): Pick<HpRecord, "concentrating"> | object =>
+    nextCurrent <= 0 && r.concentrating ? { concentrating: false } : {};
+
   // HP ops run the pure HP function, then reconcile death saves (saves only
-  // exist at 0 HP, so any move above 0 clears them).
+  // exist at 0 HP, so any move above 0 clears them) and drop concentration
+  // when the character falls to 0.
   const applyHp =
     (op: (s: HpState, n: number) => HpState) => (n: number) =>
       write((r) => {
         const hp = op(hpOf(r), n);
-        return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)) };
+        return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)), ...dropConcentrationIfDown(r, hp.current) };
       })();
 
   // Pip writes are reconciled against current HP: death saves only exist at 0 HP,
@@ -153,12 +191,13 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
 
   // Relative steppers read the *fresh* record inside the transaction, so a burst
   // of ± taps (or hold-to-repeat) accumulates instead of clobbering on stale state.
+  // Also drop concentration if the step lands at 0.
   const stepHp =
     (op: (s: HpState, n: number) => HpState, read: (s: HpState) => number) =>
     (delta: number) =>
       write((r) => {
         const hp = op(hpOf(r), read(hpOf(r)) + delta);
-        return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)) };
+        return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)), ...dropConcentrationIfDown(r, hp.current) };
       })();
 
   // Relative temp stepper — not undoable (the keypad's setTempValue is undoable
@@ -225,6 +264,17 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
   // Dismiss the pill (timeout / next action) without reverting.
   const dismissLastChange = () => setLastChange(null);
 
+  // Dismiss the concentration check prompt without dropping concentration.
+  const dismissConcentrationCheck = () => setConcentrationCheck(null);
+
+  // Enable or disable concentration. Enabling at 0 HP is a no-op (per 5e:
+  // a downed caster cannot maintain a spell).
+  const setConcentrating = (on: boolean) =>
+    write((r) => {
+      if (on && r.current <= 0) return r; // no-op when down
+      return { ...r, concentrating: on };
+    })();
+
   return {
     current: state.current,
     max: state.max,
@@ -237,14 +287,46 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
     hitDiceTotal: state.hitDiceTotal,
     hitDiceAvailable: state.hitDiceAvailable,
     conMod: state.conMod,
-    damage: undoable("damage", (r, n) => {
-      const hp = damage(hpOf(r), n);
-      let saves = reconcile(hp.current, savesOf(r));
-      if (n > 0 && r.current === 0 && statusFor(r.current, saves) === "dying") {
-        saves = addFailure(saves, 1);
-      }
-      return { ...r, ...hp, ...saves };
-    }),
+    // Existing records (upgraded from v3) may have name === undefined; treat as "".
+    name: state.name ?? "",
+    concentrating: state.concentrating ?? false,
+    concentrationCheck,
+    damage: (() => {
+      // The damage action is undoable AND may trigger a concentration check.
+      // We capture whether the character was concentrating from inside the fresh
+      // transaction record (mirrors the `before` snapshot pattern in undoable).
+      const kind = "damage" as const;
+      return (n: number) => {
+        let before: HpLastChange["before"] | null = null;
+        let wasConcentrating = false;
+        let resultedInDown = false;
+        return write((r) => {
+          before = { current: r.current, temp: r.temp, successes: r.successes, failures: r.failures };
+          wasConcentrating = r.concentrating ?? false;
+          const hp = damage(hpOf(r), n);
+          resultedInDown = hp.current <= 0;
+          let saves = reconcile(hp.current, savesOf(r));
+          if (n > 0 && r.current === 0 && statusFor(r.current, saves) === "dying") {
+            saves = addFailure(saves, 1);
+          }
+          return { ...r, ...hp, ...saves, ...dropConcentrationIfDown(r, hp.current) };
+        })().then(() => {
+          if (before) setLastChange({ kind, amount: n, before });
+          // Show concentration check only when: was concentrating, damage > 0,
+          // and the hit didn't drop the character (dropping clears concentration, no save needed).
+          if (wasConcentrating && n > 0) {
+            if (resultedInDown) {
+              // Character dropped to 0 — concentration auto-clears, no save prompt.
+              setConcentrationCheck(null);
+            } else {
+              setConcentrationCheck({ dc: concentrationDC(n), damage: n });
+            }
+          }
+          // If not concentrating, leave any existing check state alone (it was already
+          // dismissed or never set).
+        });
+      };
+    })(),
     heal: undoable("heal", (r, n) => {
       const hp = heal(hpOf(r), n);
       return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)) };
@@ -254,7 +336,7 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
     setMax: applyHp(setMax),
     setCurrent: undoable("set", (r, n) => {
       const hp = setCurrent(hpOf(r), n);
-      return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)) };
+      return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)), ...dropConcentrationIfDown(r, hp.current) };
     }),
     setSuccesses: applySaves(dsSetSuccesses),
     setFailures: applySaves(dsSetFailures),
@@ -267,10 +349,12 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
     setHitDiceTotal: setHd<number>(setHitDiceTotal),
     setHitDiceAvailable: setHd<number>(setHitDiceAvailable),
     setConMod: setHd<number>(setConMod),
+    setName: (s: string) => write((r) => ({ ...r, name: s.trim().slice(0, 24) }))(),
+    setConcentrating,
     shortRest,
     // Pass longRest a fresh literal of just the fields it acts on (object literals
     // satisfy RestState's index signature), then spread the recovered fields back
-    // onto the full record.
+    // onto the full record. Long rest always clears concentration.
     longRest: () =>
       write((r) => ({
         ...r,
@@ -283,9 +367,11 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
           hitDiceTotal: r.hitDiceTotal,
           hitDiceAvailable: r.hitDiceAvailable,
         }),
+        concentrating: false,
       }))(),
     undo,
     dismissLastChange,
     lastChange,
+    dismissConcentrationCheck,
   };
 }

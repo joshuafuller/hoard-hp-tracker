@@ -34,6 +34,12 @@ describe("createHpDb seeding", () => {
       hitDiceTotal: 1,
       hitDiceAvailable: 1,
       conMod: 0,
+      pp: 0,
+      gp: 0,
+      sp: 0,
+      cp: 0,
+      name: "",
+      concentrating: false,
     });
   });
 
@@ -550,9 +556,222 @@ describe("persistence across reload", () => {
         hitDiceTotal: 1,
         hitDiceAvailable: 1,
         conMod: 0,
+        pp: 0,
+        gp: 0,
+        sp: 0,
+        cp: 0,
+        name: "",
+        concentrating: false,
       });
     } finally {
       reopened.close();
     }
+  });
+});
+
+describe("useHp character name", () => {
+  it("exposes an empty name by default", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    expect(result.current.name).toBe("");
+  });
+
+  it("setName persists a trimmed name", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+
+    await act(async () => {
+      await result.current.setName("  Aria Nighthollow  ");
+    });
+
+    await waitFor(() => expect(result.current.name).toBe("Aria Nighthollow"));
+  });
+
+  it("setName caps the name at 24 characters", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+
+    await act(async () => {
+      await result.current.setName("A".repeat(30));
+    });
+
+    await waitFor(() => expect(result.current.name).toBe("A".repeat(24)));
+  });
+
+  it("setName clears the name when given an empty string", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+
+    await act(async () => {
+      await result.current.setName("Gandalf");
+    });
+    await waitFor(() => expect(result.current.name).toBe("Gandalf"));
+
+    await act(async () => {
+      await result.current.setName("");
+    });
+    await waitFor(() => expect(result.current.name).toBe(""));
+  });
+
+  it("setName survives a fresh DB connection (persists)", async () => {
+    const { result, unmount } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+
+    await act(async () => {
+      await result.current.setName("Thorn Blackveil");
+    });
+    await waitFor(() => expect(result.current.name).toBe("Thorn Blackveil"));
+
+    unmount();
+    db.close();
+
+    const reopened = createHpDb(DB_NAME);
+    try {
+      const record = await reopened.hp.get(HP_ID);
+      expect(record?.name).toBe("Thorn Blackveil");
+    } finally {
+      reopened.close();
+    }
+  });
+});
+
+describe("useHp concentration", () => {
+  it("starts not concentrating", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    expect(result.current.concentrating).toBe(false);
+  });
+
+  it("setConcentrating(true) enables concentration", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+  });
+
+  it("setConcentrating(false) drops concentration", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+    await act(() => result.current.setConcentrating(false));
+    await waitFor(() => expect(result.current.concentrating).toBe(false));
+  });
+
+  it("setConcentrating(true) is a no-op when at 0 HP", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setCurrent(0));
+    await waitFor(() => expect(result.current.current).toBe(0));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(false));
+  });
+
+  it("damage while concentrating sets a concentration check", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+
+    // 5 damage from 10 HP -> 5 HP (still alive); DC = max(10, floor(5/2)) = 10
+    await act(() => result.current.damage(5));
+    await waitFor(() => expect(result.current.concentrationCheck).not.toBeNull());
+    expect(result.current.concentrationCheck).toEqual({ dc: 10, damage: 5 });
+  });
+
+  it("concentration check DC scales with high damage (22 -> DC 11)", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    // Bump max so 22 damage doesn't drop to 0
+    await act(() => result.current.setMax(50));
+    await waitFor(() => expect(result.current.max).toBe(50));
+    await act(() => result.current.setCurrent(50));
+    await waitFor(() => expect(result.current.current).toBe(50));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+
+    await act(() => result.current.damage(22));
+    await waitFor(() => expect(result.current.concentrationCheck).not.toBeNull());
+    expect(result.current.concentrationCheck?.dc).toBe(11);
+  });
+
+  it("damage of 0 while concentrating does NOT set a concentration check", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+
+    await act(() => result.current.damage(0));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+    expect(result.current.concentrationCheck).toBeNull();
+  });
+
+  it("damage while NOT concentrating does not set a concentration check", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+
+    await act(() => result.current.damage(5));
+    await waitFor(() => expect(result.current.current).toBe(5));
+    expect(result.current.concentrationCheck).toBeNull();
+  });
+
+  it("dismissConcentrationCheck clears the check without dropping concentration", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+    // 3 damage from 10 HP -> 7 HP (stays alive)
+    await act(() => result.current.damage(3));
+    await waitFor(() => expect(result.current.concentrationCheck).not.toBeNull());
+
+    act(() => result.current.dismissConcentrationCheck());
+    expect(result.current.concentrationCheck).toBeNull();
+    expect(result.current.concentrating).toBe(true);
+  });
+
+  it("dropping to 0 HP clears concentration and sets no check", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+
+    // 10 damage drops from 10 to 0
+    await act(() => result.current.damage(10));
+    await waitFor(() => expect(result.current.current).toBe(0));
+    expect(result.current.concentrating).toBe(false);
+    expect(result.current.concentrationCheck).toBeNull();
+  });
+
+  it("long rest clears concentration", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+
+    await act(() => result.current.longRest());
+    await waitFor(() => expect(result.current.concentrating).toBe(false));
+  });
+
+  it("setCurrent to 0 clears concentration", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+
+    await act(() => result.current.setCurrent(0));
+    await waitFor(() => expect(result.current.current).toBe(0));
+    expect(result.current.concentrating).toBe(false);
+  });
+
+  it("heal does not change concentrating state", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+    await act(() => result.current.damage(5));
+    await waitFor(() => expect(result.current.current).toBe(5));
+    await act(() => result.current.heal(3));
+    await waitFor(() => expect(result.current.current).toBe(8));
+    expect(result.current.concentrating).toBe(true);
   });
 });
