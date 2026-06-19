@@ -55,6 +55,17 @@ describe("CoinSheet", () => {
     expect(p.onAdd).toHaveBeenCalledWith("gp", 7);
   });
 
+  it("retargets the same keypad to another denomination via the switcher", async () => {
+    const p = setup();
+    await userEvent.click(screen.getByRole("button", { name: /gold — 41 gp, edit/i }));
+    // Switch to silver without closing, then spend.
+    await userEvent.click(screen.getByRole("tab", { name: /silver — 12 sp/i }));
+    await userEvent.click(screen.getByRole("button", { name: "3" }));
+    await userEvent.click(screen.getByRole("button", { name: /^spend$/i }));
+    expect(p.onSpend).toHaveBeenCalledWith("sp", 3);
+    expect(p.onAdd).not.toHaveBeenCalled();
+  });
+
   it("confirms before distilling and shows the before→after preview", async () => {
     const p = setup();
     await userEvent.click(screen.getByRole("button", { name: /distill to fewest coins/i }));

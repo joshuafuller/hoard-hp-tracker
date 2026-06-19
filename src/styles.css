@@ -1371,8 +1371,10 @@ body {
 }
 
 /* ── Coin sheet ─────────────────────────────────────────────────────────── */
-/* Per-denomination coin colours, shared by the sheet rows and the distill
-   preview so a coin reads the same everywhere. Each gets a soft glow. */
+/* Per-denomination coin colours, shared by the sheet rows, the switcher strip,
+   and the distill preview so a coin reads the same everywhere. Each gets a soft
+   glow. The dot is a descendant (not necessarily a direct child) of the
+   [data-kind] element, so the combinator must be descendant. */
 .coin-row__dot,
 .distill__dot {
   display: inline-block;
@@ -1381,22 +1383,22 @@ body {
   border-radius: 50%;
   flex-shrink: 0;
 }
-[data-kind="pp"] > .coin-row__dot,
+[data-kind="pp"] .coin-row__dot,
 .distill__row[data-kind="pp"] .distill__dot {
   background: #dfe7ee;
   box-shadow: 0 0 8px color-mix(in oklab, #dfe7ee 50%, transparent);
 }
-[data-kind="gp"] > .coin-row__dot,
+[data-kind="gp"] .coin-row__dot,
 .distill__row[data-kind="gp"] .distill__dot {
   background: var(--coin-gold);
   box-shadow: 0 0 8px color-mix(in oklab, var(--coin-gold) 55%, transparent);
 }
-[data-kind="sp"] > .coin-row__dot,
+[data-kind="sp"] .coin-row__dot,
 .distill__row[data-kind="sp"] .distill__dot {
   background: #cbd5d1;
   box-shadow: 0 0 6px color-mix(in oklab, #cbd5d1 45%, transparent);
 }
-[data-kind="cp"] > .coin-row__dot,
+[data-kind="cp"] .coin-row__dot,
 .distill__row[data-kind="cp"] .distill__dot {
   background: #c47a4a;
   box-shadow: 0 0 6px color-mix(in oklab, #c47a4a 45%, transparent);
@@ -1806,6 +1808,63 @@ body {
 .distill__confirm:focus-visible {
   outline: 2px solid var(--coin-gold);
   outline-offset: 2px;
+}
+
+/* ── Coin switcher strip (in the shared keypad header) ──────────────────── */
+/* Four tabs across the top of the coin keypad. The selected denomination is
+   the one Add/Spend/Set act on; tapping another retargets the keypad without
+   closing it. Counts stay live so the strip doubles as an at-a-glance purse. */
+.coin-switcher {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+  width: 100%;
+}
+.coin-switcher__tab {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.45rem 0.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--obsidian-600);
+  background: var(--obsidian-700);
+  color: var(--ink-300);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease;
+}
+.coin-switcher__tab[aria-selected="true"] {
+  border-color: color-mix(in oklab, var(--coin-gold) 55%, var(--obsidian-600));
+  background: color-mix(in oklab, var(--coin-gold) 14%, var(--obsidian-700));
+  color: var(--ink-100);
+}
+@media (hover: hover) {
+  .coin-switcher__tab:hover {
+    background: var(--obsidian-600);
+  }
+}
+.coin-switcher__tab:focus-visible {
+  outline: 2px solid var(--coin-gold);
+  outline-offset: 2px;
+}
+.coin-switcher__head {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.coin-switcher__unit {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.coin-switcher__count {
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-100);
 }
 
 /* ── AmountKeypad coin tones ────────────────────────────────────────────── */

@@ -116,8 +116,15 @@ hook's `lastChange`.
 The passive list of counts becomes an actionable sheet:
 - **Hero total** at the top (the gold-equivalent wealth, large).
 - **`CoinRow`** per denomination with inline **−/+ steppers** (single-coin
-  nudges; − disabled at 0) and a **tap-to-edit count** that still opens the
-  shared `AmountKeypad` (Add/Spend/Set) for larger amounts.
+  nudges; − disabled at 0) and a **tap-to-edit count** that opens the shared
+  keypad for larger amounts.
+- **Unified switchable keypad** (no per-row keypad): `AmountKeypad` gains an
+  optional `header` slot; the coin keypad fills it with a **denomination
+  switcher strip** (pp/gp/sp/cp tabs with live counts). One keypad serves all
+  four coins — tap a tab to retarget Add/Spend/Set without closing, and the
+  typed amount persists across switches (`closeOnCommit={false}`), so "type 10,
+  add to gold, switch to silver, add 10" is one fluid gesture. This replaces the
+  original denomination-first "open a keypad bound to one coin" flow.
 - **Footer Distill action** ("Distill to fewest coins"), disabled and labelled
   "Already distilled" when the purse is minimal.
 - **`DistillConfirm`** modal: a per-denomination **before→after diff** (changed

@@ -199,7 +199,7 @@ describe("App (integration)", () => {
     await userEvent.click(screen.getByRole("button", { name: /gold — 0 gp, edit/i }));
     await userEvent.click(screen.getByRole("button", { name: "8" }));
     await userEvent.click(screen.getByRole("button", { name: /^add$/i }));
-    // committing returns to the rows; the Gold row now shows 8 (seed 0 → 8)
-    await waitFor(() => expect(screen.getByRole("button", { name: /gold — 8 gp, edit/i })).toBeInTheDocument());
+    // The unified keypad stays open; the Gold switcher tab now reads 8 (seed 0 → 8).
+    await waitFor(() => expect(screen.getByRole("tab", { name: /gold — 8 gp/i })).toBeInTheDocument());
   });
 });

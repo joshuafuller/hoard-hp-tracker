@@ -71,11 +71,36 @@ export function CoinSheet({
 
   if (editing) {
     const row = ROWS.find((r) => r.kind === editing)!;
+    // One keypad, retargetable: the strip switches which denomination the digits
+    // and Add/Spend/Set act on, without closing the keypad. Counts stay live.
+    const switcher = (
+      <div className="coin-switcher" role="tablist" aria-label="Denomination">
+        {ROWS.map((r) => (
+          <button
+            key={r.kind}
+            type="button"
+            role="tab"
+            className="coin-switcher__tab"
+            data-kind={r.kind}
+            aria-selected={r.kind === editing}
+            aria-label={`${r.label} — ${counts[r.kind]} ${r.unit}`}
+            onClick={() => setEditing(r.kind)}
+          >
+            <span className="coin-switcher__head">
+              <span className="coin-row__dot" aria-hidden="true" />
+              <span className="coin-switcher__unit">{r.unit}</span>
+            </span>
+            <span className="coin-switcher__count">{counts[r.kind]}</span>
+          </button>
+        ))}
+      </div>
+    );
     return (
       <AmountKeypad
-        ariaLabel={`${row.label} coins`}
+        ariaLabel="Coins"
+        header={switcher}
         context={`${row.label} — ${counts[editing]} ${row.unit}`}
-        closeOnCommit
+        closeOnCommit={false}
         primary={[
           { label: () => "Add", ariaLabel: "Add", tone: "add", gate: "positive", onCommit: (n) => onAdd(editing, n) },
           { label: () => "Spend", ariaLabel: "Spend", tone: "spend", gate: "positive", onCommit: (n) => onSpend(editing, n) },
