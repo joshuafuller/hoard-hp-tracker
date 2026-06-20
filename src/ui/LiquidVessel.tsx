@@ -26,6 +26,7 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
   const flash = useChangeFlash(current + temp);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const foilRef = useRef<HTMLDivElement | null>(null);
   const { gravity } = useGyro();
 
   // Use the WebGL fluid only where it can actually run: WebGL2 present, motion
@@ -33,6 +34,12 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
   const [webglOk, setWebglOk] = useState(() => LiquidRenderer.isSupported());
   const reducedMotion = useReducedMotion();
   const active = webglOk && !reducedMotion;
+
+  // Brushed-gold foil sweep tied to the device gyro: the specular highlight
+  // tracks the phone's left-right tilt (gravity.x), like light raking across a
+  // foil card. No sensor (desktop) → gravity.x stays 0 → the highlight rests
+  // centered (no fake timed shimmer). Disabled under reduced motion.
+  useFoilTilt(foilRef, gravity, reducedMotion);
 
   const color = hpColor(current, max);
   // Drive the CSS accent (numerals, aura, glow) from the same continuous colour
@@ -62,7 +69,7 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
             <div className="vessel__fallback-fill" style={{ height: `${ratio * 100}%` }} />
           </div>
         )}
-        <div className="vessel__foil" aria-hidden="true" />
+        <div className="vessel__foil" aria-hidden="true" ref={foilRef} />
         <div className="vessel__rim" aria-hidden="true" />
         <div className="vessel__shine" aria-hidden="true" />
       </div>
@@ -101,6 +108,37 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
       </div>
     </div>
   );
+}
+
+/**
+ * Drive the foil specular sweep from the device gyro. Each frame, read the live
+ * left-right tilt (gravity.x ∈ [-1,1]) and write it (smoothed) to the foil
+ * element's `--foil-shift` CSS var, which positions the highlight. Genuine
+ * sensor input — not a timed loop. Rests centered when there's no sensor.
+ */
+function useFoilTilt(
+  ref: React.RefObject<HTMLDivElement | null>,
+  gravity: React.MutableRefObject<{ x: number; y: number }>,
+  reducedMotion: boolean,
+) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (reducedMotion || typeof requestAnimationFrame !== "function") {
+      el.style.setProperty("--foil-shift", "0%");
+      return;
+    }
+    let raf = 0;
+    let cur = 0;
+    const tick = () => {
+      const target = Math.max(-1, Math.min(1, gravity.current.x));
+      cur += (target - cur) * 0.14; // smooth out sensor jitter
+      el.style.setProperty("--foil-shift", `${(cur * 55).toFixed(2)}%`);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [ref, gravity, reducedMotion]);
 }
 
 /** Live `prefers-reduced-motion` — reacts if the user toggles it while mounted. */
