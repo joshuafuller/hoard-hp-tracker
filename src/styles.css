@@ -1,36 +1,52 @@
 /*
- * Obsidian — the Hoard design language.
+ * Molten Hoard — the Hoard design language.
  *
- * Near-black canvas, luminous accents, a soft radial glow tinted by the current
- * HP tier. Premium, quiet, focused. This file is the taste-setting reference for
- * every future Hoard tool: tokens up top, then a thin layer of component styling
- * keyed off the data-attributes the React components emit (data-tier, data-flash,
- * data-variant). Motion is opt-in and fully disabled under prefers-reduced-motion.
+ * Warm volcanic-black canvas, gold + gem accents, a soft radial glow tinted by
+ * the current HP tier. Premium, quiet, focused. This file is the taste-setting
+ * reference for every Hoard tool: tokens up top, then a thin layer of component
+ * styling keyed off the data-attributes the React components emit (data-tier,
+ * data-flash, data-variant). Motion is opt-in and disabled under prefers-reduced-motion.
  */
 
+/* Self-hosted variable fonts (offline-safe; Vite fingerprints + Workbox precaches them). */
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("./fonts/dm-sans.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("./fonts/fraunces.woff2") format("woff2");
+}
+
 :root {
-  /* Canvas — layered near-blacks for depth without hard edges. */
-  --obsidian-900: #0a0a0c;
-  --obsidian-800: #101014;
-  --obsidian-700: #16161c;
-  --obsidian-600: #1f1f27;
+  /* Canvas — Molten Hoard: warm volcanic near-blacks for depth without hard edges. */
+  --obsidian-900: #0b0a08;
+  --obsidian-800: #100e0a;
+  --obsidian-700: #16130d;
+  --obsidian-600: #1f1a11;
 
-  /* Ink — high-contrast white stepping down to quiet labels. */
-  --ink-100: #f4f4f8;
-  --ink-200: #dcdce4;
-  --ink-300: #c7c7d2;
-  --ink-500: #8a8a99;
-  --ink-700: #51515e;
+  /* Ink — warm ivory stepping down to quiet labels. */
+  --ink-100: #f4ecdd;
+  --ink-200: #e4dac6;
+  --ink-300: #c9bca0;
+  --ink-500: #9a8f7a;
+  --ink-700: #5a5142;
 
-  /* Tier accents — the green→amber→red health spectrum + the temp overshield. */
-  --hp-healthy: #34d399;
-  --hp-bloodied: #f5b942;
-  --hp-critical: #f0506a;
-  --hp-down: #6b6b78;
-  --hp-temp: #7dd3fc;
+  /* Tier accents — Molten Hoard spectrum: emerald → gold → ruby + sapphire overshield. */
+  --hp-healthy: #4fb477;
+  --hp-bloodied: #e8b45a;
+  --hp-critical: #d8453b;
+  --hp-down: #6b6354;
+  --hp-temp: #5b8fd9;
 
   /* Coin gold — the shared hue for gp, the coin-button chrome, and the total readout. */
-  --coin-gold: #e8c763;
+  --coin-gold: #e8b45a;
 
   /* The live accent + its glow, re-pointed per tier by [data-tier]. */
   --accent: var(--hp-healthy);
@@ -62,9 +78,15 @@ body {
   background: var(--obsidian-900);
   color: var(--ink-100);
   font-family:
-    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Molten Hoard display face — warm serif for identity moments (character name, headings). */
+.character-name__display,
+.character-name__input {
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
 }
 
 /* ── App shell ─────────────────────────────────────────────────────────── */
