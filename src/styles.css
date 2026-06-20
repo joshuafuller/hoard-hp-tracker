@@ -2058,3 +2058,76 @@ body {
   background: color-mix(in oklab, var(--hp-critical) 20%, var(--obsidian-700));
   color: var(--hp-critical);
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   COIN TOKEN — the minted-gold medallion control (engraved sigil, no text)
+   Polished-medallion finish (per the Claude Design pass): smooth luminous
+   gold, a bright beveled rim, and a glossy top-left highlight.
+   ════════════════════════════════════════════════════════════════════════ */
+.coin-token {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+  color: #3a2606; /* engraved sigil colour (currentColor) */
+  /* smooth, luminous gold body (polished, not brushed) */
+  background:
+    radial-gradient(62% 56% at 38% 30%, #fff1c6 0%, #f4c66a 28%, #d49a3f 62%, #9c6a23 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 244, 206, 0.6),   /* bright beveled rim */
+    inset 0 3px 7px rgba(255, 248, 222, 0.6),   /* top inner gloss */
+    inset 0 -9px 16px rgba(40, 24, 4, 0.5),     /* bottom inner shade (convex) */
+    inset 0 0 0 5px rgba(120, 80, 24, 0.22),    /* milled edge darkening */
+    0 6px 16px rgba(0, 0, 0, 0.5);              /* drop */
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+/* glossy specular highlight (the polish) */
+.coin-token::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    40% 32% at 36% 24%,
+    rgba(255, 255, 255, 0.85),
+    rgba(255, 246, 214, 0.2) 45%,
+    transparent 70%
+  );
+  mix-blend-mode: screen;
+}
+.coin-token__face {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+}
+.coin-token__face svg {
+  width: 56%;
+  height: 56%;
+  display: block;
+  filter: drop-shadow(0 1.5px 0 rgba(255, 244, 206, 0.45)); /* engraved relief */
+}
+.coin-token:active { transform: translateY(1px) scale(0.98); }
+.coin-token:focus-visible { outline: 2px solid var(--coin-gold); outline-offset: 3px; }
+.coin-token:disabled { opacity: 0.45; cursor: default; }
+/* per-action edge tone */
+.coin-token[data-tone="damage"] { box-shadow:
+  inset 0 0 0 2px rgba(255, 244, 206, 0.6), inset 0 3px 7px rgba(255, 248, 222, 0.6),
+  inset 0 -9px 16px rgba(40, 24, 4, 0.5), inset 0 0 0 5px rgba(120, 80, 24, 0.22),
+  0 0 0 2px color-mix(in oklab, var(--hp-critical) 55%, transparent), 0 6px 16px rgba(0, 0, 0, 0.5); }
+.coin-token[data-tone="heal"] { box-shadow:
+  inset 0 0 0 2px rgba(255, 244, 206, 0.6), inset 0 3px 7px rgba(255, 248, 222, 0.6),
+  inset 0 -9px 16px rgba(40, 24, 4, 0.5), inset 0 0 0 5px rgba(120, 80, 24, 0.22),
+  0 0 0 2px color-mix(in oklab, var(--hp-healthy) 55%, transparent), 0 6px 16px rgba(0, 0, 0, 0.5); }
+@media (prefers-reduced-motion: reduce) {
+  .coin-token { transition: none; }
+}
