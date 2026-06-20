@@ -179,18 +179,17 @@ not gated behind an animation she can't use.
 
 ---
 
-## 5. Decision to ratify — dice ↔ HP integration
+## 5. Decision — dice ↔ HP integration *(RATIFIED 2026-06-20: yes)*
 
-PRD §11 lists *cross-task state* as an **open question**. The journeys propose a concrete rule:
+PRD §11 listed *cross-task state* as an open question. **Decided:**
 
 > **Healing-type rolls flow back into the tracker; damage-dealt rolls stay informational.**
 > Hoard tracks only *the player's own* HP, so: Hit Dice, healing spells (`1d8+mod`), and death saves
-> may apply their outcome to HP/death-save state. A weapon-damage roll is read-aloud to the DM and
+> apply their outcome to HP/death-save state. A weapon-damage roll is read-aloud to the DM and
 > changes nothing in Hoard.
 
-This is the highest-leverage product call here and it **changes build scope** (US-D5, US-D6 depend on
-it). **Needs Josh's ratification before #75 builds it.** If declined, dice ships as a pure roller and
-the death-save/Hit-Dice routing (§6) is deferred.
+US-D5 and US-D6 are **in scope**. (Resolves the PRD §11 cross-task-state open question — fold into
+the next PRD changelog entry.)
 
 ---
 
@@ -203,18 +202,24 @@ red-green tests) **after** the standalone tray lands — not bundled into the fi
 
 ---
 
-## 7. Proposed first slice (of weight-8 #75)
+## 7. Build order *(decided 2026-06-20: whole module at once)*
 
-#75 is too big for one PR. Ordered by value, the first shippable slice is the **hero path**:
+#75 builds the **full module** before merging to beta — not a thin first slice. The order below is
+the *build sequence* (each step TDD red-green-refactor), not separate releases:
 
 1. **Table-throw tray** — lazy-loaded full-screen overlay; d20 token entry from the chrome; inert
    when closed; tap-to-clear / ✕ to exit. *(US-D1)*
 2. **Zero-typing core rolling** — die chips + modifier + **one-tap advantage/disadvantage**, showing
-   total + per-die + notation, dropped dice struck. *(US-D1, US-D2)*
-3. **Recorded model + session history** — `{notation, total, result, dice[]}`. *(US-D3, US-D4)*
-4. **Offline + reduced-motion** — precache assets (#45), instant-settle path. *(US-D8)*
+   total + per-die + notation, dropped dice struck. *(US-D1, US-D2, US-D3)*
+3. **Recorded model + session history** — `{notation, total, result, dice[]}`, persisted. *(US-D4)*
+4. **Notation escape hatch** — secondary field, full Roll20 grammar. *(US-D7)*
+5. **Death-save + Hit-Dice routing through the tray, with heal-apply into HP** — the shared mechanic
+   (§6 refactor) + the ratified dice↔HP link (§5). *(US-D5, US-D6)*
+6. **Offline + reduced-motion** — precache assets (#45), instant-settle path, lazy engine. *(US-D8)*
 
-**Deferred to later slices:** notation escape hatch polish (US-D7 — engine already supports it),
-death-save/Hit-Dice routing + dice↔HP (US-D5, US-D6, §5/§6), radial-purse entry (#74).
+Sequencing note: §6's refactor still gets its **own commits + red-green tests** within this branch,
+because it touches shipped death-save/Hit-Dice code and the e2e layout guard. Radial-purse entry
+(#74) remains a separate follow-up.
 
-Each slice: brainstorm → spec (#73 AC) → plan → TDD → PR into `beta` → review → promote to `main`.
+Whole module: brainstorm → spec (#73 AC) → plan → TDD across the steps above → PR into `beta` →
+review → promote to `main`.
