@@ -1380,10 +1380,10 @@ body {
 
 /* Set name: reads at a glance, matches the ink palette. */
 .character-name__display--set {
-  font-size: 0.85rem;
+  font-size: clamp(1.25rem, 5.5vw, 1.7rem); /* card header (also #44) */
   font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--ink-300);
+  letter-spacing: 0.01em;
+  color: var(--ink-100);
 }
 @media (hover: hover) {
   .character-name__display--set:hover {
