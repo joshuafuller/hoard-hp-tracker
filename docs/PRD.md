@@ -185,7 +185,9 @@ deliberate trade for the privacy/offline guarantee.
 
 ### Primary signal — task speed & correctness
 - **Turn-time:** a core action (e.g. "apply 9 damage") completes in **≤ 2 interactions**, no OS
-  keyboard. *Verified by:* e2e interaction tests (Playwright) asserting tap counts.
+  keyboard. *Verification (planned, issue #53):* an e2e interaction-count test. Today the Playwright
+  suite (`e2e/layout.spec.ts`) guards layout and tap-target size, **not** tap counts — so this
+  metric is a target, not yet enforced.
 - **Rules-correctness:** 5e edge rules (temp-HP absorption, death saves, concentration DC, coin
   conversion/distill) provably correct. *Verified by:* the pure-domain unit + property tests and
   the mutation-testing gate (≥ 90% domain mutation score).
