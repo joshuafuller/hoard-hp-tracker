@@ -5,6 +5,7 @@ import { glowCss, hpColor, rgbCss } from "./hpColor";
 import { LiquidRenderer } from "./liquid/renderer";
 import { useGyro } from "./liquid/useGyro";
 import { useLiquidEngine } from "./liquid/useLiquidEngine";
+import { type DragApply, dragAmount, isTap } from "./liquid/dragInput";
 
 /** Liquid Obsidian centerpiece: HP as a real fluid (PBF sim) in a glass orb. */
 
@@ -18,9 +19,13 @@ export interface LiquidVesselProps extends HpState {
   onEditCurrent?: () => void;
   onEditMax?: () => void;
   onEditTemp?: () => void;
+  /** Orb-drag-down: apply this much damage. */
+  onDamage?: (amount: number) => void;
+  /** Orb-drag-up: apply this much healing. */
+  onHeal?: (amount: number) => void;
 }
 
-export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onEditTemp }: LiquidVesselProps) {
+export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onEditTemp, onDamage, onHeal }: LiquidVesselProps) {
   const ratio = max > 0 ? Math.max(0, Math.min(1, current / max)) : 0;
   const tier = tierFor(current, max);
   const flash = useChangeFlash(current + temp);
@@ -58,10 +63,65 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
     onUnsupported: () => setWebglOk(false),
   });
 
+  // Orb-as-input: a vertical drag applies damage (down) / heal (up), scaled to
+  // the orb height. A real drag suppresses the trailing click so it can't also
+  // open the keypad; taps fall through to the value buttons (current/max/temp).
+  const [drag, setDrag] = useState<DragApply | null>(null);
+  const dragRef = useRef<{ startY: number; orbPx: number; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
+
+  function onOrbPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.button > 0) return;
+    const orb = e.currentTarget;
+    const orbPx = orb.clientHeight || orb.getBoundingClientRect().height;
+    dragRef.current = { startY: e.clientY, orbPx, moved: false };
+    orb.setPointerCapture?.(e.pointerId);
+  }
+  function onOrbPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const st = dragRef.current;
+    if (!st) return;
+    const dy = e.clientY - st.startY;
+    if (!st.moved && isTap(dy)) return;
+    st.moved = true;
+    setDrag(dragAmount(dy, st.orbPx, max));
+  }
+  function onOrbPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    const st = dragRef.current;
+    if (!st) return;
+    dragRef.current = null;
+    setDrag(null);
+    const dy = e.clientY - st.startY;
+    if (st.moved && !isTap(dy)) {
+      const { kind, amount } = dragAmount(dy, st.orbPx, max);
+      if (amount > 0) {
+        if (kind === "damage") onDamage?.(amount);
+        else onHeal?.(amount);
+        suppressClick.current = true;
+      }
+    }
+  }
+  function onOrbClickCapture(e: React.MouseEvent<HTMLDivElement>) {
+    if (suppressClick.current) {
+      suppressClick.current = false;
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  }
+
   return (
     <div className="vessel" data-tier={tier} data-flash={flash ?? undefined} style={accentStyle}>
       <div className="vessel__aura" aria-hidden="true" />
-      <div className="vessel__orb" data-testid="hp-bar" data-tier={tier}>
+      <div
+        className="vessel__orb"
+        data-testid="hp-bar"
+        data-tier={tier}
+        data-dragging={drag ? "" : undefined}
+        onPointerDown={onOrbPointerDown}
+        onPointerMove={onOrbPointerMove}
+        onPointerUp={onOrbPointerUp}
+        onPointerCancel={onOrbPointerUp}
+        onClickCapture={onOrbClickCapture}
+      >
         {active ? (
           <canvas ref={canvasRef} className="vessel__canvas" aria-hidden="true" />
         ) : (
@@ -72,6 +132,12 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
         <div className="vessel__foil" aria-hidden="true" ref={foilRef} />
         <div className="vessel__rim" aria-hidden="true" />
         <div className="vessel__shine" aria-hidden="true" />
+        {drag && drag.amount > 0 && (
+          <div className="vessel__drag" data-kind={drag.kind} aria-hidden="true">
+            {drag.kind === "damage" ? "−" : "+"}
+            {drag.amount}
+          </div>
+        )}
       </div>
 
       <div className="vessel__readout">
