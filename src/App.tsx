@@ -18,7 +18,6 @@ import { HpValueEditor } from "./ui/HpValueEditor";
 import { LiquidVessel } from "./ui/LiquidVessel";
 import { RestControls } from "./ui/RestControls";
 import { SoundToggle } from "./ui/SoundToggle";
-import { StepControls } from "./ui/StepControls";
 import { UndoPill } from "./ui/UndoPill";
 import { CoinButton } from "./ui/CoinButton";
 import { CoinSheet } from "./ui/CoinSheet";
@@ -131,18 +130,8 @@ export function App() {
         )}
       </div>
       <div className="hp-tracker__footer">
-        {!keypadOpen && (
-          <StepControls
-            onDamage={(n) => {
-              playSfx("damage");
-              return hp.damage(n);
-            }}
-            onHeal={(n) => {
-              playSfx("heal");
-              return hp.heal(n);
-            }}
-          />
-        )}
+        {/* Damage/heal is the orb itself now: drag down/up, or tap to open the
+            keypad (the desktop click path). Only rests live down here. */}
         <RestControls
           hitDiceAvailable={hp.hitDiceAvailable}
           onShortRest={() => {

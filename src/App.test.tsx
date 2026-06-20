@@ -18,12 +18,24 @@ describe("App (integration)", () => {
     await Dexie.delete(HP_DB_NAME);
   });
 
+  // The ± steppers were removed in favour of orb-drag; damage/heal now go
+  // through the orb→keypad path (tap the HP number, type, Damage/Heal). This
+  // helper drives that path, which is the desktop click flow.
+  async function keypad(kind: "damage" | "heal", amount: number) {
+    await userEvent.click(screen.getByRole("button", { name: /edit current hp/i }));
+    for (const d of String(amount)) {
+      await userEvent.click(screen.getByRole("button", { name: d }));
+    }
+    await userEvent.click(screen.getByRole("button", { name: new RegExp(`^${kind}`, "i") }));
+  }
+
   it("renders the seeded HP and the controls", async () => {
     render(<App />);
     expect(await screen.findByTestId("hp-current")).toBeInTheDocument();
     expect(screen.getByTestId("hp-bar")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Damage 1" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Heal 1" })).toBeInTheDocument();
+    // Damage/heal is the orb (drag) + keypad now; the rests stay as buttons.
+    expect(screen.getByRole("button", { name: "Long Rest" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /edit current hp/i })).toBeInTheDocument();
     // First-run seed is 10/10.
     expect(await screen.findByText("10")).toBeInTheDocument();
   });
@@ -31,7 +43,7 @@ describe("App (integration)", () => {
   it("applies damage through the store to the display", async () => {
     render(<App />);
     await screen.findByText("10");
-    await userEvent.click(screen.getByRole("button", { name: "Damage 1" }));
+    await keypad("damage", 1);
     expect(await screen.findByText("9")).toBeInTheDocument();
   });
 
@@ -40,9 +52,8 @@ describe("App (integration)", () => {
     await screen.findByText("10");
     expect(screen.queryByLabelText(/death saving throws/i)).not.toBeInTheDocument();
 
-    // 10 -> 0 via two Damage 5 taps.
-    await userEvent.click(screen.getByRole("button", { name: "Damage 5" }));
-    await userEvent.click(screen.getByRole("button", { name: "Damage 5" }));
+    // 10 -> 0.
+    await keypad("damage", 10);
 
     expect(await screen.findByLabelText(/death saving throws/i)).toBeInTheDocument();
 
@@ -53,7 +64,7 @@ describe("App (integration)", () => {
   it("plays a damage sound effect when damaging", async () => {
     render(<App />);
     await screen.findByText("10");
-    await userEvent.click(screen.getByRole("button", { name: "Damage 1" }));
+    await keypad("damage", 1);
     expect(playSfx).toHaveBeenCalledWith("damage");
   });
 
@@ -71,7 +82,7 @@ describe("App (integration)", () => {
   it("long rest (with confirm) restores HP to full", async () => {
     render(<App />);
     await screen.findByText("10");
-    await userEvent.click(screen.getByRole("button", { name: "Damage 5" }));
+    await keypad("damage", 5);
     expect(await screen.findByText("5")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Long Rest" }));
@@ -103,8 +114,7 @@ describe("App (integration)", () => {
     expect(panel!.querySelector(".hit-dice")).not.toBeNull();
 
     // Dying: the death-saves panel takes the SAME slot, orb still alone in stage.
-    await userEvent.click(screen.getByRole("button", { name: "Damage 5" }));
-    await userEvent.click(screen.getByRole("button", { name: "Damage 5" }));
+    await keypad("damage", 10);
     await screen.findByLabelText(/death saving throws/i);
     expect(panel!.querySelector(".death-saves")).not.toBeNull();
     expect(stage!.querySelector(".death-saves")).toBeNull();
@@ -122,8 +132,7 @@ describe("App (integration)", () => {
     panel.scrollTop = 60; // user scrolled the hit-dice slot
 
     // 10 -> 0 mounts DeathSaves into the SAME scroll container.
-    await userEvent.click(screen.getByRole("button", { name: "Damage 5" }));
-    await userEvent.click(screen.getByRole("button", { name: "Damage 5" }));
+    await keypad("damage", 10);
     await screen.findByLabelText(/death saving throws/i);
 
     expect(panel.scrollTop).toBe(0);
@@ -132,11 +141,10 @@ describe("App (integration)", () => {
   it("hides death saves after healing back above 0", async () => {
     render(<App />);
     await screen.findByText("10");
-    await userEvent.click(screen.getByRole("button", { name: "Damage 5" }));
-    await userEvent.click(screen.getByRole("button", { name: "Damage 5" }));
+    await keypad("damage", 10);
     await screen.findByLabelText(/death saving throws/i);
 
-    await userEvent.click(screen.getByRole("button", { name: "Heal 5" }));
+    await keypad("heal", 5);
     await waitFor(() =>
       expect(screen.queryByLabelText(/death saving throws/i)).not.toBeInTheDocument(),
     );
