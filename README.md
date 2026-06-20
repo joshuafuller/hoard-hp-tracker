@@ -65,6 +65,13 @@ fault is caught by a test. CI enforces lint, types, tests, build, and the mutati
 pnpm mutation        # Stryker mutation testing over src/domain
 ```
 
+## Product direction
+
+Hoard is **a single player's utility belt at the tabletop** — fast, offline, one-screen tools for
+the bookkeeping a player does on their turn (HP, coins, and more to come). What belongs in the app
+(and what deliberately doesn't) is governed by an explicit **Scope-Fit Test**. See the
+**[Product Requirements Document](docs/PRD.md)** for the vision, personas, and how scope grows.
+
 ## License
 
 [AGPL-3.0](LICENSE). See [`NOTICE`](NOTICE). This is an independent, unofficial fan tool and ships no
