@@ -23,6 +23,14 @@ function dicePath(file: string): string {
   return `${import.meta.env.BASE_URL}dice/${file}`;
 }
 
+/**
+ * Indirect dynamic import. The engine is a `/public` file (served as-is, with its
+ * own worker), not a source module — a literal `import()` makes Vite's dev server
+ * try to resolve it from the module graph and fail. Routing through `Function`
+ * hides the URL from Vite so the browser fetches it same-origin at runtime.
+ */
+const importModule = new Function("url", "return import(url)") as (url: string) => Promise<unknown>;
+
 interface DieGroup {
   qty: number;
   sides: number | "fate";
@@ -95,10 +103,8 @@ type DiceBoxCtor = new (selector: string | HTMLElement, options: DiceBoxOptions)
  */
 export async function createDiceTray(container: string | HTMLElement): Promise<DiceTray> {
   // Vendored, same-origin import so the worker/assets resolve (a bundled import
-  // would break the worker path). @vite-ignore keeps Vite from rewriting the URL.
-  const mod = (await import(/* @vite-ignore */ dicePath("dice-box.es.min.js"))) as {
-    default: DiceBoxCtor;
-  };
+  // would break the worker path); the indirect import keeps Vite out of it.
+  const mod = (await importModule(dicePath("dice-box.es.min.js"))) as { default: DiceBoxCtor };
   const DiceBox = mod.default;
   const parser = new DiceParser();
   const box = new DiceBox(container, {

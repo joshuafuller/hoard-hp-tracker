@@ -18,6 +18,9 @@ export interface DiceTrayProps {
   reducedMotion?: boolean;
 }
 
+/** Stable id for the dice canvas container — dice-box looks it up by selector. */
+const CANVAS_ID = "hoard-dice-canvas";
+
 function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 }
@@ -52,7 +55,9 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
     if (!open || reduced || engineRef.current || loadingRef.current || !canvasRef.current) return;
     loadingRef.current = true;
     let cancelled = false;
-    createDiceTray(canvasRef.current)
+    // dice-box resolves its container with document.querySelector — pass the id
+    // selector, not the element.
+    createDiceTray(`#${CANVAS_ID}`)
       .then((engine) => {
         if (cancelled) return;
         engineRef.current = engine;
@@ -121,7 +126,7 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
       </button>
 
       <div className="dice-tray__stage">
-        <div className="dice-tray__canvas" ref={canvasRef} aria-hidden="true" />
+        <div className="dice-tray__canvas" id={CANVAS_ID} ref={canvasRef} aria-hidden="true" />
         {record && <DiceResult record={record} onApplyHeal={onApplyHeal} />}
       </div>
 
