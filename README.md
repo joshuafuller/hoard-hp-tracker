@@ -58,8 +58,9 @@ core** (`src/domain/`); the UI is presentational.
 ## Quality
 
 The rules domain is held to a high bar: **example + property-based tests** (fast-check) for its
-invariants, and **mutation testing** (Stryker) at a **100% score** on the domain — every injected
-fault is caught by a test. CI enforces lint, types, tests, build, and the mutation threshold.
+invariants, and **mutation testing** (Stryker) over the domain — CI **fails the build below a 90%
+mutation score**, so injected faults must be caught by a test. CI enforces lint, types, tests,
+build, and the mutation threshold.
 
 ```bash
 pnpm mutation        # Stryker mutation testing over src/domain

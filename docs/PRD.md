@@ -144,6 +144,29 @@ Every task module follows the same shape, which is what keeps the product cohere
 A new task (e.g. dice) is "just another module" plugged into this pattern — that's the
 extensibility model. See the keypad and coin console as the reference implementations.
 
+### 5.4 Non-Functional Requirements (NFRs)
+These hold for **every** module and are a precondition for shipping, not per-feature niceties.
+
+- **Platform / layout:** phone-first, fullscreen portrait, **installable PWA**. Core paths are
+  one-handed and respect the **one-screen thumb-reach budget** — no content clips off the bottom
+  on target phone viewports (safe-area-inset aware; enforced by the e2e layout guard, #32).
+- **Performance:** fast cold start, small bundle/install size that stays small as modules are
+  added, smooth orb rendering, and interactions that feel instant within a ~15-second turn.
+- **Offline:** **fully functional with no network** — service-worker precache of the app shell
+  (incl. fonts/icons) and **zero third-party/CDN requests at runtime** (audited in #45).
+- **Persistence:** local-only via Dexie/IndexedDB, **versioned with migrations**; state survives
+  reload and across sessions. No data leaves the device.
+- **Accessibility:** controls carry accessible names (`aria-label`s); editable values support
+  keyboard interaction (Enter commits / Escape cancels) with visible `:focus-visible` states;
+  text meets legible **contrast** against the obsidian background (a known watch item for the dim
+  character name, #44); tap targets meet a sane minimum size; motion/feedback respects
+  `prefers-reduced-motion`; and meaningful state changes (HP tier, death saves) are perceivable
+  by more than colour alone.
+- **Privacy & cost:** no accounts, no tracking/telemetry, no backend; static build, plus a
+  one-command Docker self-host.
+
+NFR regressions are release-blocking the same way a failing rules test is.
+
 ### 5.3 Next likely module — Dice roller (illustrative, not committed)
 Passes the Scope-Fit Test (§8): single-player, at-the-table, offline, one-screen, and traces to
 real friction (players already reach for a separate dice app; death saves already roll a d20
