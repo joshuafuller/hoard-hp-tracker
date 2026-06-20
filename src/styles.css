@@ -1175,6 +1175,8 @@ body {
   inset: 0;
   border-radius: 50%;
   overflow: hidden;
+  touch-action: none; /* vertical drag = damage/heal, not page scroll */
+  cursor: ns-resize;
   background: radial-gradient(120% 120% at 50% 28%, var(--obsidian-800) 0%, var(--obsidian-900) 72%);
   /* a bright sphere edge, then a floating concentric gold ring frame
      (gap → hairline gold ring → gap → faint outer ring), per the reference. */
@@ -1262,6 +1264,24 @@ body {
   background: radial-gradient(closest-side, rgba(255, 250, 235, 0.32), transparent);
   filter: blur(3px);
 }
+
+/* Live preview while dragging the orb to damage/heal: a big signed amount over
+   the orb, tinted ruby (damage) or emerald (heal). */
+.vessel__drag {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(2.5rem, 22cqmin, 5rem);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  pointer-events: none;
+}
+.vessel__drag[data-kind="damage"] { color: #ffd9d2; text-shadow: 0 2px 18px rgba(216, 69, 59, 0.9); }
+.vessel__drag[data-kind="heal"] { color: #d6ffe7; text-shadow: 0 2px 18px rgba(79, 180, 119, 0.9); }
 
 /* Centered readout, legible over liquid or void. */
 .vessel__readout {

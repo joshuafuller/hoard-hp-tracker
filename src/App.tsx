@@ -98,6 +98,8 @@ export function App() {
           onEditCurrent={() => { setEditingMax(false); setCoinsOpen(false); setKeypadOpen(true); }}
           onEditMax={() => { setKeypadOpen(false); setCoinsOpen(false); setEditingMax(true); }}
           onEditTemp={() => { setEditingMax(false); setCoinsOpen(false); setKeypadOpen(true); }}
+          onDamage={(n) => { playSfx("damage"); return hp.damage(n); }}
+          onHeal={(n) => { playSfx("heal"); return hp.heal(n); }}
         />
       </div>
       {/* The swappable panel lives in its own fixed-height slot so the
@@ -128,7 +130,6 @@ export function App() {
           />
         )}
       </div>
-      </div>
       <div className="hp-tracker__footer">
         {!keypadOpen && (
           <StepControls
@@ -153,6 +154,7 @@ export function App() {
             return hp.longRest();
           }}
         />
+      </div>
       </div>
 
       {keypadOpen && (
