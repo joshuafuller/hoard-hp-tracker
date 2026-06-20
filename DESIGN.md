@@ -86,6 +86,13 @@ treasure instead of a yellow rectangle.
   - `prefers-reduced-motion` → disable the moving shimmer; keep the static brushed gradient.
 - **Restraint:** shimmer lives on gold *material* surfaces only. Never on turn-critical numerals to
   the point of hurting legibility, and never on body text.
+- **Working reference:** [`docs/design/foil-gold-study.html`](docs/design/foil-gold-study.html) is a
+  CSS prototype of the material (open it / tilt-states rendered side by side). The recipe: a `.foil`
+  surface layering (1) a dense **brushed micro-streak** repeating-linear-gradient, (2) a rich warm
+  **metal base** gradient with strong light→dark for curvature, (3) a faint **iridescent fringe**
+  (`::before`, cool ahead / warm behind), and (4) a crisp bright **specular core** (`::after`) at
+  `--sweep`. At runtime, drive `--sweep` from device tilt (`useGyro`); the static value is the
+  no-sensor fallback. This is the look to reproduce in the app (issue #51).
 
 ## Spacing
 - **Base unit:** 4px.

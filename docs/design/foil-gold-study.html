@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foil gold study</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=DM+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#0B0A08; --gold:#E8B45A; --ivory:#F4ECDD; }
+  *{box-sizing:border-box}
+  body{margin:0;background:
+    radial-gradient(1000px 500px at 50% -10%, rgba(232,180,90,.10), transparent 60%), var(--bg);
+    color:var(--ivory);font-family:"DM Sans",sans-serif;padding:30px}
+  h1{font-family:"Fraunces",serif;font-weight:900;font-size:26px;margin:0 0 4px}
+  .sub{color:#9A8F7A;font-size:13px;margin-bottom:24px}
+  .row{display:flex;gap:34px;align-items:flex-end;flex-wrap:wrap;margin-bottom:30px}
+  .cap{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#9A8F7A;text-align:center;margin-top:10px}
+
+  /* ---------- FOIL MATERIAL ---------- */
+  /* --sweep: position of the specular highlight (0%..100%), driven by tilt at runtime */
+  .foil{
+    --sweep:50%;
+    position:relative;
+    background:
+      /* fine brushed micro-streaks (anisotropic metal grain) — denser + higher contrast */
+      repeating-linear-gradient(116deg, rgba(255,250,225,.30) 0 .75px, rgba(0,0,0,0) .75px 1.5px, rgba(54,34,8,.34) 1.5px 2.25px, rgba(0,0,0,0) 2.25px 3px),
+      /* rich metal base: strong light-to-dark to read as a curved metal surface */
+      linear-gradient(116deg, #4a2f0d 0%, #7d5418 12%, #c08d33 28%, var(--gold) 42%, #fff4d2 50%, var(--gold) 58%, #b07c2a 74%, #6e4715 88%, #3c2608 100%);
+    background-blend-mode: overlay, normal;
+    box-shadow: inset 0 2px 0 rgba(255,244,210,.45), inset 0 -12px 26px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,235,190,.12);
+  }
+  .foil::before{ /* faint iridescent fringe that rides just ahead/behind the core (foil chroma) */
+    content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:linear-gradient(116deg,
+      transparent calc(var(--sweep) - 20%),
+      rgba(180,210,255,.16) calc(var(--sweep) - 8%),
+      rgba(255,255,255,0) var(--sweep),
+      rgba(255,210,150,.18) calc(var(--sweep) + 8%),
+      transparent calc(var(--sweep) + 20%));
+    mix-blend-mode:screen;
+  }
+  .foil::after{ /* the moving specular sweep — crisp bright core (the 'foil flip') */
+    content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:linear-gradient(116deg,
+      transparent calc(var(--sweep) - 16%),
+      rgba(255,252,240,0) calc(var(--sweep) - 9%),
+      rgba(255,253,245,.55) calc(var(--sweep) - 3%),
+      rgba(255,255,255,.98) var(--sweep),
+      rgba(255,253,245,.55) calc(var(--sweep) + 3%),
+      rgba(255,252,240,0) calc(var(--sweep) + 9%),
+      transparent calc(var(--sweep) + 16%));
+    mix-blend-mode:screen;
+  }
+  /* keep button labels readable above the foil + sweep */
+  .btn span, .btn{position:relative}
+  .btn .lbl{position:relative;z-index:4;text-shadow:0 1px 1px rgba(255,240,205,.55)}
+
+  /* orb */
+  .orb{width:200px;height:200px;border-radius:50%;overflow:hidden;position:relative;
+    box-shadow:0 0 0 1px rgba(232,180,90,.30), 0 0 60px rgba(232,180,90,.14), inset 0 0 40px rgba(0,0,0,.55)}
+  .orb .fill{position:absolute;left:0;right:0;bottom:0;height:62%;border-radius:0}
+  .orb .glass{position:absolute;inset:0;border-radius:50%;
+    background:radial-gradient(120px 90px at 36% 26%, rgba(255,255,255,.18), transparent 60%)}
+  .orb .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:3}
+  .orb .num b{font-family:"DM Sans";font-weight:700;font-size:58px;line-height:1;color:#241804;font-variant-numeric:tabular-nums;text-shadow:0 1px 0 rgba(255,240,200,.5)}
+  .orb .num span{font-size:13px;font-weight:700;color:#3a2c12;letter-spacing:.05em}
+
+  /* button */
+  .btn{height:56px;padding:0 26px;border:0;border-radius:14px;font-family:"DM Sans";font-weight:700;font-size:16px;color:#1a1305;overflow:hidden;position:relative}
+  /* coin */
+  .coin{width:88px;height:88px;border-radius:50%;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 16px rgba(0,0,0,.5), inset 0 0 0 2px rgba(255,240,200,.25)}
+  .coin b{position:relative;z-index:3;font-family:"Fraunces",serif;font-weight:900;font-size:30px;color:#3a2606}
+</style>
+</head>
+<body>
+  <h1>Brushed / foil gold — material study</h1>
+  <div class="sub">Three columns = three phone tilts. The bright band is the specular sweep; watch it travel. Goal: reads like a foil trading card, not a flat yellow fill.</div>
+
+  <div class="row">
+    <div>
+      <div class="foil" style="width:280px;height:150px;border-radius:18px"></div>
+      <div class="cap">detail tile · is this brushed metal?</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div>
+      <div class="orb"><div class="fill foil" style="--sweep:24%"></div><div class="glass"></div><div class="num"><b>27</b><span>/ 45 HP</span></div></div>
+      <div class="cap">tilt left</div>
+    </div>
+    <div>
+      <div class="orb"><div class="fill foil" style="--sweep:50%"></div><div class="glass"></div><div class="num"><b>27</b><span>/ 45 HP</span></div></div>
+      <div class="cap">flat</div>
+    </div>
+    <div>
+      <div class="orb"><div class="fill foil" style="--sweep:78%"></div><div class="glass"></div><div class="num"><b>27</b><span>/ 45 HP</span></div></div>
+      <div class="cap">tilt right</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div><button class="btn foil" style="--sweep:30%"><span class="lbl">Distill hoard</span></button><div class="cap">button · tilt</div></div>
+    <div><button class="btn foil" style="--sweep:62%"><span class="lbl">Distill hoard</span></button><div class="cap">button · tilt</div></div>
+    <div><div class="coin foil" style="--sweep:40%"><b>G</b></div><div class="cap">gold coin</div></div>
+    <div><div class="coin foil" style="--sweep:70%"><b>G</b></div><div class="cap">gold coin</div></div>
+  </div>
+</body>
+</html>
