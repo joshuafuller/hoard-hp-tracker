@@ -133,7 +133,8 @@ function useFoilTilt(
     const tick = () => {
       const target = Math.max(-1, Math.min(1, gravity.current.x));
       cur += (target - cur) * 0.14; // smooth out sensor jitter
-      el.style.setProperty("--foil-shift", `${(cur * 55).toFixed(2)}%`);
+      // ±28% moves the specular hotspot across the globe as the phone tilts.
+      el.style.setProperty("--foil-shift", `${(cur * 28).toFixed(2)}%`);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
