@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hoard — Dice tray (Variant B, refined) — all states</title>
+<style>
+:root{
+  --obsidian-900:#0b0a08; --obsidian-800:#100e0a; --obsidian-700:#16130d; --obsidian-600:#1f1a11;
+  --ink-100:#f4ecdd; --ink-200:#e4dac6; --ink-300:#c9bca0; --ink-500:#9a8f7a; --ink-700:#5a5142;
+  --coin-gold:#e8b45a; --emerald:#4fb477; --ruby:#d8453b;
+  --radius-lg:28px; --radius-pill:999px; --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+  --gold-body:radial-gradient(62% 56% at 38% 30%,#fff1c6 0%,#f4c66a 28%,#d49a3f 62%,#9c6a23 100%);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#070605;color:var(--ink-100);font-family:"DM Sans",system-ui,sans-serif;padding:26px 18px 60px}
+h1{font-family:"Fraunces",Georgia,serif;font-weight:600;font-size:1.55rem;margin-bottom:4px}
+.sub{color:var(--ink-500);font-size:.86rem;margin-bottom:22px;max-width:64rem;line-height:1.55}
+.sub b{color:var(--coin-gold);font-weight:600}
+.row{display:flex;gap:30px;flex-wrap:wrap;align-items:flex-start;justify-content:center}
+.col{width:374px}
+.label{font-family:"Fraunces",serif;font-size:1.05rem;color:var(--coin-gold);margin:0 0 2px}
+.tag{font-size:.74rem;color:var(--ink-500);margin-bottom:11px;min-height:2.7em;line-height:1.45}
+
+.phone{position:relative;width:374px;height:740px;border-radius:38px;overflow:hidden;
+  background:var(--obsidian-900);border:1px solid #221d14;box-shadow:0 24px 60px rgba(0,0,0,.6)}
+.app{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:52px 16px 16px}
+.chrome{position:absolute;top:15px;right:14px;display:flex;gap:8px;z-index:2}
+.tok{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:.95rem;color:var(--ink-300);
+  background:var(--obsidian-700);border:1px solid color-mix(in oklab,var(--coin-gold) 22%,var(--obsidian-600))}
+.tok.d20{color:#3a2606;background:var(--gold-body);font-weight:800;font-size:.66rem;font-family:"Fraunces",serif;
+  box-shadow:inset 0 0 0 1.5px rgba(255,244,206,.6),inset 0 -5px 11px rgba(40,24,4,.5),0 4px 10px rgba(0,0,0,.5)}
+.card{width:100%;max-width:344px;flex:1;display:flex;flex-direction:column;align-items:center;gap:13px;
+  padding:24px 18px;background:linear-gradient(180deg,#17140d,#100e0a);border:1px solid #2a2418;border-radius:28px;justify-content:center}
+.name{font-family:"Fraunces",serif;font-size:1.4rem;color:var(--ink-200);opacity:.9}
+.orb{width:172px;height:172px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(60% 54% at 40% 32%,#ffe9b0 0%,#e8b45a 34%,#b9842f 66%,#6e4d1c 100%);
+  box-shadow:inset 0 0 0 2px rgba(255,244,206,.45),inset 0 -15px 28px rgba(40,24,4,.55),0 0 44px color-mix(in oklab,var(--coin-gold) 36%,transparent),0 10px 26px rgba(0,0,0,.55)}
+.orb.down{background:radial-gradient(60% 54% at 40% 32%,#8a8073 0%,#6b6354 40%,#3c372d 75%,#1b180f 100%);box-shadow:inset 0 -15px 28px rgba(0,0,0,.5),0 10px 26px rgba(0,0,0,.55)}
+.orb b{font-weight:800;font-size:3.1rem;color:#2a1c06;font-variant-numeric:tabular-nums}
+.orb.down b{color:#d8cdb8}
+.dimmed .app{filter:saturate(.5) brightness(.4)}
+
+.tray{position:absolute;inset:0;z-index:5}
+.scrim{position:absolute;inset:0;background:rgba(8,7,5,.64)}
+.closex{position:absolute;top:15px;left:15px;z-index:7;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+  background:rgba(20,17,11,.8);border:1px solid #2a2418;color:var(--ink-300);font-size:1.05rem}
+.logbtn{position:absolute;top:16px;right:15px;z-index:7;color:var(--ink-300);font-size:.74rem;display:flex;gap:5px;align-items:center;
+  background:rgba(20,17,11,.7);padding:6px 11px;border-radius:var(--radius-pill);border:1px solid #2a2418}
+.ctx{position:absolute;top:60px;left:0;right:0;text-align:center;z-index:6;font-family:"Fraunces",serif;font-size:1.05rem;color:var(--ink-200)}
+.ctx small{display:block;font-family:"DM Sans";font-size:.72rem;color:var(--ink-500);margin-top:2px;font-weight:600}
+
+.stage{position:absolute;left:0;right:0;top:120px;bottom:208px;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.dice{display:flex;gap:16px}
+.die{width:62px;height:62px;border-radius:15px;display:grid;place-items:center;font-weight:800;font-size:1.65rem;color:#2a1c06;
+  background:var(--gold-body);position:relative;overflow:hidden;transform:rotate(-8deg);
+  box-shadow:inset 0 0 0 1.5px rgba(255,244,206,.65),inset 0 -7px 13px rgba(40,24,4,.5),0 8px 18px rgba(0,0,0,.55)}
+/* brushed-gold foil specular streak (static rep of the sensor sweep) */
+.die::after,.rollbtn::after{content:"";position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;
+  background:linear-gradient(115deg,transparent 38%,rgba(255,252,235,.55) 50%,transparent 62%)}
+.die.kept{box-shadow:inset 0 0 0 1.5px rgba(255,244,206,.65),inset 0 -7px 13px rgba(40,24,4,.5),0 0 26px color-mix(in oklab,var(--coin-gold) 60%,transparent),0 8px 18px rgba(0,0,0,.55)}
+.die.drop{filter:grayscale(.7) brightness(.6);transform:rotate(7deg) scale(.88)}
+.die.drop::before{content:"";position:absolute;left:8%;right:8%;top:48%;height:3px;background:#d8453b;border-radius:2px;transform:rotate(-12deg);z-index:2}
+.die.big{width:78px;height:78px;font-size:2rem;transform:none}
+
+.total{font-family:"Fraunces",serif;font-weight:600;font-size:4.2rem;line-height:1;color:var(--coin-gold);
+  text-shadow:0 0 30px color-mix(in oklab,var(--coin-gold) 42%,transparent)}
+.total.heal{color:var(--emerald);text-shadow:0 0 30px color-mix(in oklab,var(--emerald) 42%,transparent)}
+.expr{font-family:"JetBrains Mono",monospace;font-size:.8rem;color:var(--ink-300)}
+.expr s{color:var(--ink-700)}
+.applyheal{margin-top:4px;display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:var(--radius-pill);
+  background:color-mix(in oklab,var(--emerald) 20%,var(--obsidian-700));border:1px solid color-mix(in oklab,var(--emerald) 50%,transparent);
+  color:#a6ecc5;font-weight:700;font-size:.84rem}
+.applyheal.strong{background:linear-gradient(180deg,#2e7d52,#1f5e3c);color:#eafff3;border-color:transparent;box-shadow:0 6px 16px rgba(0,0,0,.4)}
+.savemark{display:inline-flex;gap:7px;align-items:center;color:#a6ecc5;font-weight:700;font-size:.9rem}
+
+/* death-save pips */
+.pips{display:flex;gap:18px;margin-top:4px}
+.pipset{display:flex;gap:6px;align-items:center}
+.pipset .lab{font-size:.66rem;color:var(--ink-500);margin-right:2px}
+.pip{width:15px;height:15px;border-radius:50%;border:1.5px solid #3a3326}
+.pip.s{border-color:var(--emerald)} .pip.s.on{background:var(--emerald)}
+.pip.f{border-color:var(--ruby)} .pip.f.on{background:var(--ruby)}
+
+/* bottom dock */
+.dock{position:absolute;left:12px;right:12px;bottom:16px;z-index:7;display:flex;flex-direction:column;gap:10px;
+  padding:12px 13px;background:rgba(16,14,10,.82);backdrop-filter:blur(9px);border:1px solid #2a2418;border-radius:22px;box-shadow:0 12px 34px rgba(0,0,0,.5)}
+.chips{display:flex;gap:7px;overflow-x:auto}
+.chip{flex:none;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-family:"Fraunces",serif;font-size:.7rem;
+  color:var(--ink-300);background:var(--obsidian-700);border:1px solid #2a2418}
+.chip.on{color:#3a2606;background:var(--gold-body);border-color:transparent;box-shadow:inset 0 0 0 1.5px rgba(255,244,206,.6),inset 0 -4px 9px rgba(40,24,4,.5)}
+.advseg{display:grid;grid-template-columns:1fr 1fr 1fr;border-radius:var(--radius-pill);background:var(--obsidian-800);border:1px solid #2a2418;overflow:hidden}
+.advseg button{appearance:none;border:0;background:transparent;color:var(--ink-300);font-weight:700;font-size:.8rem;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:1px}
+.advseg button small{font-size:.6rem;font-weight:600;color:var(--ink-500)}
+.advseg .dis.on{background:linear-gradient(180deg,#3a1714,#2a1210);color:#f0a59c}
+.advseg .adv.on{background:linear-gradient(180deg,#3a2c12,#2a2010);color:var(--coin-gold)}
+.advseg .nrm.on{background:var(--obsidian-600);color:var(--ink-100)}
+.dockrow{display:flex;gap:9px;align-items:center}
+.mod{display:flex;align-items:center;gap:7px}
+.mod .pm{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:1.2rem;background:var(--obsidian-700);border:1px solid #2a2418;color:var(--coin-gold)}
+.mod .val{font-weight:800;font-variant-numeric:tabular-nums;min-width:40px;text-align:center}
+.rollbtn{position:relative;overflow:hidden;flex:1;appearance:none;border:0;padding:13px;border-radius:var(--radius-pill);font-weight:800;font-size:1rem;color:#2a1c06;background:var(--gold-body);box-shadow:inset 0 0 0 1.5px rgba(255,244,206,.55),0 8px 18px rgba(0,0,0,.45)}
+.kbtn{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--obsidian-700);border:1px solid #2a2418;color:var(--ink-300)}
+.notation{display:flex;align-items:center;gap:8px;background:var(--obsidian-800);border:1px solid #2a2418;border-radius:14px;padding:10px 13px;color:var(--ink-200);font-family:"JetBrains Mono",monospace;font-size:.84rem}
+.notation .cur{width:1px;height:1.1em;background:var(--coin-gold);animation:bl 1s step-end infinite}
+@keyframes bl{50%{opacity:0}}
+
+/* history sheet */
+.histsheet{position:absolute;left:0;right:0;bottom:0;z-index:8;padding:16px 18px 22px;background:linear-gradient(180deg,#16130d,#100e0a);border:1px solid var(--obsidian-600);border-radius:var(--radius-lg) var(--radius-lg) 0 0;box-shadow:0 -20px 50px rgba(0,0,0,.55)}
+.histsheet h3{font-family:"Fraunces",serif;font-weight:600;font-size:1.05rem;color:var(--ink-200);margin-bottom:10px;display:flex;justify-content:space-between}
+.histsheet h3 span{font-size:.72rem;color:var(--ink-500);font-family:"DM Sans";font-weight:600}
+.h{display:flex;justify-content:space-between;align-items:center;font-family:"JetBrains Mono",monospace;font-size:.78rem;color:var(--ink-500);padding:8px 0;border-top:1px solid #221d14}
+.h b{color:var(--coin-gold);font-weight:700;font-size:.95rem}
+.h .pd{color:var(--ink-300)} .h .pd s{color:var(--ink-700)}
+.notes{list-style:none;margin-top:13px;font-size:.76rem;color:var(--ink-300);line-height:1.6}
+.notes li{padding-left:15px;position:relative;margin-bottom:3px}
+.notes li::before{content:"◆";position:absolute;left:0;color:var(--coin-gold);font-size:.58rem;top:.3em}
+</style>
+</head><body>
+<h1>Dice tray — Variant B (Immersive dock), refined · all build states</h1>
+<p class="sub">The chosen direction, polished and shown in the <b>five states the build needs</b>. Gold carries the static <b>foil specular streak</b> (the sensor sweep at rest). Co-equal <b>Disadvantage · Normal · Advantage</b>. Damage rolls are informational with a manual <b>✚ Apply as heal</b>; <b>Hit Die</b> and <b>death saves</b> are context-aware (auto-offer / auto-mark).</p>
+
+<div class="row">
+
+  <!-- 1. READY -->
+  <div class="col">
+    <div class="label">1 · Ready (just opened)</div>
+    <div class="tag">d20 pre-selected, last modifier remembered. One flick to throw — the zero-typing hero path.</div>
+    <div class="phone dimmed">
+      <div class="app"><div class="chrome"><div class="tok">⛁</div><div class="tok">♪</div><div class="tok">◎</div><div class="tok d20">d20</div></div>
+        <div class="card"><div class="name">Marcus</div><div class="orb"><b>23</b></div></div></div>
+      <div class="tray"><div class="scrim"></div><div class="closex">✕</div><div class="logbtn">⟲ log</div>
+        <div class="stage"><div style="color:var(--ink-500);font-size:.82rem;font-family:'DM Sans'">flick to throw</div></div>
+        <div class="dock">
+          <div class="chips"><span class="chip">d4</span><span class="chip">d6</span><span class="chip">d8</span><span class="chip">d10</span><span class="chip">d12</span><span class="chip on">d20</span><span class="chip">d100</span></div>
+          <div class="advseg"><button class="dis">Disadv<small>keep low</small></button><button class="nrm on">Normal<small>1 die</small></button><button class="adv">Advantage<small>keep high</small></button></div>
+          <div class="dockrow"><div class="mod"><span class="pm">−</span><span class="val">+5</span><span class="pm">+</span></div><button class="rollbtn">Throw · 1d20+5</button><div class="kbtn">⌨</div></div>
+        </div></div>
+    </div>
+  </div>
+
+  <!-- 2. AD-HOC RESULT (advantage) -->
+  <div class="col">
+    <div class="label">2 · Result — advantage attack</div>
+    <div class="tag">Kept die glows, dropped die struck ruby. Giant gold total reads across the table. Apply-as-heal offered (ignore after damage).</div>
+    <div class="phone dimmed">
+      <div class="app"><div class="chrome"><div class="tok">⛁</div><div class="tok">♪</div><div class="tok">◎</div><div class="tok d20">d20</div></div>
+        <div class="card"><div class="name">Marcus</div><div class="orb"><b>23</b></div></div></div>
+      <div class="tray"><div class="scrim"></div><div class="closex">✕</div><div class="logbtn">⟲ log</div>
+        <div class="stage">
+          <div class="dice"><div class="die kept">18</div><div class="die drop">4</div></div>
+          <div class="total">23</div><div class="expr">2d20kh1+5 → 18 ▸ +5 · <s>(4)</s></div>
+          <span class="applyheal">✚ Apply as heal</span>
+        </div>
+        <div class="dock">
+          <div class="chips"><span class="chip">d4</span><span class="chip">d6</span><span class="chip">d8</span><span class="chip">d10</span><span class="chip">d12</span><span class="chip on">d20</span><span class="chip">d100</span></div>
+          <div class="advseg"><button class="dis">Disadv<small>keep low</small></button><button class="nrm">Normal<small>1 die</small></button><button class="adv on">Advantage<small>keep high</small></button></div>
+          <div class="dockrow"><div class="mod"><span class="pm">−</span><span class="val">+5</span><span class="pm">+</span></div><button class="rollbtn">Throw again</button><div class="kbtn">⌨</div></div>
+        </div></div>
+    </div>
+  </div>
+
+  <!-- 3. DEATH SAVE MODE -->
+  <div class="col">
+    <div class="label">3 · Death save (auto, at 0 HP)</div>
+    <div class="tag">Opened from the death panel. Always 1d20 — no chips/adv. The app marks the pip itself (≥10 success). Priya never looks up the rule.</div>
+    <div class="phone dimmed">
+      <div class="app"><div class="chrome"><div class="tok">⛁</div><div class="tok">♪</div><div class="tok">◎</div><div class="tok d20">d20</div></div>
+        <div class="card"><div class="name">Marcus</div><div class="orb down"><b>0</b></div></div></div>
+      <div class="tray"><div class="scrim"></div><div class="closex">✕</div>
+        <div class="ctx">Death save<small>roll a d20</small></div>
+        <div class="stage">
+          <div class="dice"><div class="die big kept">14</div></div>
+          <span class="savemark">✓ Success marked</span>
+          <div class="pips">
+            <div class="pipset"><span class="lab">saves</span><span class="pip s on"></span><span class="pip s"></span><span class="pip s"></span></div>
+            <div class="pipset"><span class="lab">fails</span><span class="pip f"></span><span class="pip f"></span><span class="pip f"></span></div>
+          </div>
+          <div class="expr">1d20 → 14 (≥10 = success)</div>
+        </div>
+        <div class="dock"><div class="dockrow"><button class="rollbtn">Roll death save</button></div></div></div>
+    </div>
+  </div>
+
+  <!-- 4. HIT DIE HEAL MODE -->
+  <div class="col">
+    <div class="label">4 · Hit Die (short rest → heal)</div>
+    <div class="tag">Opened from short rest. The roll + CON is <b>auto-offered as healing</b> (context known). Confirm → HP rises. Emerald total signals "this heals you".</div>
+    <div class="phone dimmed">
+      <div class="app"><div class="chrome"><div class="tok">⛁</div><div class="tok">♪</div><div class="tok">◎</div><div class="tok d20">d20</div></div>
+        <div class="card"><div class="name">Marcus</div><div class="orb"><b>14</b></div></div></div>
+      <div class="tray"><div class="scrim"></div><div class="closex">✕</div>
+        <div class="ctx">Short rest · Hit Die<small>1d8 + CON 2 · 2 dice left</small></div>
+        <div class="stage">
+          <div class="dice"><div class="die big kept">7</div></div>
+          <div class="total heal">+9</div><div class="expr">1d8 → 7 ▸ +2 CON = 9 HP</div>
+          <span class="applyheal strong">✚ Apply 9 healing</span>
+        </div>
+        <div class="dock"><div class="dockrow"><button class="rollbtn">Roll Hit Die</button></div></div></div>
+    </div>
+  </div>
+
+  <!-- 5. HISTORY -->
+  <div class="col">
+    <div class="label">5 · Roll history (⟲ log)</div>
+    <div class="tag">Tap the log: recent rolls newest-first, each notation + per-die + total. Persists for the session. "What did I just roll?" — answered.</div>
+    <div class="phone dimmed">
+      <div class="app"><div class="chrome"><div class="tok">⛁</div><div class="tok">♪</div><div class="tok">◎</div><div class="tok d20">d20</div></div>
+        <div class="card"><div class="name">Marcus</div><div class="orb"><b>23</b></div></div></div>
+      <div class="tray"><div class="scrim"></div><div class="closex">✕</div>
+        <div class="histsheet">
+          <h3>Recent rolls <span>this session · clear</span></h3>
+          <div class="h"><span class="pd">2d20kh1+5</span><span class="pd">18 ▸ +5 <s>(4)</s></span><b>23</b></div>
+          <div class="h"><span class="pd">2d6+3</span><span class="pd">4 · 6 ▸ +3</span><b>13</b></div>
+          <div class="h"><span class="pd">1d20</span><span class="pd">14 · death save</span><b>14</b></div>
+          <div class="h"><span class="pd">1d8 +2</span><span class="pd">7 ▸ +2 · Hit Die</span><b>9</b></div>
+          <div class="h"><span class="pd">4d6kh3</span><span class="pd">6 · 5 · 4 <s>(2)</s></span><b>15</b></div>
+        </div></div>
+    </div>
+  </div>
+
+</div>
+
+<ul class="notes" style="max-width:64rem;margin:24px auto 0">
+  <li><b style="color:var(--coin-gold)">Token:</b> 4th gold d20 in the chrome (matches coin/sound/concentration row). Tap → tray.</li>
+  <li><b style="color:var(--coin-gold)">Foil:</b> the gold dice + Throw button carry the brushed specular streak; at runtime it sweeps with device tilt (reuse useGyro), static fallback on desktop / reduced-motion.</li>
+  <li><b style="color:var(--coin-gold)">Reduced-motion:</b> dice settle instantly (no tumble) — same total + per-die + struck result.</li>
+  <li><b style="color:var(--coin-gold)">Co-equal adv/dis:</b> three equal segments; Advantage lights gold, Disadvantage lights ruby — neither is secondary.</li>
+</ul>
+</body></html>
