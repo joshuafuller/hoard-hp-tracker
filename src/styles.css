@@ -1075,13 +1075,13 @@ body {
    only the glow shows, never an edge. */
 .vessel__aura {
   position: absolute;
-  inset: -30%;
+  inset: -65%; /* extend well beyond the orb so the glow shows on the dark card */
   z-index: -1;
   border-radius: 50%;
-  background: radial-gradient(38% 38% at 40% 38%, var(--accent-glow) 0%, transparent 70%);
-  filter: blur(38px);
-  opacity: 0.6;
-  animation: lv-aura-a 19s ease-in-out infinite;
+  background: radial-gradient(34% 34% at 38% 36%, var(--accent-glow) 0%, transparent 66%);
+  filter: blur(34px);
+  opacity: 0.95;
+  animation: lv-aura-a 16s ease-in-out infinite;
   transition: background var(--dur-flow) ease;
 }
 .vessel__aura::before,
@@ -1102,20 +1102,20 @@ body {
   animation: lv-aura-c 31s ease-in-out infinite;
 }
 @keyframes lv-aura-a {
-  0%   { transform: translate(-4%, 3%) scale(1); }
-  33%  { transform: translate(5%, -3%) scale(1.09); }
-  66%  { transform: translate(-2%, 5%) scale(0.95); }
-  100% { transform: translate(-4%, 3%) scale(1); }
+  0%   { transform: translate(-10%, 8%) scale(1); }
+  33%  { transform: translate(12%, -7%) scale(1.15); }
+  66%  { transform: translate(-6%, 12%) scale(0.9); }
+  100% { transform: translate(-10%, 8%) scale(1); }
 }
 @keyframes lv-aura-b {
-  0%   { transform: translate(4%, -2%) scale(1.06); }
-  50%  { transform: translate(-6%, 4%) scale(0.92); }
-  100% { transform: translate(4%, -2%) scale(1.06); }
+  0%   { transform: translate(10%, -6%) scale(1.1); }
+  50%  { transform: translate(-13%, 9%) scale(0.88); }
+  100% { transform: translate(10%, -6%) scale(1.1); }
 }
 @keyframes lv-aura-c {
-  0%   { transform: translate(-3%, -4%) scale(0.97); }
-  50%  { transform: translate(5%, 3%) scale(1.12); }
-  100% { transform: translate(-3%, -4%) scale(0.97); }
+  0%   { transform: translate(-8%, -9%) scale(0.95); }
+  50%  { transform: translate(11%, 8%) scale(1.18); }
+  100% { transform: translate(-8%, -9%) scale(0.95); }
 }
 @media (prefers-reduced-motion: reduce) {
   .vessel__aura,
