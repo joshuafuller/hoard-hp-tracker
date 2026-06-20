@@ -15,10 +15,11 @@ const hex = (h: string): Rgb => [
   parseInt(h.slice(5, 7), 16) / 255,
 ];
 
-// The --hp-* tokens, as gradient anchors (Molten Hoard: emerald → gold → ruby).
-const GREEN = hex("#4fb477"); // healthy   @ ratio 1.0
-const AMBER = hex("#e8b45a"); // bloodied  @ ratio 0.5 (molten gold)
-const RED = hex("#d8453b"); //  critical  @ ratio 0.25 (and below)
+// Gradient anchors — Molten Hoard is gold-forward: the orb reads as molten gold
+// across the top half of HP and only tides to ruby as you drop low.
+const GREEN = hex("#f4c66a"); // full      @ ratio 1.0 (bright molten gold)
+const AMBER = hex("#e8b45a"); // half      @ ratio 0.5 (gold)
+const RED = hex("#d8453b"); //  critical  @ ratio 0.25 (and below) — ruby when low
 const DOWN = hex("#6b6354"); //  down      @ current <= 0
 
 // ── sRGB ↔ OKLab (Björn Ottosson) ──────────────────────────────────────────

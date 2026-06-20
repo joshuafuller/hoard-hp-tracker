@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { hpColor, type Rgb, rgbCss } from "./hpColor";
 
-// Anchor colors (the --hp-* tokens, Molten Hoard: emerald → gold → ruby), sRGB 0..1.
-const GREEN: Rgb = [0x4f / 255, 0xb4 / 255, 0x77 / 255];
+// Anchor colors (Molten Hoard gold-forward ramp: bright gold → gold → ruby), sRGB 0..1.
+const GREEN: Rgb = [0xf4 / 255, 0xc6 / 255, 0x6a / 255];
 const AMBER: Rgb = [0xe8 / 255, 0xb4 / 255, 0x5a / 255];
 const RED: Rgb = [0xd8 / 255, 0x45 / 255, 0x3b / 255];
 const DOWN: Rgb = [0x6b / 255, 0x63 / 255, 0x54 / 255];

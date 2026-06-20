@@ -62,6 +62,7 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
             <div className="vessel__fallback-fill" style={{ height: `${ratio * 100}%` }} />
           </div>
         )}
+        <div className="vessel__foil" aria-hidden="true" />
         <div className="vessel__rim" aria-hidden="true" />
         <div className="vessel__shine" aria-hidden="true" />
       </div>
