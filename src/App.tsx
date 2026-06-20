@@ -88,6 +88,7 @@ export function App() {
           onToggle={() => hp.setConcentrating(!hp.concentrating)}
         />
       </div>
+      <div className="hp-tracker__card">
       <CharacterName name={hp.name} onSetName={hp.setName} />
       <div className="hp-tracker__stage">
         <LiquidVessel
@@ -126,6 +127,7 @@ export function App() {
             onSetConMod={hp.setConMod}
           />
         )}
+      </div>
       </div>
       <div className="hp-tracker__footer">
         {!keypadOpen && (
