@@ -11,8 +11,8 @@
   width: 44px;
   height: 44px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--obsidian-600);
-  color: var(--ink-300);
+  border: 1px solid color-mix(in oklab, var(--coin-gold) 30%, var(--obsidian-600));
+  color: var(--coin-gold);
   background: var(--obsidian-700);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
