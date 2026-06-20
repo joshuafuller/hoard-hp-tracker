@@ -368,6 +368,8 @@ body {
 }
 
 .step-button {
+  position: relative; /* contains the primary medallion gloss ::after */
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -397,16 +399,37 @@ body {
   border-radius: 50%;
   font-size: 2.5rem;
   font-size: clamp(1.8rem, 6svh, 2.5rem);
-  background: radial-gradient(
-    circle at 50% 28%,
-    color-mix(in oklab, var(--coin-gold) 12%, var(--obsidian-600)),
-    var(--obsidian-900)
-  );
+  /* Polished-gold medallion body (same finish as .coin-token), engraved glyph. */
+  color: #3a2606;
+  background: radial-gradient(62% 56% at 38% 30%, #fff1c6 0%, #f4c66a 28%, #d49a3f 62%, #9c6a23 100%);
   box-shadow:
-    inset 0 0 0 1.5px color-mix(in oklab, var(--coin-gold) 42%, transparent), /* gold bevel rim */
-    inset 0 2px 5px rgba(255, 244, 206, 0.18), /* top gloss */
-    inset 0 -8px 14px rgba(20, 12, 2, 0.5),
-    0 8px 24px rgba(0, 0, 0, 0.45);
+    inset 0 0 0 2px rgba(255, 244, 206, 0.6),   /* bright beveled rim */
+    inset 0 3px 7px rgba(255, 248, 222, 0.6),   /* top gloss */
+    inset 0 -9px 16px rgba(40, 24, 4, 0.5),     /* convex bottom shade */
+    inset 0 0 0 5px rgba(120, 80, 24, 0.22),    /* milled edge */
+    0 6px 16px rgba(0, 0, 0, 0.5);
+  isolation: isolate;
+}
+/* glossy specular highlight (the polish) */
+.step-button[data-variant="primary"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    40% 32% at 36% 24%,
+    rgba(255, 255, 255, 0.85),
+    rgba(255, 246, 214, 0.2) 45%,
+    transparent 70%
+  );
+  mix-blend-mode: screen;
+}
+.step-button[data-variant="primary"] .step-button__glyph {
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1.5px 0 rgba(255, 244, 206, 0.45); /* engraved relief */
 }
 
 .step-button[data-variant="secondary"] {
@@ -416,9 +439,16 @@ body {
   padding: 0 1.25rem;
   border-radius: var(--radius-pill);
   font-size: 1.1rem;
-  color: var(--coin-gold);
-  background: var(--obsidian-700);
-  border-color: color-mix(in oklab, var(--coin-gold) 30%, var(--obsidian-700));
+  /* polished-gold pill, engraved text */
+  color: #3a2606;
+  background: linear-gradient(180deg, #fbe6ac 0%, #f4c66a 38%, #cf9a3f 100%);
+  border-color: rgba(120, 80, 24, 0.5);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 244, 206, 0.55),
+    inset 0 2px 4px rgba(255, 248, 222, 0.55),
+    inset 0 -4px 8px rgba(40, 24, 4, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 1px 0 rgba(255, 244, 206, 0.4);
 }
 
 .step-button:active {
@@ -852,18 +882,17 @@ body {
   min-height: clamp(42px, 6.5svh, 56px);
   padding: 0.6rem 1.4rem;
   border-radius: var(--radius-lg);
-  border: 1px solid color-mix(in oklab, var(--coin-gold) 30%, var(--obsidian-600));
+  border: 1px solid rgba(120, 80, 24, 0.5);
   font-weight: 700;
-  color: var(--ink-100);
-  background: radial-gradient(
-    circle at 50% 22%,
-    color-mix(in oklab, var(--coin-gold) 10%, var(--obsidian-600)),
-    var(--obsidian-900)
-  );
+  /* polished-gold body, engraved dark text */
+  color: #3a2606;
+  background: linear-gradient(180deg, #fbe6ac 0%, #f4c66a 40%, #cf9a3f 100%);
   box-shadow:
-    inset 0 0 0 1px color-mix(in oklab, var(--coin-gold) 28%, transparent),
-    inset 0 2px 4px rgba(255, 244, 206, 0.14),
+    inset 0 0 0 1.5px rgba(255, 244, 206, 0.55),
+    inset 0 2px 5px rgba(255, 248, 222, 0.55),
+    inset 0 -7px 14px rgba(40, 24, 4, 0.4),
     0 8px 22px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 1px 0 rgba(255, 244, 206, 0.4);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
@@ -897,10 +926,10 @@ body {
 
 .rest-controls__sub {
   font-size: 0.66rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ink-500);
+  color: rgba(58, 38, 6, 0.72); /* engraved bronze on the gold body */
 }
 
 /* The confirm step takes the Long Rest button's place: a prompt flanked by a
