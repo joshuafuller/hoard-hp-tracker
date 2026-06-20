@@ -5,27 +5,33 @@ import { glowCss, hpColor, rgbCss } from "./hpColor";
 import { LiquidRenderer } from "./liquid/renderer";
 import { useGyro } from "./liquid/useGyro";
 import { useLiquidEngine } from "./liquid/useLiquidEngine";
+import { type DragApply, dragAmount, isTap } from "./liquid/dragInput";
 
 /** Liquid Obsidian centerpiece: HP as a real fluid (PBF sim) in a glass orb. */
 
 // The surface tint ships a darker "deep" tone so the fluid shades from surface
 // to depth. The surface colour itself is a continuous function of HP (hpColor).
 const darken = (c: [number, number, number], f = 0.42): [number, number, number] => [c[0] * f, c[1] * f, c[2] * f];
-// --hp-temp #7dd3fc as 0..1 rgb
-const TEMP_RGB: [number, number, number] = [0.49, 0.827, 0.988];
+// --hp-temp #5b8fd9 (Molten Hoard sapphire ward) as 0..1 rgb — keep in sync with the CSS token.
+const TEMP_RGB: [number, number, number] = [0.357, 0.561, 0.851];
 
 export interface LiquidVesselProps extends HpState {
   onEditCurrent?: () => void;
   onEditMax?: () => void;
   onEditTemp?: () => void;
+  /** Orb-drag-down: apply this much damage. */
+  onDamage?: (amount: number) => void;
+  /** Orb-drag-up: apply this much healing. */
+  onHeal?: (amount: number) => void;
 }
 
-export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onEditTemp }: LiquidVesselProps) {
+export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onEditTemp, onDamage, onHeal }: LiquidVesselProps) {
   const ratio = max > 0 ? Math.max(0, Math.min(1, current / max)) : 0;
   const tier = tierFor(current, max);
   const flash = useChangeFlash(current + temp);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const foilRef = useRef<HTMLDivElement | null>(null);
   const { gravity } = useGyro();
 
   // Use the WebGL fluid only where it can actually run: WebGL2 present, motion
@@ -33,6 +39,12 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
   const [webglOk, setWebglOk] = useState(() => LiquidRenderer.isSupported());
   const reducedMotion = useReducedMotion();
   const active = webglOk && !reducedMotion;
+
+  // Brushed-gold foil sweep tied to the device gyro: the specular highlight
+  // tracks the phone's left-right tilt (gravity.x), like light raking across a
+  // foil card. No sensor (desktop) → gravity.x stays 0 → the highlight rests
+  // centered (no fake timed shimmer). Disabled under reduced motion.
+  useFoilTilt(foilRef, gravity, reducedMotion);
 
   const color = hpColor(current, max);
   // Drive the CSS accent (numerals, aura, glow) from the same continuous colour
@@ -51,10 +63,65 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
     onUnsupported: () => setWebglOk(false),
   });
 
+  // Orb-as-input: a vertical drag applies damage (down) / heal (up), scaled to
+  // the orb height. A real drag suppresses the trailing click so it can't also
+  // open the keypad; taps fall through to the value buttons (current/max/temp).
+  const [drag, setDrag] = useState<DragApply | null>(null);
+  const dragRef = useRef<{ startY: number; orbPx: number; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
+
+  function onOrbPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.button > 0) return;
+    const orb = e.currentTarget;
+    const orbPx = orb.clientHeight || orb.getBoundingClientRect().height;
+    dragRef.current = { startY: e.clientY, orbPx, moved: false };
+    orb.setPointerCapture?.(e.pointerId);
+  }
+  function onOrbPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const st = dragRef.current;
+    if (!st) return;
+    const dy = e.clientY - st.startY;
+    if (!st.moved && isTap(dy)) return;
+    st.moved = true;
+    setDrag(dragAmount(dy, st.orbPx, max));
+  }
+  function onOrbPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    const st = dragRef.current;
+    if (!st) return;
+    dragRef.current = null;
+    setDrag(null);
+    const dy = e.clientY - st.startY;
+    if (st.moved && !isTap(dy)) {
+      const { kind, amount } = dragAmount(dy, st.orbPx, max);
+      if (amount > 0) {
+        if (kind === "damage") onDamage?.(amount);
+        else onHeal?.(amount);
+        suppressClick.current = true;
+      }
+    }
+  }
+  function onOrbClickCapture(e: React.MouseEvent<HTMLDivElement>) {
+    if (suppressClick.current) {
+      suppressClick.current = false;
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  }
+
   return (
     <div className="vessel" data-tier={tier} data-flash={flash ?? undefined} style={accentStyle}>
       <div className="vessel__aura" aria-hidden="true" />
-      <div className="vessel__orb" data-testid="hp-bar" data-tier={tier}>
+      <div
+        className="vessel__orb"
+        data-testid="hp-bar"
+        data-tier={tier}
+        data-dragging={drag ? "" : undefined}
+        onPointerDown={onOrbPointerDown}
+        onPointerMove={onOrbPointerMove}
+        onPointerUp={onOrbPointerUp}
+        onPointerCancel={onOrbPointerUp}
+        onClickCapture={onOrbClickCapture}
+      >
         {active ? (
           <canvas ref={canvasRef} className="vessel__canvas" aria-hidden="true" />
         ) : (
@@ -62,8 +129,15 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
             <div className="vessel__fallback-fill" style={{ height: `${ratio * 100}%` }} />
           </div>
         )}
+        <div className="vessel__foil" aria-hidden="true" ref={foilRef} />
         <div className="vessel__rim" aria-hidden="true" />
         <div className="vessel__shine" aria-hidden="true" />
+        {drag && drag.amount > 0 && (
+          <div className="vessel__drag" data-kind={drag.kind} aria-hidden="true">
+            {drag.kind === "damage" ? "−" : "+"}
+            {drag.amount}
+          </div>
+        )}
       </div>
 
       <div className="vessel__readout">
@@ -100,6 +174,38 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
       </div>
     </div>
   );
+}
+
+/**
+ * Drive the foil specular sweep from the device gyro. Each frame, read the live
+ * left-right tilt (gravity.x ∈ [-1,1]) and write it (smoothed) to the foil
+ * element's `--foil-shift` CSS var, which positions the highlight. Genuine
+ * sensor input — not a timed loop. Rests centered when there's no sensor.
+ */
+function useFoilTilt(
+  ref: React.RefObject<HTMLDivElement | null>,
+  gravity: React.MutableRefObject<{ x: number; y: number }>,
+  reducedMotion: boolean,
+) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (reducedMotion || typeof requestAnimationFrame !== "function") {
+      el.style.setProperty("--foil-shift", "0%");
+      return;
+    }
+    let raf = 0;
+    let cur = 0;
+    const tick = () => {
+      const target = Math.max(-1, Math.min(1, gravity.current.x));
+      cur += (target - cur) * 0.14; // smooth out sensor jitter
+      // ±28% moves the specular hotspot across the globe as the phone tilts.
+      el.style.setProperty("--foil-shift", `${(cur * 28).toFixed(2)}%`);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [ref, gravity, reducedMotion]);
 }
 
 /** Live `prefers-reduced-motion` — reacts if the user toggles it while mounted. */

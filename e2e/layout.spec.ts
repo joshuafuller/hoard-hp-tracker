@@ -11,7 +11,7 @@
  *     inject a synthetic inset via CSS variable and verify the layout still
  *     respects it).
  *  2. The liquid-orb (.vessel) top position does not jump when HP changes
- *     (tapping −5 must not re-centre the orb).
+ *     (applying damage must not re-centre the orb).
  *  3. The quick-entry keypad opens on tapping the HP number and renders keys
  *     large enough to tap (≥ 80 px wide).
  */
@@ -51,8 +51,12 @@ test.describe("mobile layout", () => {
     const boxBefore = await vessel.boundingBox();
     expect(boxBefore, "vessel must be visible").not.toBeNull();
 
-    // Apply 5 damage via the secondary step button.
-    await page.getByLabel("Damage 5").click();
+    // Apply damage via the orb→keypad path (the ± steppers were removed in
+    // favour of orb-drag; the keypad is the deterministic way to drive a change).
+    await page.getByLabel("Edit current HP").click();
+    const kp = page.getByRole("dialog");
+    await kp.getByRole("button", { name: "5", exact: true }).click();
+    await kp.getByRole("button", { name: /^damage/i }).click();
 
     // Wait for the HP display to reflect the change (the undo pill text
     // confirms the store has committed) before re-measuring.

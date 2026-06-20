@@ -18,7 +18,6 @@ import { HpValueEditor } from "./ui/HpValueEditor";
 import { LiquidVessel } from "./ui/LiquidVessel";
 import { RestControls } from "./ui/RestControls";
 import { SoundToggle } from "./ui/SoundToggle";
-import { StepControls } from "./ui/StepControls";
 import { UndoPill } from "./ui/UndoPill";
 import { CoinButton } from "./ui/CoinButton";
 import { CoinSheet } from "./ui/CoinSheet";
@@ -88,6 +87,7 @@ export function App() {
           onToggle={() => hp.setConcentrating(!hp.concentrating)}
         />
       </div>
+      <div className="hp-tracker__card">
       <CharacterName name={hp.name} onSetName={hp.setName} />
       <div className="hp-tracker__stage">
         <LiquidVessel
@@ -97,6 +97,8 @@ export function App() {
           onEditCurrent={() => { setEditingMax(false); setCoinsOpen(false); setKeypadOpen(true); }}
           onEditMax={() => { setKeypadOpen(false); setCoinsOpen(false); setEditingMax(true); }}
           onEditTemp={() => { setEditingMax(false); setCoinsOpen(false); setKeypadOpen(true); }}
+          onDamage={(n) => { playSfx("damage"); return hp.damage(n); }}
+          onHeal={(n) => { playSfx("heal"); return hp.heal(n); }}
         />
       </div>
       {/* The swappable panel lives in its own fixed-height slot so the
@@ -128,18 +130,8 @@ export function App() {
         )}
       </div>
       <div className="hp-tracker__footer">
-        {!keypadOpen && (
-          <StepControls
-            onDamage={(n) => {
-              playSfx("damage");
-              return hp.damage(n);
-            }}
-            onHeal={(n) => {
-              playSfx("heal");
-              return hp.heal(n);
-            }}
-          />
-        )}
+        {/* Damage/heal is the orb itself now: drag down/up, or tap to open the
+            keypad (the desktop click path). Only rests live down here. */}
         <RestControls
           hitDiceAvailable={hp.hitDiceAvailable}
           onShortRest={() => {
@@ -151,6 +143,7 @@ export function App() {
             return hp.longRest();
           }}
         />
+      </div>
       </div>
 
       {keypadOpen && (

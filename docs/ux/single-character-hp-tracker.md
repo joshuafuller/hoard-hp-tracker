@@ -1,5 +1,10 @@
 # UX Discovery — Single-Character HP Tracker
 
+> **Note (2026-06-19):** This doc scoped the HP tool specifically. The product's overall vision
+> and scope are now governed by the [Product Requirements Document](../PRD.md), which reframes
+> Hoard as a single player's at-the-table utility belt (HP, coins, dice-next). Where the two
+> differ on product scope, the PRD takes precedence.
+
 **Status:** Draft for review
 **Scope:** the shipped single-character HP tracker
 **Last updated:** 2026-06-14
