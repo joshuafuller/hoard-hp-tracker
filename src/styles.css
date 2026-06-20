@@ -1069,21 +1069,59 @@ body {
 .vessel[data-tier="critical"] { --accent-glow: color-mix(in oklab, var(--hp-critical) 60%, transparent); }
 .vessel[data-tier="down"]     { --accent-glow: color-mix(in oklab, var(--hp-down) 45%, transparent); }
 
-/* Light-bending aura behind the orb. */
+/* Living aura behind the orb: three soft, circular blobs of the tier glow that
+   drift and breathe at coprime tempos. No square box, no rotation — the motion
+   reads as organic light, not a spinning shape. All heavily blurred + round so
+   only the glow shows, never an edge. */
 .vessel__aura {
   position: absolute;
-  inset: -22%;
+  inset: -30%;
   z-index: -1;
-  background:
-    radial-gradient(45% 45% at 50% 52%, var(--accent-glow) 0%, transparent 70%),
-    conic-gradient(from 0deg, var(--accent-glow), transparent 30%, var(--accent-glow) 60%, transparent 90%, var(--accent-glow));
-  filter: blur(34px);
+  border-radius: 50%;
+  background: radial-gradient(38% 38% at 40% 38%, var(--accent-glow) 0%, transparent 70%);
+  filter: blur(38px);
   opacity: 0.6;
-  animation: lv-aura 14s ease-in-out infinite, lv-spin 32s linear infinite;
+  animation: lv-aura-a 19s ease-in-out infinite;
   transition: background var(--dur-flow) ease;
 }
-@keyframes lv-aura { 0%,100% { opacity: 0.45; } 50% { opacity: 0.7; } }
-@keyframes lv-spin { to { transform: rotate(360deg); } }
+.vessel__aura::before,
+.vessel__aura::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+.vessel__aura::before {
+  background: radial-gradient(32% 32% at 62% 58%, var(--accent-glow) 0%, transparent 72%);
+  opacity: 0.85;
+  animation: lv-aura-b 23s ease-in-out infinite;
+}
+.vessel__aura::after {
+  background: radial-gradient(30% 30% at 50% 66%, var(--accent-glow) 0%, transparent 74%);
+  opacity: 0.7;
+  animation: lv-aura-c 31s ease-in-out infinite;
+}
+@keyframes lv-aura-a {
+  0%   { transform: translate(-4%, 3%) scale(1); }
+  33%  { transform: translate(5%, -3%) scale(1.09); }
+  66%  { transform: translate(-2%, 5%) scale(0.95); }
+  100% { transform: translate(-4%, 3%) scale(1); }
+}
+@keyframes lv-aura-b {
+  0%   { transform: translate(4%, -2%) scale(1.06); }
+  50%  { transform: translate(-6%, 4%) scale(0.92); }
+  100% { transform: translate(4%, -2%) scale(1.06); }
+}
+@keyframes lv-aura-c {
+  0%   { transform: translate(-3%, -4%) scale(0.97); }
+  50%  { transform: translate(5%, 3%) scale(1.12); }
+  100% { transform: translate(-3%, -4%) scale(0.97); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vessel__aura,
+  .vessel__aura::before,
+  .vessel__aura::after { animation: none; }
+}
 
 /* The circular glass orb that holds the fluid. The WebGL canvas (or the static
    fallback) fills it; the rim + shine sit on top as the glass shell. */
