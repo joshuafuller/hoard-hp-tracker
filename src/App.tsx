@@ -1,6 +1,7 @@
 import "./styles.css";
 import "./App.css";
 import "./sound/sound.css";
+import "./ui/dice/dice.css";
 import { useEffect, useRef, useState } from "react";
 import { playSfx } from "./sound/sfx";
 import { useHp } from "./store/useHp";
@@ -21,6 +22,8 @@ import { SoundToggle } from "./ui/SoundToggle";
 import { UndoPill } from "./ui/UndoPill";
 import { CoinButton } from "./ui/CoinButton";
 import { CoinSheet } from "./ui/CoinSheet";
+import { DiceToken } from "./ui/dice/DiceToken";
+import { DiceTray } from "./ui/dice/DiceTray";
 
 /**
  * The composed HP Tracker: reactive state from `useHp` flows into the
@@ -36,6 +39,7 @@ export function App() {
   const [keypadOpen, setKeypadOpen] = useState(false);
   const coins = useCoins();
   const [coinsOpen, setCoinsOpen] = useState(false);
+  const [diceOpen, setDiceOpen] = useState(false);
 
   // The panel slot is a shared scroll container for Hit Dice and Death Saves.
   // Reset its scroll whenever the two swap, so the incoming panel starts at the
@@ -81,6 +85,7 @@ export function App() {
     <main className="hp-tracker" data-tier={tierFor(current, max)} style={accentStyle}>
       <div className="hp-tracker__chrome">
         <CoinButton onOpen={() => { setKeypadOpen(false); setEditingMax(false); setCoinsOpen(true); }} />
+        <DiceToken onOpen={() => { setKeypadOpen(false); setEditingMax(false); setCoinsOpen(false); setDiceOpen(true); }} />
         <SoundToggle />
         <ConcentrationToggle
           concentrating={hp.concentrating}
@@ -181,6 +186,14 @@ export function App() {
           onClose={() => { coins.dismissDistill(); setCoinsOpen(false); }}
         />
       )}
+
+      {/* Always mounted so it's inert-when-closed (display:none) rather than
+          remounting — keeps the lazy-loaded 3D engine warm between opens. */}
+      <DiceTray
+        open={diceOpen}
+        onClose={() => setDiceOpen(false)}
+        onApplyHeal={(n) => { playSfx("heal"); setDiceOpen(false); return hp.heal(n); }}
+      />
 
       {hp.lastChange && (
         <UndoPill
