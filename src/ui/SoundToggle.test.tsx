@@ -32,6 +32,14 @@ describe("SoundToggle", () => {
     expect(button()).toHaveAttribute("aria-pressed", "false");
   });
 
+  it("shows the speaker icon when enabled and the muted icon when off", async () => {
+    render(<SoundToggle />);
+    const icon = () => button().querySelector("svg");
+    expect(icon()).toHaveAttribute("data-icon", "speaker");
+    await userEvent.click(button());
+    expect(icon()).toHaveAttribute("data-icon", "speaker-off");
+  });
+
   it("flips aria-pressed and persists the muted flag on click", async () => {
     render(<SoundToggle />);
     expect(button()).toHaveAttribute("aria-pressed", "true");
