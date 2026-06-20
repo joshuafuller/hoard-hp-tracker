@@ -1178,7 +1178,10 @@ body {
   content: "";
   position: absolute;
   inset: -45%;
-  /* the travelling specular sweep — the foil-card flip */
+  /* the specular sweep — the foil-card flip. Its position is driven by the
+     device gyro via the --foil-shift custom property (set per-frame in JS from
+     the phone's left-right tilt), NOT a timed animation. Rests centered (0%)
+     when there's no sensor. */
   background: linear-gradient(
     115deg,
     transparent 38%,
@@ -1188,15 +1191,7 @@ body {
     transparent 62%
   );
   mix-blend-mode: screen;
-  animation: lv-foil 5s ease-in-out infinite;
-}
-@keyframes lv-foil {
-  0%   { transform: translateX(-46%) rotate(0.001deg); }
-  50%  { transform: translateX(46%) rotate(0.001deg); }
-  100% { transform: translateX(-46%) rotate(0.001deg); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .vessel__foil::after { animation: none; opacity: 0.4; }
+  transform: translateX(var(--foil-shift, 0%));
 }
 
 /* Milled-gold rim — an ornamental coin's edge framing the orb (treasure flourish).
