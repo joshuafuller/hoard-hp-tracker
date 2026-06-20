@@ -59,6 +59,34 @@ Dark-first. Hex values are the source of truth; mirror them as CSS custom proper
   (use ivory for small text, reserve gold for accents/large numerals). Ties to the dim
   character-name contrast item (#44).
 
+## Signature treatment — Brushed gold (sensor-driven shimmer)
+**Non-negotiable for this direction:** gold must read as **brushed metal**, never a flat fill.
+Brushed metal is *defined* by how it throws light from different angles, so we simulate real
+metal by driving the highlight with the **device orientation sensor** — tilt the phone and the
+gold shimmers like a real coin catching candlelight. This is what makes "Molten Hoard" feel like
+treasure instead of a yellow rectangle.
+
+- **Reference (the bar to hit):** premium **foil / holographic trading cards** (Pokémon, MTG
+  foils). Tilt the card, the sheen sweeps across it. We want that *exact* tilt-to-shimmer
+  behaviour on Hoard's gold — a tactile "this is a collectible object" feel, not a flat UI color.
+- **Material:** anisotropic gold — fine directional micro-streaks (a repeating low-contrast linear
+  gradient) plus a brighter **specular highlight band** (the "foil sweep") running across the
+  surface; a restrained warm chroma shift along the band sells the foil look without going rainbow.
+- **Sensor link:** the highlight band's position/angle tracks device tilt via
+  `DeviceOrientationEvent` (reuse the existing gyro infra in `src/ui/liquid/useGyro.ts`). Tilt =
+  the band sweeps = shimmer. The orb's molten gold, primary (gold) buttons, the gold coin row, and
+  large gold numerals all share one tilt source so they shimmer coherently.
+- **Performance:** drive only `background-position`/gradient angle (GPU-cheap); throttle sensor to
+  ~30–60fps; never reflow. Must hold 60fps on a mid-range phone.
+- **Graceful degradation (required):**
+  - No sensor / desktop / permission denied → a **static brushed-gold gradient** (still
+    anisotropic, still looks like metal), with an optional slow time-based shimmer.
+  - **iOS:** `DeviceOrientationEvent.requestPermission()` needs a user gesture (Safari 13+); hook
+    into the same permission moment the liquid orb already uses. No permission → static fallback.
+  - `prefers-reduced-motion` → disable the moving shimmer; keep the static brushed gradient.
+- **Restraint:** shimmer lives on gold *material* surfaces only. Never on turn-critical numerals to
+  the point of hurting legibility, and never on body text.
+
 ## Spacing
 - **Base unit:** 4px.
 - **Density:** comfortable, biased to large tap targets over information density.
@@ -91,3 +119,4 @@ radius on everything, no gradient-button-as-default, no generic SaaS hero. Gold 
 |------|----------|-----------|
 | 2026-06-19 | Initial design system: **Molten Hoard** | `/design-consultation`. Audience confirmed dark/glanceable/tactile/fast; user chose a fresh direction over extending the shipped "Liquid Obsidian" look. Gold-on-warm-black owns the product's name and the premium-game-object feel while staying glanceable in dim rooms. |
 | 2026-06-19 | Body/numeral font = **DM Sans** (not Geist) | DM Sans is freely available and self-hostable as woff2, satisfying the offline-PWA font requirement (#45) with the same clean feel. |
+| 2026-06-19 | Gold = **sensor-driven brushed/foil shimmer**, not flat | Per user: gold only "works" if it reads as brushed metal that shimmers like a foil/holo trading card when the phone tilts. Drive the specular sweep from the device-orientation sensor (reuse `useGyro`), with a static brushed-gradient fallback when no sensor / reduced-motion. |
