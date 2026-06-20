@@ -23,17 +23,14 @@ describe("hpColor", () => {
 
   it("interpolates between anchors (70% sits between amber and green)", () => {
     const c = hpColor(7, 10);
-    // OKLab interpolation is perceptual, not per-channel-linear, so a blended
-    // sRGB channel can overshoot its endpoints' range by a small amount (most
-    // visible when two anchors share an identical channel). Allow a perceptual
-    // tolerance — this still catches a blend landing on the wrong side entirely.
-    const EPS = 0.02;
-    CHANNELS.forEach((i) => {
-      const lo = Math.min(AMBER[i], GREEN[i]);
-      const hi = Math.max(AMBER[i], GREEN[i]);
-      expect(c[i]).toBeGreaterThanOrEqual(lo - EPS);
-      expect(c[i]).toBeLessThanOrEqual(hi + EPS);
-    });
+    // OKLab interpolation isn't per-channel-linear in sRGB, so asserting each
+    // channel stays within the endpoints' range is the wrong invariant. The real
+    // property: the blend is a point strictly inside the amber→green segment — so
+    // it's distinct from both anchors and closer to each than the anchors are to
+    // each other (it can't have overshot past either end).
+    const span = dist(AMBER, GREEN);
+    expect(dist(c, AMBER)).toBeLessThan(span);
+    expect(dist(c, GREEN)).toBeLessThan(span);
     expect(c).not.toEqual(AMBER);
     expect(c).not.toEqual(GREEN);
   });

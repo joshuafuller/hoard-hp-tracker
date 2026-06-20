@@ -11,8 +11,8 @@ import { useLiquidEngine } from "./liquid/useLiquidEngine";
 // The surface tint ships a darker "deep" tone so the fluid shades from surface
 // to depth. The surface colour itself is a continuous function of HP (hpColor).
 const darken = (c: [number, number, number], f = 0.42): [number, number, number] => [c[0] * f, c[1] * f, c[2] * f];
-// --hp-temp #7dd3fc as 0..1 rgb
-const TEMP_RGB: [number, number, number] = [0.49, 0.827, 0.988];
+// --hp-temp #5b8fd9 (Molten Hoard sapphire ward) as 0..1 rgb — keep in sync with the CSS token.
+const TEMP_RGB: [number, number, number] = [0.357, 0.561, 0.851];
 
 export interface LiquidVesselProps extends HpState {
   onEditCurrent?: () => void;

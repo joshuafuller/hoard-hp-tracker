@@ -11,14 +11,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <!-- Molten Hoard fonts. NOTE: CDN for the beta preview only; self-host woff2
-         for the offline PWA before production (see issues #45 / #51). -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=DM+Sans:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
+    <!-- Molten Hoard fonts are self-hosted (see @font-face in src/styles.css) so
+         the PWA stays fully offline — no third-party font requests. -->
     <title>Hoard HP Tracker</title>
   </head>
   <body>

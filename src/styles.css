@@ -1,12 +1,28 @@
 /*
- * Obsidian — the Hoard design language.
+ * Molten Hoard — the Hoard design language.
  *
- * Near-black canvas, luminous accents, a soft radial glow tinted by the current
- * HP tier. Premium, quiet, focused. This file is the taste-setting reference for
- * every future Hoard tool: tokens up top, then a thin layer of component styling
- * keyed off the data-attributes the React components emit (data-tier, data-flash,
- * data-variant). Motion is opt-in and fully disabled under prefers-reduced-motion.
+ * Warm volcanic-black canvas, gold + gem accents, a soft radial glow tinted by
+ * the current HP tier. Premium, quiet, focused. This file is the taste-setting
+ * reference for every Hoard tool: tokens up top, then a thin layer of component
+ * styling keyed off the data-attributes the React components emit (data-tier,
+ * data-flash, data-variant). Motion is opt-in and disabled under prefers-reduced-motion.
  */
+
+/* Self-hosted variable fonts (offline-safe; Vite fingerprints + Workbox precaches them). */
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("./fonts/dm-sans.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("./fonts/fraunces.woff2") format("woff2");
+}
 
 :root {
   /* Canvas — Molten Hoard: warm volcanic near-blacks for depth without hard edges. */
