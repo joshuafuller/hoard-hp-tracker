@@ -1176,9 +1176,16 @@ body {
   border-radius: 50%;
   overflow: hidden;
   background: radial-gradient(120% 120% at 50% 28%, var(--obsidian-800) 0%, var(--obsidian-900) 72%);
+  /* a bright sphere edge, then a floating concentric gold ring frame
+     (gap → hairline gold ring → gap → faint outer ring), per the reference. */
   box-shadow:
-    inset 0 14px 36px rgba(0, 0, 0, 0.6),
-    0 22px 48px rgba(0, 0, 0, 0.55);
+    inset 0 0 0 1.5px rgba(255, 244, 206, 0.35),
+    inset 0 14px 40px rgba(30, 18, 4, 0.45),
+    0 0 0 7px var(--obsidian-900),
+    0 0 0 8px color-mix(in oklab, var(--coin-gold) 60%, transparent),
+    0 0 0 16px var(--obsidian-900),
+    0 0 0 17px color-mix(in oklab, var(--coin-gold) 20%, transparent),
+    0 24px 50px rgba(0, 0, 0, 0.55);
 }
 .vessel__canvas { width: 100%; height: 100%; display: block; }
 
@@ -1200,25 +1207,18 @@ body {
   border-radius: 50%;
   pointer-events: none;
   z-index: 1;
-  /* Sphere body: (1) brushed-metal micro-streaks for the foil grain, then
-     (2) a spherical shade — bright near the top-left, falling to a dark
-     terminator at the lower edges — so the orb reads as a 3D gold ball, not a
-     flat disc. */
-  background:
-    repeating-linear-gradient(
-      118deg,
-      rgba(255, 248, 222, 0.11) 0 1px,
-      rgba(46, 30, 8, 0.14) 1px 2.5px
-    ),
-    radial-gradient(
-      75% 75% at 34% 30%,
-      rgba(255, 250, 228, 0.5) 0%,
-      rgba(255, 240, 200, 0.12) 26%,
-      rgba(70, 46, 14, 0) 52%,
-      rgba(26, 16, 4, 0.62) 100%
-    );
+  /* Smooth spherical shade — bright near the top-left falling to a soft dark
+     terminator at the lower edge, so the orb reads as a polished 3D gold ball.
+     No grain: the Claude Design reference is glass-smooth, not brushed. */
+  background: radial-gradient(
+    72% 72% at 36% 28%,
+    rgba(255, 251, 232, 0.5) 0%,
+    rgba(255, 242, 206, 0.1) 32%,
+    rgba(70, 46, 14, 0) 56%,
+    rgba(24, 15, 3, 0.5) 100%
+  );
   mix-blend-mode: overlay;
-  opacity: 0.95;
+  opacity: 0.92;
 }
 .vessel__foil::after {
   content: "";
@@ -1230,41 +1230,25 @@ body {
      per-frame from the phone's left-right tilt), so the glint slides across the
      globe as you tilt it — like light on a foil card. Centered when no sensor. */
   background: radial-gradient(
-    34% 40% at calc(38% + var(--foil-shift, 0%)) 30%,
-    rgba(255, 255, 255, 0.92) 0%,
-    rgba(255, 246, 214, 0.42) 26%,
-    rgba(255, 240, 200, 0) 58%
+    46% 48% at calc(38% + var(--foil-shift, 0%)) 28%,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(255, 248, 220, 0.3) 32%,
+    rgba(255, 240, 200, 0) 62%
   );
   mix-blend-mode: screen;
 }
 
-/* Milled-gold rim — an ornamental coin's edge framing the orb (treasure flourish).
-   A thick brushed-gold band plus a fine inner gold line = a crafted double ring. */
+/* A soft top gloss on the glass sphere (smooth, not a milled band — the ring
+   frame now lives on .vessel__orb's box-shadow). */
 .vessel__rim {
   position: absolute;
   inset: 0;
   border-radius: 50%;
   pointer-events: none;
   z-index: 2;
-  background: conic-gradient(
-    from 218deg,
-    #fff6da, #f4c66a 10%, #8a5e22 26%, #ffe6a8 42%, #6e4715 60%, #f4c66a 78%, #5e3c12 90%, #fff6da
-  );
-  -webkit-mask: radial-gradient(circle, transparent calc(100% - 11px), #000 calc(100% - 10px));
-          mask: radial-gradient(circle, transparent calc(100% - 11px), #000 calc(100% - 10px));
   box-shadow:
-    inset 0 0 18px rgba(0, 0, 0, 0.6),
-    inset 0 0 0 1px rgba(255, 244, 206, 0.5),
-    0 0 0 1px rgba(255, 240, 200, 0.25),
-    0 0 34px rgba(232, 180, 90, 0.4);
-}
-/* fine inner gold hairline, just inside the milled band */
-.vessel__rim::after {
-  content: "";
-  position: absolute;
-  inset: 12px;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1px rgba(255, 232, 175, 0.35);
+    inset 0 3px 8px rgba(255, 248, 222, 0.28),
+    inset 0 -10px 22px rgba(24, 15, 3, 0.35);
 }
 .vessel__shine {
   position: absolute;
@@ -1296,10 +1280,19 @@ body {
   font-weight: 800;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
-  color: var(--ink-100);
-  text-shadow: 0 2px 12px rgba(0,0,0,0.7), 0 0 30px var(--accent-glow);
+  /* engraved dark into the gold (per the reference); relief = light top + soft shade */
+  color: #2a1c06;
+  text-shadow: 0 1.5px 0 rgba(255, 244, 206, 0.4), 0 2px 10px rgba(20, 12, 2, 0.25);
 }
-.vessel__max { font-size: clamp(0.9rem, 11cqmin, 1.8rem); font-weight: 600; color: var(--ink-300); text-shadow: 0 2px 8px rgba(0,0,0,0.7); font-variant-numeric: tabular-nums; }
+.vessel__max { font-size: clamp(0.9rem, 11cqmin, 1.8rem); font-weight: 700; color: rgba(42, 28, 6, 0.66); text-shadow: 0 1px 0 rgba(255, 244, 206, 0.35); font-variant-numeric: tabular-nums; }
+/* On the low-HP ruby/down states the body goes dark — flip numerals back to light. */
+.vessel[data-tier="critical"] .vessel__current,
+.vessel[data-tier="down"] .vessel__current {
+  color: var(--ink-100);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7), 0 0 30px var(--accent-glow);
+}
+.vessel[data-tier="critical"] .vessel__max,
+.vessel[data-tier="down"] .vessel__max { color: var(--ink-300); text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7); }
 .vessel__edit { appearance: none; background: none; border: none; padding: 0 0.2rem; border-radius: 14px; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
 @media (hover: hover) { .vessel__edit:hover { background: rgba(255,255,255,0.07); } }
 .vessel__edit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
