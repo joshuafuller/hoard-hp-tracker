@@ -1,0 +1,138 @@
+/**
+ * Dice engine adapter — bridges the chip selection / notation to a {@link RollRecord}.
+ *
+ * Two paths share one result shape:
+ *  - `rollHeadless` rolls entirely in the parser (no WebGL) — used for reduced-motion
+ *    or when the 3D engine is unavailable. Deterministic if given floats; testable.
+ *  - `createDiceTray` lazy-loads the vendored `@3d-dice/dice-box` (BabylonJS + Ammo)
+ *    and rolls with physics, reconciling rerolls before recording. WebGL — covered by e2e.
+ *
+ * The engine is loaded from the SAME-ORIGIN vendored copy (`public/dice/`, see
+ * `scripts/vendor-dice.mjs`) so its worker + assets resolve correctly and are
+ * precached for offline (#45). It is dynamic-imported on first tray open only.
+ */
+// @ts-expect-error — the parser ships no types
+import DiceParser from "@3d-dice/dice-parser-interface";
+import { toRollRecord, type RollRecord } from "../../domain/dice";
+
+/** Gold dice tuned to Molten Hoard; tray physics tuned in the spike. */
+const THEME_COLOR = "#e8b45a";
+
+/** Where the vendored engine + assets live, honouring the Pages subpath (BASE_URL). */
+function dicePath(file: string): string {
+  return `${import.meta.env.BASE_URL}dice/${file}`;
+}
+
+interface DieGroup {
+  qty: number;
+  sides: number | "fate";
+}
+
+/**
+ * Build one float per die for the parser's RNG. The parser maps a float to a face
+ * with `round(float*sides)+1`, which is only exact for `float = (value-1)/sides`
+ * (how physical dice feed it) — a raw `Math.random()` can round up to `sides+1`.
+ * So we roll each die uniformly ourselves and emit the exact float it expects.
+ */
+function randomFloatsFor(groups: DieGroup[]): number[] {
+  const out: number[] = [];
+  for (const g of groups) {
+    for (let i = 0; i < g.qty; i++) {
+      if (g.sides === "fate") {
+        const v = Math.floor(Math.random() * 3) - 1; // -1, 0, +1
+        out.push((v + 2) * 0.25);
+      } else {
+        const v = Math.floor(Math.random() * g.sides) + 1;
+        out.push((v - 1) / g.sides);
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Roll without physics, entirely in the parser. Pass `floats` (= `(value-1)/sides`)
+ * for a deterministic result; omit for a real uniform roll. This is the
+ * reduced-motion / no-engine path and is unit-tested. (Exploding/reroll dice beyond
+ * the initial set are rare here and degrade to the parser's own fallback.)
+ */
+export function rollHeadless(notation: string, floats?: number[]): RollRecord {
+  const parser = new DiceParser();
+  const groups = parser.parseNotation(notation) as DieGroup[];
+  parser.rollsAsFloats = floats ?? randomFloatsFor(groups);
+  const result = parser.rollNotation(parser.parsedNotation);
+  return toRollRecord(result, notation);
+}
+
+/** A live 3D dice tray bound to a container element. */
+export interface DiceTray {
+  /** Throw the notation; resolves with the recorded result once the dice settle + reconcile. */
+  roll: (notation: string) => Promise<RollRecord>;
+  /** Clear the dice from the tray. */
+  clear: () => void;
+}
+
+interface DiceBoxOptions {
+  assetPath: string;
+  theme: string;
+  themeColor: string;
+  scale: number;
+  gravity: number;
+}
+interface DiceBoxInstance {
+  init: () => Promise<unknown>;
+  roll: (parsed: unknown) => void;
+  add: (rerolls: unknown, opts?: { newStartPoint?: boolean }) => void;
+  clear: () => void;
+  onRollComplete: (results: unknown) => void;
+}
+type DiceBoxCtor = new (selector: string | HTMLElement, options: DiceBoxOptions) => DiceBoxInstance;
+
+/**
+ * Lazy-load + init a 3D dice tray in `container`. Heavy (BabylonJS); call only on
+ * the first tray open. Reuses one parser instance (rolls are sequential; the parser
+ * resets its own state on each `parseNotation`).
+ */
+export async function createDiceTray(container: string | HTMLElement): Promise<DiceTray> {
+  // Vendored, same-origin import so the worker/assets resolve (a bundled import
+  // would break the worker path). @vite-ignore keeps Vite from rewriting the URL.
+  const mod = (await import(/* @vite-ignore */ dicePath("dice-box.es.min.js"))) as {
+    default: DiceBoxCtor;
+  };
+  const DiceBox = mod.default;
+  const parser = new DiceParser();
+  const box = new DiceBox(container, {
+    assetPath: dicePath("assets/"),
+    theme: "default",
+    themeColor: THEME_COLOR,
+    scale: 7,
+    gravity: 1.4,
+  });
+  await box.init();
+
+  return {
+    roll: (notation: string) =>
+      new Promise<RollRecord>((resolve, reject) => {
+        // Resolve rerolls (explode/reroll/penetrate) first, then record the final.
+        box.onRollComplete = (results: unknown) => {
+          try {
+            const rerolls = parser.handleRerolls(results);
+            if (Array.isArray(rerolls) && rerolls.length > 0) {
+              box.add(rerolls, { newStartPoint: false });
+              return;
+            }
+            const final = parser.parseFinalResults(results);
+            resolve(toRollRecord(final, notation));
+          } catch (err) {
+            reject(err instanceof Error ? err : new Error(String(err)));
+          }
+        };
+        try {
+          box.roll(parser.parseNotation(notation));
+        } catch (err) {
+          reject(err instanceof Error ? err : new Error(String(err)));
+        }
+      }),
+    clear: () => box.clear(),
+  };
+}

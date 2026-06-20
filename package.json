@@ -7,8 +7,9 @@
   "license": "AGPL-3.0-only",
   "packageManager": "pnpm@10.30.2",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "vendor:dice": "node scripts/vendor-dice.mjs",
+    "dev": "node scripts/vendor-dice.mjs && vite",
+    "build": "node scripts/vendor-dice.mjs && tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
