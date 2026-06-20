@@ -58,12 +58,20 @@ core** (`src/domain/`); the UI is presentational.
 ## Quality
 
 The rules domain is held to a high bar: **example + property-based tests** (fast-check) for its
-invariants, and **mutation testing** (Stryker) at a **100% score** on the domain — every injected
-fault is caught by a test. CI enforces lint, types, tests, build, and the mutation threshold.
+invariants, and **mutation testing** (Stryker) over the domain — CI **fails the build below a 90%
+mutation score**, so injected faults must be caught by a test. CI enforces lint, types, tests,
+build, and the mutation threshold.
 
 ```bash
 pnpm mutation        # Stryker mutation testing over src/domain
 ```
+
+## Product direction
+
+Hoard is **a single player's utility belt at the tabletop** — fast, offline, one-screen tools for
+the bookkeeping a player does on their turn (HP, coins, and more to come). What belongs in the app
+(and what deliberately doesn't) is governed by an explicit **Scope-Fit Test**. See the
+**[Product Requirements Document](docs/PRD.md)** for the vision, personas, and how scope grows.
 
 ## License
 
