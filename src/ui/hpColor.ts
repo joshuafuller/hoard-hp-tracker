@@ -15,11 +15,11 @@ const hex = (h: string): Rgb => [
   parseInt(h.slice(5, 7), 16) / 255,
 ];
 
-// The existing --hp-* tokens, as gradient anchors.
-const GREEN = hex("#34d399"); // healthy   @ ratio 1.0
-const AMBER = hex("#f5b942"); // bloodied  @ ratio 0.5
-const RED = hex("#f0506a"); //  critical  @ ratio 0.25 (and below)
-const DOWN = hex("#6b6b78"); //  down      @ current <= 0
+// The --hp-* tokens, as gradient anchors (Molten Hoard: emerald → gold → ruby).
+const GREEN = hex("#4fb477"); // healthy   @ ratio 1.0
+const AMBER = hex("#e8b45a"); // bloodied  @ ratio 0.5 (molten gold)
+const RED = hex("#d8453b"); //  critical  @ ratio 0.25 (and below)
+const DOWN = hex("#6b6354"); //  down      @ current <= 0
 
 // ── sRGB ↔ OKLab (Björn Ottosson) ──────────────────────────────────────────
 const toLinear = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);

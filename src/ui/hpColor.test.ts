@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { hpColor, type Rgb, rgbCss } from "./hpColor";
 
-// Anchor colors (the existing --hp-* tokens), sRGB 0..1.
-const GREEN: Rgb = [0x34 / 255, 0xd3 / 255, 0x99 / 255];
-const AMBER: Rgb = [0xf5 / 255, 0xb9 / 255, 0x42 / 255];
-const RED: Rgb = [0xf0 / 255, 0x50 / 255, 0x6a / 255];
-const DOWN: Rgb = [0x6b / 255, 0x6b / 255, 0x78 / 255];
+// Anchor colors (the --hp-* tokens, Molten Hoard: emerald → gold → ruby), sRGB 0..1.
+const GREEN: Rgb = [0x4f / 255, 0xb4 / 255, 0x77 / 255];
+const AMBER: Rgb = [0xe8 / 255, 0xb4 / 255, 0x5a / 255];
+const RED: Rgb = [0xd8 / 255, 0x45 / 255, 0x3b / 255];
+const DOWN: Rgb = [0x6b / 255, 0x63 / 255, 0x54 / 255];
 
 const CHANNELS = [0, 1, 2] as const;
 const near = (a: Rgb, b: Rgb, p = 1) => CHANNELS.forEach((i) => expect(a[i]).toBeCloseTo(b[i], p));
@@ -23,11 +23,16 @@ describe("hpColor", () => {
 
   it("interpolates between anchors (70% sits between amber and green)", () => {
     const c = hpColor(7, 10);
+    // OKLab interpolation is perceptual, not per-channel-linear, so a blended
+    // sRGB channel can overshoot its endpoints' range by a small amount (most
+    // visible when two anchors share an identical channel). Allow a perceptual
+    // tolerance — this still catches a blend landing on the wrong side entirely.
+    const EPS = 0.02;
     CHANNELS.forEach((i) => {
       const lo = Math.min(AMBER[i], GREEN[i]);
       const hi = Math.max(AMBER[i], GREEN[i]);
-      expect(c[i]).toBeGreaterThanOrEqual(lo - 1e-6);
-      expect(c[i]).toBeLessThanOrEqual(hi + 1e-6);
+      expect(c[i]).toBeGreaterThanOrEqual(lo - EPS);
+      expect(c[i]).toBeLessThanOrEqual(hi + EPS);
     });
     expect(c).not.toEqual(AMBER);
     expect(c).not.toEqual(GREEN);
