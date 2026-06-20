@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from "dexie";
 import type { HitDieSize } from "../domain/hitDice";
+import type { RollRecord } from "../domain/dice";
 
 /** Default name for the production HP database. */
 export const HP_DB_NAME = "hoard-hp";
@@ -44,9 +45,22 @@ export interface HpRecord {
   concentrating: boolean;
 }
 
-/** A Dexie database holding exactly one `hp` table. */
+/** Where a recorded roll came from — drives the history label and HP routing. */
+export type RollContext = "ad-hoc" | "death-save" | "hit-die";
+
+/** A persisted dice roll: the pure {@link RollRecord} plus an id, timestamp, and context. */
+export interface DiceRollRecord extends RollRecord {
+  /** Auto-incremented primary key (insertion order == chronological order). */
+  id?: number;
+  /** When it was rolled (epoch ms) — for display only; ordering uses `id`. */
+  at: number;
+  context: RollContext;
+}
+
+/** A Dexie database holding the single `hp` record and the `rolls` history table. */
 export type HpDb = Dexie & {
   hp: EntityTable<HpRecord, "id">;
+  rolls: EntityTable<DiceRollRecord, "id">;
 };
 
 /**
@@ -108,6 +122,10 @@ export function createHpDb(name: string = HP_DB_NAME): HpDb {
           r.pp ??= 0;
         }),
     );
+  // v6 adds the dice roll-history table. New empty table — existing `hp` records
+  // are untouched (the schema string just re-declares hp + adds rolls).
+  db.version(6).stores({ hp: "id", rolls: "++id" });
+
   // Return the add() promise so the seed write completes inside the populate
   // transaction before the database open resolves (avoids a timing-dependent seed).
   db.on("populate", () =>
