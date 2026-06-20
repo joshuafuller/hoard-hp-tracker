@@ -632,13 +632,43 @@ body {
 }
 
 /* The revealed body: explainer + editors, set off from the summary by a hairline. */
+/* Dim backdrop behind the Hit Dice editor sheet. */
+.hit-dice__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  border: none;
+  background: rgba(8, 7, 5, 0.6);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+/* The editor opens as a bottom sheet (fixed → escapes the clipped panel slot),
+   so it gets full room instead of overflowing the card. */
 .hit-dice__body {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 61;
+  width: min(100%, 30rem);
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  padding: 0.25rem 1.25rem 1.25rem;
-  border-top: 1px solid var(--obsidian-600);
+  padding: 1rem 1.25rem calc(env(safe-area-inset-bottom, 0px) + 1.25rem);
+  background: linear-gradient(180deg, var(--obsidian-700), var(--obsidian-800));
+  border: 1px solid var(--obsidian-600);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: 0 -20px 50px rgba(0, 0, 0, 0.55);
+  animation: hd-sheet-in var(--dur-fast) var(--ease-spring);
+}
+@keyframes hd-sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hit-dice__body { animation: none; }
 }
 
 .hit-dice__explainer {

@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { HitDieSize } from "../domain/hitDice";
 import { NumberEditor } from "./NumberEditor";
 
@@ -39,6 +39,17 @@ export function HitDicePanel({
   const [open, setOpen] = useState(false);
   const bodyId = useId();
 
+  // The editor opens as a bottom-sheet overlay (not inline) so it gets full
+  // room instead of overflowing the fixed panel slot. Escape closes it.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   return (
     <section className="hit-dice" aria-label="Hit Dice">
       <button
@@ -65,7 +76,14 @@ export function HitDicePanel({
       </button>
 
       {open && (
-        <div className="hit-dice__body" id={bodyId}>
+        <>
+          <button
+            type="button"
+            className="hit-dice__backdrop"
+            aria-label="Close Hit Dice"
+            onClick={() => setOpen(false)}
+          />
+          <div className="hit-dice__body" id={bodyId} role="dialog" aria-label="Hit Dice">
           <p className="hit-dice__explainer">
             Spend on a short rest to heal — each die restores its roll + your CON
             modifier. Total = your level; die = your class.
@@ -105,7 +123,8 @@ export function HitDicePanel({
               onCommit={onSetConMod}
             />
           </div>
-        </div>
+          </div>
+        </>
       )}
     </section>
   );
