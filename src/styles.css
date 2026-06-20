@@ -1156,42 +1156,42 @@ body {
   border-radius: 50%;
   pointer-events: none;
   z-index: 1;
-  /* (1) anisotropic brushed-metal micro-streaks + (2) a metallic curvature sheen
-     (bright upper-left → dark lower-right) so the gold reads as a domed metal
-     surface rather than a flat fill. */
+  /* Sphere body: (1) brushed-metal micro-streaks for the foil grain, then
+     (2) a spherical shade — bright near the top-left, falling to a dark
+     terminator at the lower edges — so the orb reads as a 3D gold ball, not a
+     flat disc. */
   background:
     repeating-linear-gradient(
       118deg,
-      rgba(255, 248, 222, 0.13) 0 1px,
-      rgba(46, 30, 8, 0.16) 1px 2.5px
+      rgba(255, 248, 222, 0.11) 0 1px,
+      rgba(46, 30, 8, 0.14) 1px 2.5px
     ),
     radial-gradient(
-      130% 130% at 32% 24%,
-      rgba(255, 250, 225, 0.55) 0%,
-      rgba(255, 240, 200, 0) 38%,
-      rgba(40, 26, 6, 0.45) 100%
+      75% 75% at 34% 30%,
+      rgba(255, 250, 228, 0.5) 0%,
+      rgba(255, 240, 200, 0.12) 26%,
+      rgba(70, 46, 14, 0) 52%,
+      rgba(26, 16, 4, 0.62) 100%
     );
   mix-blend-mode: overlay;
-  opacity: 0.9;
+  opacity: 0.95;
 }
 .vessel__foil::after {
   content: "";
   position: absolute;
-  inset: -45%;
-  /* the specular sweep — the foil-card flip. Its position is driven by the
-     device gyro via the --foil-shift custom property (set per-frame in JS from
-     the phone's left-right tilt), NOT a timed animation. Rests centered (0%)
-     when there's no sensor. */
-  background: linear-gradient(
-    115deg,
-    transparent 38%,
-    rgba(255, 246, 214, 0.4) 46%,
-    rgba(255, 255, 255, 0.95) 50%,
-    rgba(255, 246, 214, 0.4) 54%,
-    transparent 62%
+  inset: 0;
+  border-radius: 50%;
+  /* The specular hotspot — a tight bright reflection sitting ON the curved
+     surface. Its center is driven by the device gyro via --foil-shift (set
+     per-frame from the phone's left-right tilt), so the glint slides across the
+     globe as you tilt it — like light on a foil card. Centered when no sensor. */
+  background: radial-gradient(
+    34% 40% at calc(38% + var(--foil-shift, 0%)) 30%,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 246, 214, 0.42) 26%,
+    rgba(255, 240, 200, 0) 58%
   );
   mix-blend-mode: screen;
-  transform: translateX(var(--foil-shift, 0%));
 }
 
 /* Milled-gold rim — an ornamental coin's edge framing the orb (treasure flourish).
