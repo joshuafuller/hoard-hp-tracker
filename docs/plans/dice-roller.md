@@ -9,18 +9,12 @@
 
 ---
 
-## 0. Open decision (blocks §F sign-off) — how does an *ad-hoc* heal reach HP?
-A `1d8+3` healing spell and a `1d8+3` damage bonus are **byte-identical notation** — the tray has no way to
-auto-tell heal from damage on an ad-hoc roll. So "healing rolls flow into HP" (journeys §5) **cannot be
-automatic**. Two faithful options, decide before TDD:
-- **(A) Manual "Apply as heal" on every roll result** — the result card always offers a heal-to-self button;
-  player taps it after a Cure Wounds roll, ignores it after a damage roll. Faithful to the ratification; one
-  extra control on `DiceResult`.
-- **(B) HP-writes only from known contexts** — only **Hit Dice** and **death saves** (where the app *knows* the
-  intent) write to HP; all ad-hoc rolls, including healing spells, stay informational. Simpler; narrower.
-
-Until decided, §F below assumes the death-save + Hit-Die mechanisms (common to both) and leaves the ad-hoc
-heal button as the open item.
+## 0. Resolved decision — ad-hoc heal = manual "Apply as heal" (option A, 2026-06-20)
+A `1d8+3` healing spell and a `1d8+3` damage bonus are **byte-identical notation**, so heal-vs-damage **cannot
+be auto-detected**. **Decided:** every roll result card offers a manual **"Apply as heal"** button that adds the
+roll total to current HP (capped at max). The player taps it after a Cure-Wounds-style roll, ignores it after
+damage. Hit Dice + death saves keep their context-aware auto-apply. → `DiceResult` carries an `onApplyHeal`
+action wired to `hp.heal(total)`.
 
 ## 1. Architecture (layers, mirroring the existing modules)
 
