@@ -1,7 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { addCoin, coinsEqual, type Coins, distill, setCoin, spendCoin, totalCp, totalGp } from "./coins";
+import { addCoin, canSpend, coinsEqual, type Coins, distill, setCoin, spendCoin, totalCp, totalGp } from "./coins";
 
 const C = (pp: number, gp: number, sp: number, cp: number): Coins => ({ pp, gp, sp, cp });
+
+describe("canSpend", () => {
+  it("is true when total wealth covers the spend via conversion, even with zero of that coin", () => {
+    expect(canSpend(C(1, 0, 0, 0), "sp")).toBe(true); // 1 pp = 100 sp covers 1 sp
+    expect(canSpend(C(0, 0, 0, 100), "gp")).toBe(true); // 100 cp == 1 gp exactly
+  });
+  it("is false when total wealth can't cover even one of that coin", () => {
+    expect(canSpend(C(0, 0, 0, 0), "cp")).toBe(false); // empty purse
+    expect(canSpend(C(0, 0, 0, 5), "gp")).toBe(false); // 5 cp < 100 cp (1 gp)
+  });
+  it("defaults to one coin and respects an explicit amount", () => {
+    expect(canSpend(C(0, 0, 2, 0), "sp")).toBe(true); // 20 cp ≥ 10 cp
+    expect(canSpend(C(0, 0, 2, 0), "sp", 3)).toBe(false); // 20 cp < 30 cp
+  });
+});
 
 describe("coins", () => {
   it("adds to a denomination, leaving others untouched", () => {

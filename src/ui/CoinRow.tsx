@@ -7,6 +7,8 @@ export interface CoinRowProps {
   /** Abbreviation, e.g. "gp". */
   unit: string;
   count: number;
+  /** Whether a spend of one is possible (purse can cover it via conversion). */
+  canSpend: boolean;
   /** Add one coin of this kind. */
   onAdd: () => void;
   /** Spend one coin of this kind (converts across denominations when short). */
@@ -25,7 +27,7 @@ function haptic() {
  * single-coin nudges, and a tappable count that opens the keypad for larger
  * Add/Spend/Set amounts. Presentational — all mutation flows through the props.
  */
-export function CoinRow({ kind, label, unit, count, onAdd, onSpend, onEdit }: CoinRowProps) {
+export function CoinRow({ kind, label, unit, count, canSpend, onAdd, onSpend, onEdit }: CoinRowProps) {
   const tap = (fn: () => void) => () => {
     haptic();
     fn();
@@ -42,7 +44,7 @@ export function CoinRow({ kind, label, unit, count, onAdd, onSpend, onEdit }: Co
           type="button"
           className="coin-row__step"
           aria-label={`Spend 1 ${label}`}
-          disabled={count <= 0}
+          disabled={!canSpend}
           onClick={tap(onSpend)}
         >
           −
