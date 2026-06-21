@@ -25,7 +25,9 @@ The chip bar is a **pool builder**, not a single-select (revised 2026-06-20 per 
 - **Modifier** stepper; **remembered** between throws.
 - **Adv/Dis = one symmetric segment** *Disadvantage · Normal · Advantage* — **co-equal**, but enabled
   **only for a lone d20** (the 5e keep-high/low rule; "advantage on 3d6" is meaningless, so it dims).
-- **Notation** escape hatch behind a ⌨ glyph — secondary, never required for the core path.
+- **Notation is the same field** — the live expression line is itself editable: tap it and type full
+  Roll20 grammar (`4d6kh3!`) right where the dice are built. No separate panel; chips write into it,
+  hand-editing hides the stale tags. Never required for the chip/advantage core path.
 - Interaction budget: a plain d20 is ≤ 3 interactions; advantage / a modifier add at most one tap each.
 
 ## The five build states (see the mockup)
