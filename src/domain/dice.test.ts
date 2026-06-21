@@ -208,6 +208,17 @@ describe("toRollRecord (real parser)", () => {
     expect(rec.total).toBe(12); // 7 (finite die) + 5 (modifier)
   });
 
+  it("captures exploding dice with the total = sum (no early/over tally)", () => {
+    // 1d6! where the 6 explodes into a 3 → both dice recorded, total 9.
+    const rec = roll("1d6!", [{ v: 6, sides: 6 }, { v: 3, sides: 6 }]);
+    expect(rec.total).toBe(9);
+    expect(rec.result).toEqual([6, 3]);
+    expect(rec.dice).toEqual([
+      { sides: 6, value: 6, dropped: false, exploded: true }, // the 6 triggered the explosion
+      { sides: 6, value: 3, dropped: false }, // the added die
+    ]);
+  });
+
   it("4d6 drop-lowest keeps three, struck-out one", () => {
     const rec = roll("4d6kh3", [
       { v: 6, sides: 6 },

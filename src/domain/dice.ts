@@ -33,6 +33,8 @@ export interface RolledDie {
   sides: number;
   value: number;
   dropped: boolean;
+  /** True if this die triggered an explosion (the next die in sequence is its result). */
+  exploded?: boolean;
 }
 
 /** A recorded roll: the notation thrown, the grand total, the kept result, every die. */
@@ -49,6 +51,7 @@ interface ParserRollEntry {
   value: number;
   valid?: boolean;
   drop?: boolean;
+  explode?: boolean;
 }
 
 /** The parser's `expressionroll` result tree (only the fields we read are typed). */
@@ -136,11 +139,13 @@ function collectDice(node: unknown, out: RolledDie[]): void {
   for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
     if (key === "rolls" && Array.isArray(value)) {
       for (const entry of value as ParserRollEntry[]) {
-        out.push({
+        const die: RolledDie = {
           sides: entry.die ?? 0,
           value: entry.value,
           dropped: isDropped(entry),
-        });
+        };
+        if (entry.explode) die.exploded = true;
+        out.push(die);
       }
     } else if (value && typeof value === "object") {
       collectDice(value, out);

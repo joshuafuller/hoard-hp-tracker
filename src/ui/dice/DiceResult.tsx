@@ -22,11 +22,25 @@ export function DiceResult({ record, onApplyHeal, heal = false }: DiceResultProp
         <div className="dice-result__total">{record.total}</div>
         <div className="dice-result__notation">{record.notation}</div>
         <div className="dice-result__dice">
-          {record.dice.map((d, i) => (
-            <span key={i} className="dice-result__chip" data-testid={`die-${d.value}`} data-dropped={d.dropped}>
-              {d.dropped ? <s>{d.value}</s> : d.value}
-            </span>
-          ))}
+          {record.dice.map((d, i) => {
+            // Nat 1 / nat 20 on a d20 are gameplay-critical — outline ruby / emerald.
+            const crit = d.sides === 20 && d.value === 20 ? "hit" : d.sides === 20 && d.value === 1 ? "miss" : undefined;
+            // A die produced by an explosion follows one flagged `exploded` — show a "+".
+            const added = i > 0 && record.dice[i - 1]?.exploded;
+            return (
+              <span key={i} className="dice-result__chipwrap">
+                {added && <span className="dice-result__plus" aria-hidden="true">+</span>}
+                <span
+                  className="dice-result__chip"
+                  data-testid={`die-${d.value}`}
+                  data-dropped={d.dropped}
+                  data-crit={crit}
+                >
+                  {d.dropped ? <s>{d.value}</s> : d.value}
+                </span>
+              </span>
+            );
+          })}
         </div>
         {onApplyHeal && (
           <button type="button" className="dice-applyheal" onClick={() => onApplyHeal(record.total)}>

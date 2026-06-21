@@ -36,24 +36,33 @@ interface DieGroup {
   sides: number | "fate";
 }
 
+/** An exact float for one die of `sides`, so the parser's `round(float*sides)+1`
+ * yields a uniform [1, sides] (a raw `Math.random()` can round up to `sides+1`). */
+function floatFor(sides: number | "fate"): number {
+  if (sides === "fate") {
+    const v = Math.floor(Math.random() * 3) - 1; // -1, 0, +1
+    return (v + 2) * 0.25;
+  }
+  const v = Math.floor(Math.random() * sides) + 1;
+  return (v - 1) / sides;
+}
+
 /**
- * Build one float per die for the parser's RNG. The parser maps a float to a face
- * with `round(float*sides)+1`, which is only exact for `float = (value-1)/sides`
- * (how physical dice feed it) — a raw `Math.random()` can round up to `sides+1`.
- * So we roll each die uniformly ourselves and emit the exact float it expects.
+ * Build the floats the parser's RNG consumes: one exact float per initial die,
+ * plus — for a single-die-size pool — a buffer of extra exact floats so EXPLODING
+ * / reroll dice keep drawing correct values instead of falling back to the parser's
+ * buggy `Math.random` (which both overshoots AND desyncs the total from the dice).
  */
 function randomFloatsFor(groups: DieGroup[]): number[] {
   const out: number[] = [];
   for (const g of groups) {
-    for (let i = 0; i < g.qty; i++) {
-      if (g.sides === "fate") {
-        const v = Math.floor(Math.random() * 3) - 1; // -1, 0, +1
-        out.push((v + 2) * 0.25);
-      } else {
-        const v = Math.floor(Math.random() * g.sides) + 1;
-        out.push((v - 1) / g.sides);
-      }
-    }
+    for (let i = 0; i < g.qty; i++) out.push(floatFor(g.sides));
+  }
+  // Explosions/rerolls draw more of the SAME die when the pool is one size (the
+  // common case, e.g. 3d6!). 64 is well past any realistic explosion chain.
+  const sizes = new Set(groups.map((g) => String(g.sides)));
+  if (sizes.size === 1 && groups[0]) {
+    for (let i = 0; i < 64; i++) out.push(floatFor(groups[0].sides));
   }
   return out;
 }

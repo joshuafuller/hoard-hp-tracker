@@ -37,6 +37,18 @@ describe("rollHeadless", () => {
     }
   });
 
+  it("exploding rolls never tally the total ahead of the dice (total == sum, in range)", () => {
+    for (let i = 0; i < 200; i++) {
+      const rec = rollHeadless("3d6!");
+      const sum = rec.dice.filter((d) => !d.dropped).reduce((a, d) => a + d.value, 0);
+      expect(rec.total).toBe(sum); // the total always matches the dice actually shown
+      for (const d of rec.dice) {
+        expect(d.value).toBeGreaterThanOrEqual(1);
+        expect(d.value).toBeLessThanOrEqual(6);
+      }
+    }
+  });
+
   it("property: every die size stays within [1, sides] (guards the round-overshoot bug)", () => {
     fc.assert(
       fc.property(

@@ -180,6 +180,19 @@
 }
 .dice-result__chip[data-dropped="true"] { opacity: 0.55; }
 .dice-result__chip s { color: var(--ink-500); }
+/* nat 20 = critical hit (emerald), nat 1 = fumble (ruby) on a d20 */
+.dice-result__chip[data-crit="hit"] {
+  border-color: #4fb477;
+  color: #b9f0d2;
+  box-shadow: 0 0 0 1px #4fb477, 0 0 9px color-mix(in oklab, #4fb477 55%, transparent);
+}
+.dice-result__chip[data-crit="miss"] {
+  border-color: var(--hp-critical);
+  color: #f4b0a8;
+  box-shadow: 0 0 0 1px var(--hp-critical), 0 0 9px color-mix(in oklab, var(--hp-critical) 55%, transparent);
+}
+.dice-result__chipwrap { display: inline-flex; align-items: center; gap: 3px; }
+.dice-result__plus { color: var(--coin-gold); font-weight: 800; font-size: 0.8rem; }
 .dice-applyheal {
   margin-top: 0.5rem;
   display: inline-flex;
