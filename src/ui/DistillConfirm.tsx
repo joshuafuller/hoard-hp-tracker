@@ -28,13 +28,39 @@ export function DistillConfirm({ coins, onConfirm, onClose }: DistillConfirmProp
   const after = distill(coins);
   const total = totalGp(coins); // distill conserves wealth, so before === after
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
+  // Escape closes; Tab is trapped within the dialog so focus can't escape to
+  // the page behind it.
   useEffect(() => {
     confirmRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCloseRef.current();
+      if (e.key === "Escape") {
+        onCloseRef.current();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const sheet = sheetRef.current;
+      if (!sheet) return;
+      const focusable = sheet.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+      const active = document.activeElement;
+      if (!sheet.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      } else if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -43,6 +69,7 @@ export function DistillConfirm({ coins, onConfirm, onClose }: DistillConfirmProp
   return (
     <div className="hp-editor" data-testid="distill-backdrop" onClick={onClose}>
       <div
+        ref={sheetRef}
         className="hp-editor__sheet distill"
         role="dialog"
         aria-modal="true"

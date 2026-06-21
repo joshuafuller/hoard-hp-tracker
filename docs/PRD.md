@@ -1,7 +1,7 @@
 # Hoard — Product Requirements Document
 
-**Status:** Living document (v1)
-**Last updated:** 2026-06-19
+**Status:** Living document (v1.1)
+**Last updated:** 2026-06-20
 **Owner:** Joshua Fuller
 **Supersedes scope framing in:** [`docs/ux/single-character-hp-tracker.md`](./ux/single-character-hp-tracker.md) (which scoped only the HP tool; this PRD reframes the product around the suite)
 
@@ -167,12 +167,23 @@ These hold for **every** module and are a precondition for shipping, not per-fea
 
 NFR regressions are release-blocking the same way a failing rules test is.
 
-### 5.3 Next likely module — Dice roller (illustrative, not committed)
+### 5.3 Next module — 3D dice roller (committed; spiked & proven)
 Passes the Scope-Fit Test (§8): single-player, at-the-table, offline, one-screen, and traces to
-real friction (players already reach for a separate dice app; death saves already roll a d20
-internally). Sketch: standard polyhedral set (d4–d20, d100), quantity + modifier, advantage/
-disadvantage, last-roll history; reuses the console + haptics/sound feel. To be specced/planned
-in its own issue before build.
+real friction (players reach for a separate dice app; death saves / Hit Dice already roll
+internally). **The goal is physics-based 3D dice (D&D-Beyond-style), not a text roller** — and we
+do **not** model dice ourselves.
+- **Engine (decided, proven via a spike):** [`@3d-dice/dice-box`](https://github.com/3d-dice/dice-box)
+  (BabylonJS + Ammo physics; ships its own meshes/themes; gold-tinted to match) +
+  [`@3d-dice/dice-parser-interface`](https://github.com/3d-dice/dice-parser-interface) for the full
+  Roll20 notation (advantage `2d20kh1`, disadvantage `2d20kl1`, keep/drop, exploding `!`, reroll,
+  success counts, fudge, math). Spike: [`docs/spikes/dice-roller/`](spikes/dice-roller/).
+- **Interface:** full-screen "table throw" — a d20 token in the chrome (later the radial purse)
+  dims the app and turns the screen into a transparent dice tray; choose via chips or notation;
+  total + per-die result + roll history; tap to clear. The existing **death-save d20** and
+  **short-rest Hit Dice** roll through this same tray (one shared mechanic).
+- **Constraints carried from the spike:** lazy-load the engine on first open (Babylon is heavy);
+  self-host + precache assets for offline (#45); record each roll as `{notation,total,result,dice[]}`.
+- Tracked in #73 (spec/AC) and #75 (WIP build).
 
 ---
 
@@ -230,8 +241,9 @@ optional character name, haptics + sound, offline PWA + Dexie persistence, Docke
 | #33 | esbuild advisory bump | Could | 1 |
 | #32 | E2E / visual-regression guard | (shipped/expanding) | 3 |
 
-### 7.3 Candidate modules (not yet issues)
-- **Dice roller** (§5.3) — likely next; spec/plan first.
+### 7.3 Candidate modules
+- **3D dice roller** (§5.3) — **committed & spiked** (#73 + #75); the next build.
+- Radial "purse" for secondary actions (#74) — consolidates rests/coins/dice/concentration.
 - Other player-side tasks that pass §8 (e.g. spell-slot / resource ticks, conditions-on-self) —
   each must clear the Scope-Fit Test before becoming an issue.
 
@@ -312,3 +324,7 @@ These are **deliberately not** Hoard, mostly because they fail Gate 1 (single-pl
 - **v1 (2026-06-19):** First PRD. Reframed the product from "single-character HP tracker" to
   "single player's table companion" with an explicit module pattern and Scope-Fit Test, prompted by
   the coin-tracker scope addition and an anticipated dice module. Closes issue #46.
+- **v1.1 (2026-06-20):** Molten Hoard redesign shipped (smooth-gold orb, gold-medallion controls,
+  charcoal card, orb-as-input drag, living aura). **3D dice roller committed** as the next module
+  after a proven spike (dice-box + dice-parser-interface; full Roll20 notation) — §5.3, #73 + #75;
+  spike saved under `docs/spikes/dice-roller/`.

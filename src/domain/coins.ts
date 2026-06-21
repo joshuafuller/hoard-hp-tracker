@@ -25,6 +25,14 @@ export function totalCp(c: Coins): number {
   return c.pp * CP_VALUE.pp + c.gp * CP_VALUE.gp + c.sp * CP_VALUE.sp + c.cp * CP_VALUE.cp;
 }
 
+/**
+ * Whether the purse can spend `n` of `kind` — true when total wealth covers it,
+ * even with zero of that coin (spending auto-converts across denominations).
+ */
+export function canSpend(c: Coins, kind: CoinKind, n = 1): boolean {
+  return totalCp(c) >= norm(n) * CP_VALUE[kind];
+}
+
 export function addCoin(c: Coins, kind: CoinKind, n: number): Coins {
   return { ...c, [kind]: norm(c[kind] + Math.trunc(n)) };
 }

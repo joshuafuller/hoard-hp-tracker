@@ -1,5 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// `process` exists when Playwright runs this config under Node; declared locally
+// to avoid pulling @types/node into the type graph (mirrors vite.config.ts).
+declare const process: { env: Record<string, string | undefined> };
+
 /**
  * End-to-end layout guard for the Hoard HP Tracker.
  *
@@ -19,7 +23,8 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:4173",
     // Reduce animation-related flakiness: browser honours prefers-reduced-motion.
-    reducedMotion: "reduce",
+    // In Playwright 1.60 this is a context option, not a top-level `use` key.
+    contextOptions: { reducedMotion: "reduce" },
     // Capture a trace on retry so failures in CI are diagnosable.
     trace: "on-first-retry",
   },

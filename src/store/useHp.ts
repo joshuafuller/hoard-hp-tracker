@@ -47,7 +47,7 @@ export interface HpLastChange {
   /** The operand passed to the action — a delta for damage/heal, an absolute value for set/temp. */
   amount: number;
   /** The HP-bearing fields as they were *before* the action, for undo. */
-  before: Pick<HpRecord, "current" | "temp" | "successes" | "failures">;
+  before: Pick<HpRecord, "current" | "temp" | "successes" | "failures" | "concentrating">;
 }
 
 /** Reactive HP + death-save state plus the actions that mutate it. */
@@ -177,11 +177,20 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
   // exist at 0 HP, so any move above 0 clears them) and drop concentration
   // when the character falls to 0.
   const applyHp =
-    (op: (s: HpState, n: number) => HpState) => (n: number) =>
-      write((r) => {
+    (op: (s: HpState, n: number) => HpState) => (n: number) => {
+      let down = false;
+      return write((r) => {
         const hp = op(hpOf(r), n);
+        down = hp.current <= 0;
         return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)), ...dropConcentrationIfDown(r, hp.current) };
-      })();
+      })().then(() => {
+        // A drop to 0 auto-clears concentration; clear any stale prompt too.
+        // Defensive parity with stepHp/setCurrent and AC #1: today no applyHp
+        // consumer (setTemp/setMax) can reach <=0 (the domain floors max>=1), so
+        // this branch is unreachable in practice — kept uniform across helpers.
+        if (down) setConcentrationCheck(null);
+      });
+    };
 
   // Pip writes are reconciled against current HP: death saves only exist at 0 HP,
   // so a write while alive is dropped (keeps the invariant; avoids hidden pips).
@@ -194,11 +203,17 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
   // Also drop concentration if the step lands at 0.
   const stepHp =
     (op: (s: HpState, n: number) => HpState, read: (s: HpState) => number) =>
-    (delta: number) =>
-      write((r) => {
+    (delta: number) => {
+      let down = false;
+      return write((r) => {
         const hp = op(hpOf(r), read(hpOf(r)) + delta);
+        down = hp.current <= 0;
         return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)), ...dropConcentrationIfDown(r, hp.current) };
-      })();
+      })().then(() => {
+        // A step to 0 auto-clears concentration; clear any stale prompt too.
+        if (down) setConcentrationCheck(null);
+      });
+    };
 
   // Relative temp stepper — not undoable (the keypad's setTempValue is undoable
   // via the producer in the return object below).
@@ -240,7 +255,7 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
     (n: number) => {
       let before: HpLastChange["before"] | null = null;
       return write((r) => {
-        before = { current: r.current, temp: r.temp, successes: r.successes, failures: r.failures };
+        before = { current: r.current, temp: r.temp, successes: r.successes, failures: r.failures, concentrating: r.concentrating ?? false };
         return producer(r, n);
       })().then(() => {
         if (before) setLastChange({ kind, amount: n, before });
@@ -273,7 +288,10 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
     write((r) => {
       if (on && r.current <= 0) return r; // no-op when down
       return { ...r, concentrating: on };
-    })();
+    })().then(() => {
+      // Turning concentration off dismisses any visible check prompt.
+      if (!on) setConcentrationCheck(null);
+    });
 
   return {
     current: state.current,
@@ -301,7 +319,7 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
         let wasConcentrating = false;
         let resultedInDown = false;
         return write((r) => {
-          before = { current: r.current, temp: r.temp, successes: r.successes, failures: r.failures };
+          before = { current: r.current, temp: r.temp, successes: r.successes, failures: r.failures, concentrating: r.concentrating ?? false };
           wasConcentrating = r.concentrating ?? false;
           const hp = damage(hpOf(r), n);
           resultedInDown = hp.current <= 0;
@@ -334,10 +352,25 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
     // setTemp is the domain non-stacking path; not undoable (the keypad uses setTempValue).
     setTemp: applyHp(setTemp),
     setMax: applyHp(setMax),
-    setCurrent: undoable("set", (r, n) => {
-      const hp = setCurrent(hpOf(r), n);
-      return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)), ...dropConcentrationIfDown(r, hp.current) };
-    }),
+    setCurrent: (() => {
+      // setCurrent is undoable AND may drop the character to 0. On a drop,
+      // concentration auto-clears (via dropConcentrationIfDown) and any stale
+      // transient prompt must be cleared too (React state, post-write).
+      const kind = "set" as const;
+      return (n: number) => {
+        let before: HpLastChange["before"] | null = null;
+        let down = false;
+        return write((r) => {
+          before = { current: r.current, temp: r.temp, successes: r.successes, failures: r.failures, concentrating: r.concentrating ?? false };
+          const hp = setCurrent(hpOf(r), n);
+          down = hp.current <= 0;
+          return { ...r, ...hp, ...reconcile(hp.current, savesOf(r)), ...dropConcentrationIfDown(r, hp.current) };
+        })().then(() => {
+          if (before) setLastChange({ kind, amount: n, before });
+          if (down) setConcentrationCheck(null);
+        });
+      };
+    })(),
     setSuccesses: applySaves(dsSetSuccesses),
     setFailures: applySaves(dsSetFailures),
     rollDeathSave,
@@ -368,7 +401,10 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
           hitDiceAvailable: r.hitDiceAvailable,
         }),
         concentrating: false,
-      }))(),
+      }))().then(() => {
+        // A long rest ends concentration; clear any lingering prompt too.
+        setConcentrationCheck(null);
+      }),
     undo,
     dismissLastChange,
     lastChange,

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { type CoinKind, type Coins, coinsEqual, distill } from "../domain/coins";
+import { type CoinKind, type Coins, canSpend, coinsEqual, distill } from "../domain/coins";
 import { AmountKeypad } from "./AmountKeypad";
 import { CoinRow } from "./CoinRow";
 import { DistillConfirm } from "./DistillConfirm";
+import { Glyph } from "./icons/Glyph";
 
 export interface CoinSheetProps {
   pp: number;
@@ -59,6 +60,20 @@ export function CoinSheet({
   const coins: Coins = { pp, gp, sp, cp };
   const [editing, setEditing] = useState<CoinKind | null>(null);
   const [confirming, setConfirming] = useState(false);
+
+  // Escape closes the overview. While a sub-view is up (the keypad or the
+  // distill confirmation) that sub-view owns Escape — returning to the overview
+  // rather than closing the whole sheet — so we stand down in those states.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  useEffect(() => {
+    if (editing || confirming) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCloseRef.current();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editing, confirming]);
 
   // Auto-dismiss the undo affordance after a beat, mirroring the HP undo pill.
   const onDismissRef = useRef(onDismissDistill);
@@ -149,7 +164,7 @@ export function CoinSheet({
         <div className="coins__head">
           <span className="coins__label">HOARD</span>
           <button type="button" className="coins__close" aria-label="Close" onClick={onClose}>
-            ✕
+            <Glyph name="close" />
           </button>
         </div>
         <div className="coins__hero">
@@ -166,6 +181,7 @@ export function CoinSheet({
               label={r.label}
               unit={r.unit}
               count={counts[r.kind]}
+              canSpend={canSpend(coins, r.kind, 1)}
               onAdd={() => onAdd(r.kind, 1)}
               onSpend={() => onSpend(r.kind, 1)}
               onEdit={() => setEditing(r.kind)}

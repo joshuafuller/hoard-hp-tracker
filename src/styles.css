@@ -12,7 +12,7 @@
 @font-face {
   font-family: "DM Sans";
   font-style: normal;
-  font-weight: 400 700;
+  font-weight: 400 900; /* cover the heavy numeral weight (800) so it isn't faux-bolded — #114 */
   font-display: swap;
   src: url("./fonts/dm-sans.woff2") format("woff2");
 }
@@ -25,6 +25,8 @@
 }
 
 :root {
+  /* Numeric readouts (HP orb, coin total, dice total) share one heavy sans face — #114. */
+  --font-num: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   /* Canvas — Molten Hoard: warm volcanic near-blacks for depth without hard edges. */
   --obsidian-900: #0b0a08;
   --obsidian-800: #100e0a;
@@ -1251,6 +1253,7 @@ body {
 }
 .vessel__nums { display: flex; align-items: baseline; gap: 0.4rem; line-height: 1; }
 .vessel__current {
+  font-family: var(--font-num); /* explicit so the orb numeral can't drift off the body font (#114) */
   font-size: clamp(2rem, 32cqmin, 6rem);
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -1259,7 +1262,7 @@ body {
   color: #2a1c06;
   text-shadow: 0 1.5px 0 rgba(255, 244, 206, 0.4), 0 2px 10px rgba(20, 12, 2, 0.25);
 }
-.vessel__max { font-size: clamp(0.9rem, 11cqmin, 1.8rem); font-weight: 700; color: rgba(42, 28, 6, 0.66); text-shadow: 0 1px 0 rgba(255, 244, 206, 0.35); font-variant-numeric: tabular-nums; }
+.vessel__max { font-family: var(--font-num); font-size: clamp(0.9rem, 11cqmin, 1.8rem); font-weight: 700; color: rgba(42, 28, 6, 0.66); text-shadow: 0 1px 0 rgba(255, 244, 206, 0.35); font-variant-numeric: tabular-nums; }
 /* On the low-HP ruby/down states the body goes dark — flip numerals back to light. */
 .vessel[data-tier="critical"] .vessel__current,
 .vessel[data-tier="down"] .vessel__current {
@@ -1276,6 +1279,7 @@ body {
   appearance: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
   padding: 0.15rem 0.7rem; border-radius: var(--radius-pill);
   font-size: 1rem; font-weight: 700; color: var(--hp-temp);
+  font-variant-numeric: tabular-nums; /* #95 — stable digit width for legibility */
   background: color-mix(in oklab, var(--hp-temp) 18%, transparent);
   border: 1px solid color-mix(in oklab, var(--hp-temp) 40%, transparent);
   box-shadow: 0 0 16px color-mix(in oklab, var(--hp-temp) 30%, transparent);
@@ -1572,6 +1576,7 @@ body {
 }
 
 .coins__total {
+  font-family: var(--font-num);
   font-size: 2rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
