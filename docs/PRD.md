@@ -185,9 +185,10 @@ deliberate trade for the privacy/offline guarantee.
 
 ### Primary signal — task speed & correctness
 - **Turn-time:** a core action (e.g. "apply 9 damage") completes in **≤ 2 interactions**, no OS
-  keyboard. *Verification (planned, issue #53):* an e2e interaction-count test. Today the Playwright
-  suite (`e2e/layout.spec.ts`) guards layout and tap-target size, **not** tap counts — so this
-  metric is a target, not yet enforced.
+  keyboard. *Verified by:* the e2e interaction-count test (`e2e/interactions.spec.ts`, issue #53),
+  which drives damage and heal from the default screen, counts the actual taps (1 to open the
+  keypad + 2 to apply), asserts the budget, and confirms the keypad carries no text input (no OS
+  keyboard). The test goes red if a future change adds a tap to the core path.
 - **Rules-correctness:** 5e edge rules (temp-HP absorption, death saves, concentration DC, coin
   conversion/distill) provably correct. *Verified by:* the pure-domain unit + property tests and
   the mutation-testing gate (≥ 90% domain mutation score).

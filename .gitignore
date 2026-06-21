@@ -17,5 +17,9 @@ dev-dist/
 .stryker-tmp/
 reports/
 
+# Playwright e2e artifacts
+test-results/
+playwright-report/
+
 # brainstorming visual companion artifacts
 .superpowers/
