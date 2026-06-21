@@ -337,9 +337,11 @@ export function DiceTray({
           <span className="dice-tray__intent-label">
             {intent.kind === "death-save" ? "Death save" : `Hit Die — d${intent.sides}`}
           </span>
-          {intent.kind === "death-save" && deathSaveRoll != null ? (
-            // A death-save throw already ticked a pip; swap to Done so a second tap
-            // can't accidentally apply another save in the same open.
+          {(intent.kind === "death-save" ? deathSaveRoll != null : hitDieRoll != null) ? (
+            // A contextual intent is a SINGLE throw. Once settled, swap Throw → Done:
+            // death save already ticked its pip, and a Hit Die's action is Apply (in the
+            // result). This stops re-throwing — which would double-tick a save or hand
+            // out free short-rest rerolls (replacing the pending heal). #129 follow-up.
             <button type="button" className="dice-throw" onClick={handleClose}>
               Done
             </button>

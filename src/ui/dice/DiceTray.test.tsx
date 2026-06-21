@@ -224,6 +224,15 @@ describe("DiceTray", () => {
       expect(onDeathSave).not.toHaveBeenCalled();
     });
 
+    it("gates re-throwing a Hit Die after it settles (single roll — no free short-rest rerolls)", async () => {
+      open({ intent: { kind: "hit-die", sides: 8, conMod: 0 }, onHitDie: vi.fn(), onClose: vi.fn() });
+      await userEvent.click(screen.getByRole("button", { name: /^throw/i }));
+      // After settle the dock Throw is replaced by Done; Apply stays in the result.
+      await waitFor(() => expect(screen.queryByRole("button", { name: /^throw/i })).not.toBeInTheDocument());
+      expect(screen.getByRole("button", { name: /done/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /apply/i })).toBeInTheDocument();
+    });
+
     it("ignores a scrim tap under an intent so a death save can't be re-thrown / double-applied", async () => {
       const onDeathSave = vi.fn();
       open({ intent: { kind: "death-save" }, onDeathSave });
