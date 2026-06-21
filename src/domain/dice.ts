@@ -177,6 +177,23 @@ function sumModifiers(node: unknown): number {
  * die and, if the parser's grand total is itself non-finite, recompute it from the
  * kept dice plus the literal modifiers — so a roll never displays `NaN`.
  */
+/** True if `notation` asks for at least one die (vs. a bare modifier like "+5"). */
+export function notationHasDice(notation: string): boolean {
+  return /d[\df%]/i.test(notation);
+}
+
+/**
+ * Sanity-check a recorded roll against its notation. The 3D engine intermittently
+ * returns a malformed result (a finite-but-bogus total with NO dice — observed as a
+ * static "21" on a re-rolled 1d20); the engine adapter uses this to detect that and
+ * fall back to a clean headless roll. Pure + unit-tested.
+ */
+export function isPlausibleRoll(rec: RollRecord, notation: string): boolean {
+  if (!Number.isFinite(rec.total)) return false;
+  if (notationHasDice(notation) && rec.dice.length === 0) return false;
+  return true;
+}
+
 export function toRollRecord(result: ParserResult, notation: string): RollRecord {
   const all: RolledDie[] = [];
   collectDice(result, all);

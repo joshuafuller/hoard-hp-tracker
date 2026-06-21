@@ -13,7 +13,7 @@
  */
 // @ts-expect-error — the parser ships no types
 import DiceParser from "@3d-dice/dice-parser-interface";
-import { toRollRecord, type RollRecord } from "../../domain/dice";
+import { isPlausibleRoll, toRollRecord, type RollRecord } from "../../domain/dice";
 
 /** Gold dice tuned to Molten Hoard; tray physics tuned in the spike. */
 const THEME_COLOR = "#e8b45a";
@@ -116,16 +116,15 @@ export async function createDiceTray(container: string | HTMLElement): Promise<D
   // would break the worker path); the indirect import keeps Vite out of it.
   const mod = (await importModule(dicePath("dice-box.es.min.js"))) as { default: DiceBoxCtor };
   const DiceBox = mod.default;
-  const parser = new DiceParser();
   const box = new DiceBox(container, {
     assetPath: dicePath("assets/"),
     theme: "default",
     themeColor: THEME_COLOR,
     scale: 7,
     gravity: 1.4,
-    // Use the on-screen renderer (not the offscreen worker): it exposes the engine
-    // options we patch for quality (antialiasing + device-pixel-ratio) in
-    // scripts/vendor-dice.mjs. Fine for a tray that rolls occasionally.
+    // On-screen renderer (not the offscreen worker) so our vendor patch's
+    // antialiasing + device-pixel-ratio apply (#81). Occasional malformed results
+    // from either renderer are caught by isPlausibleRoll → headless fallback.
     offscreen: false,
   });
   await box.init();
@@ -149,6 +148,11 @@ export async function createDiceTray(container: string | HTMLElement): Promise<D
   return {
     roll: (notation: string) =>
       new Promise<RollRecord>((resolve, reject) => {
+        // A FRESH parser per roll — ParserInterface carries mutable state
+        // (parsedNotation/finalResults + a module-global counter) that corrupts
+        // successive rolls if reused (a 2nd 1d20 was returning a bogus static 21
+        // with no dice). Each throw gets a clean parser.
+        const parser = new DiceParser();
         // Resolve rerolls (explode/reroll/penetrate) first, then record the final.
         box.onRollComplete = (results: unknown) => {
           try {
@@ -158,7 +162,15 @@ export async function createDiceTray(container: string | HTMLElement): Promise<D
               return;
             }
             const final = parser.parseFinalResults(results);
-            resolve(toRollRecord(final, notation));
+            const rec = toRollRecord(final, notation);
+            // The engine occasionally yields a malformed result (bogus total, no
+            // dice). Don't show garbage — recover with a clean headless roll.
+            if (!isPlausibleRoll(rec, notation)) {
+              console.warn("[hoard] engine returned a malformed roll; using headless fallback", rec);
+              resolve(rollHeadless(notation));
+              return;
+            }
+            resolve(rec);
           } catch (err) {
             reject(err instanceof Error ? err : new Error(String(err)));
           }

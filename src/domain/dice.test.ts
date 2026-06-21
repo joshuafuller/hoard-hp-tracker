@@ -6,11 +6,14 @@ import {
   addToPool,
   advantageApplies,
   buildNotation,
+  isPlausibleRoll,
+  notationHasDice,
   poolToNotation,
   removeFromPool,
   toRollRecord,
   type DiceSelection,
   type DiePool,
+  type RollRecord,
 } from "./dice";
 
 const sel = (over: Partial<DiceSelection> = {}): DiceSelection => ({
@@ -130,6 +133,38 @@ describe("dice pool builder", () => {
     // not a lone d20 → mode ignored
     expect(poolToNotation([{ sides: 20, count: 2 }], 0, "advantage")).toBe("2d20");
     expect(poolToNotation([{ sides: 6, count: 3 }], 0, "advantage")).toBe("3d6");
+  });
+});
+
+describe("isPlausibleRoll (engine result guard)", () => {
+  const rec = (over: Partial<RollRecord> = {}): RollRecord => ({
+    notation: "1d20",
+    total: 14,
+    result: [14],
+    dice: [{ sides: 20, value: 14, dropped: false }],
+    ...over,
+  });
+
+  it("accepts a normal roll", () => {
+    expect(isPlausibleRoll(rec(), "1d20")).toBe(true);
+  });
+
+  it("rejects the malformed engine result: a total with NO dice for a dice notation", () => {
+    // the observed bug: a re-rolled 1d20 came back as total 21 with zero dice.
+    expect(isPlausibleRoll(rec({ total: 21, result: [], dice: [] }), "1d20")).toBe(false);
+  });
+
+  it("rejects a non-finite total", () => {
+    expect(isPlausibleRoll(rec({ total: NaN }), "1d20")).toBe(false);
+  });
+
+  it("allows an empty dice set for a bare modifier (no dice in the notation)", () => {
+    expect(isPlausibleRoll({ notation: "+5", total: 5, result: [], dice: [] }, "+5")).toBe(true);
+  });
+
+  it("notationHasDice detects dice vs bare modifiers", () => {
+    for (const n of ["1d20", "2d6+3", "4d6kh3", "3d6!", "1dF", "1d%"]) expect(notationHasDice(n)).toBe(true);
+    for (const n of ["+5", "5", "-2", ""]) expect(notationHasDice(n)).toBe(false);
   });
 });
 
