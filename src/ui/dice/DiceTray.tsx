@@ -136,6 +136,9 @@ export function DiceTray({
   const canvasRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<DiceTrayEngine | null>(null);
   const loadingRef = useRef(false);
+  // Bumped whenever the tray is closed/cleared, so a roll still settling in the
+  // background can detect it was abandoned and discard its late result.
+  const rollSeq = useRef(0);
 
   // Lazy-load the heavy 3D engine on first open (never at app start, never under
   // reduced motion). Loaded once and reused while the tray stays mounted.
@@ -163,6 +166,7 @@ export function DiceTray({
 
   const doRoll = useCallback(
     async (expr: string, context: RollContext = "ad-hoc"): Promise<RollRecord | null> => {
+      const seq = rollSeq.current; // this throw's generation; a close/clear bumps it
       setShowLog(false);
       setRolling(true);
       // Feel: a synthesized dice-clatter cue (mute-aware) + a short haptic, matching
@@ -191,8 +195,15 @@ export function DiceTray({
             if (timer !== undefined) clearTimeout(timer);
           }
         }
+        // Abandoned mid-roll (tray closed/cleared) — discard the late result so it
+        // can't re-show or apply after the user already left this throw.
+        if (rollSeq.current !== seq) return null;
         setRecord(rec);
-        await history.record(rec, { context });
+        // History is a best-effort side log: a failed write (quota / private mode)
+        // must NOT block the roll's gameplay outcome (death-save pip / Hit Die apply).
+        void history.record(rec, { context }).catch((err) =>
+          console.error("[hoard] dice history write failed", err),
+        );
         return rec;
       } catch (err) {
         console.error("[hoard] dice roll failed", err);
@@ -211,6 +222,7 @@ export function DiceTray({
 
   // Tap the tray (the dimmed area) to clear the dice; ✕ / Escape closes it.
   const clearDice = useCallback(() => {
+    rollSeq.current++; // invalidate any in-flight roll: a late settle must not re-show / apply it
     setRecord(null);
     setDeathSaveRoll(null);
     setHitDieRoll(null);
@@ -273,7 +285,10 @@ export function DiceTray({
 
   return (
     <div className="dice-tray" data-open={open} aria-hidden={!open} role="dialog" aria-modal="true" aria-label={ariaLabel}>
-      <div className="dice-tray__scrim" onClick={clearDice} aria-hidden="true" />
+      {/* Tap-to-clear the dice in ad-hoc mode. Inert under an intent: clearing would
+          reset the contextual outcome and let a second throw double-apply (a death
+          save / Hit Die) — use Done / ✕ to leave instead. */}
+      <div className="dice-tray__scrim" onClick={() => { if (!intent) clearDice(); }} aria-hidden="true" />
       <button type="button" className="dice-tray__close" aria-label="Close dice" onClick={handleClose}>
         <Glyph name="close" />
       </button>

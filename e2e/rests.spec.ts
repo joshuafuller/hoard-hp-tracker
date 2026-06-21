@@ -21,13 +21,22 @@ test.describe("rest controls", () => {
     await expect(current(page)).toHaveText("10");
   });
 
-  test("Short Rest spends a Hit Die and heals", async ({ page }) => {
+  test("Short Rest spends a Hit Die and heals (through the shared dice tray)", async ({ page }) => {
+    // Instant-settle dice (no WebGL flake) — Short Rest now routes the Hit Die
+    // through the 3D tray (#75 step 5) instead of healing inline.
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await damageTo(page, "6"); // 10 → 4
     await expect(current(page)).toHaveText("4");
 
     const btn = page.getByRole("button", { name: "Short Rest" });
     await expect(btn).toBeEnabled();
     await btn.click();
+
+    // Short Rest opens the tray locked to the Hit Die; throw, then apply the heal.
+    const tray = page.getByRole("dialog", { name: "Hit Die roll" });
+    await expect(tray).toBeVisible();
+    await tray.getByRole("button", { name: /^throw/i }).click();
+    await tray.getByRole("button", { name: /apply/i }).click();
 
     // Heals roll(1..8) + CON(0), capped at max — so current must rise above 4.
     await expect

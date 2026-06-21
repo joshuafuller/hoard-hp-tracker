@@ -202,5 +202,37 @@ describe("DiceTray", () => {
         expect(rolls.at(-1)?.context).toBe("hit-die");
       });
     });
+
+    it("discards a contextual roll abandoned mid-throw — a late settle never applies", async () => {
+      // Engine roll we resolve by hand, so we can close the tray mid-flight.
+      let resolveRoll!: (r: unknown) => void;
+      const tray = { roll: vi.fn(() => new Promise((res) => { resolveRoll = res; })), clear: vi.fn() };
+      createDiceTray.mockResolvedValueOnce(tray);
+      const onDeathSave = vi.fn();
+      render(
+        <DiceTray open intent={{ kind: "death-save" }} onDeathSave={onDeathSave}
+          onClose={vi.fn()} onApplyHeal={vi.fn()} db={db} reducedMotion={false} />,
+      );
+      await waitFor(() => expect(createDiceTray).toHaveBeenCalled());
+      await userEvent.click(screen.getByRole("button", { name: /^throw/i }));
+      // Close while the physics is still in flight, then let it settle late.
+      await userEvent.click(screen.getByRole("button", { name: /close dice/i }));
+      resolveRoll({ notation: "1d20", total: 14, result: [14], dice: [{ sides: 20, value: 14, dropped: false }] });
+      await new Promise((r) => setTimeout(r, 20));
+      // The abandoned roll must NOT tick a death save (the bug: closing mid-roll then
+      // a late settle changing/applying the result).
+      expect(onDeathSave).not.toHaveBeenCalled();
+    });
+
+    it("ignores a scrim tap under an intent so a death save can't be re-thrown / double-applied", async () => {
+      const onDeathSave = vi.fn();
+      open({ intent: { kind: "death-save" }, onDeathSave });
+      await userEvent.click(screen.getByRole("button", { name: /^throw/i }));
+      await waitFor(() => expect(onDeathSave).toHaveBeenCalledTimes(1));
+      // After a save the dock shows Done; tapping the scrim must not reset back to Throw.
+      await userEvent.click(document.querySelector(".dice-tray__scrim")!);
+      expect(screen.getByRole("button", { name: /done/i })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^throw/i })).not.toBeInTheDocument();
+    });
   });
 });
