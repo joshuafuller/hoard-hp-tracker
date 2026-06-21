@@ -135,7 +135,7 @@ not gated behind an animation she can't use.
   - **Given** I have rolled at least once, **When** I look at the tray, **Then** I see a history of
     recent rolls (newest first) each showing notation + per-die result + total.
   - **and** each roll is persisted as `{notation, total, result, dice[]}` **plus a `context` tag
-    (`ad-hoc` / `death-save` / `hit-die`) and a timestamp**, durably in IndexedDB (newest-first,
+    (`ad-hoc` / `death-save` / `hit-die`) and an `at` timestamp (epoch ms)**, durably in IndexedDB (newest-first,
     capped at the 50 most recent) — so history survives a full reload, not just the session.
     *(Shipped: `RollRecord` + `useDiceHistory`, `DICE_HISTORY_CAP = 50`.)*
 
@@ -233,7 +233,8 @@ the *build sequence* (each step TDD red-green-refactor), not separate releases:
 2. **Zero-typing core rolling** — die chips + modifier + **one-tap advantage/disadvantage**, showing
    total + per-die + notation, dropped dice struck; successive throws clear the table cleanly.
    *(US-D1, US-D2, US-D3, US-D9)*
-3. **Recorded model + session history** — `{notation, total, result, dice[]}`, persisted. *(US-D4)*
+3. **Recorded model + durable history** — `{notation, total, result, dice[]}` + `context`/`at`,
+   persisted in IndexedDB (cap 50, newest-first). *(US-D4)*
 4. **Notation escape hatch** — secondary field, full Roll20 grammar. *(US-D7)*
 5. **Death-save + Hit-Dice routing through the tray, with heal-apply into HP** — the shared mechanic
    (§6 refactor) + the ratified dice↔HP link (§5). *(US-D5, US-D6)*
@@ -258,7 +259,7 @@ These keep the tray trustworthy at the table; each distils into a red-green test
 | **Invalid typed notation** | Inline error, tray stays open, no crash, nothing recorded. | notation field is the only free-text seam. |
 | **Engine returns a bogus result** (static "21", no dice on a re-roll) | Detected and silently re-rolled headless — the player never sees a stuck number. | `isPlausibleRoll` → headless fallback (shipped). |
 | **Exploding roll** (`3d6!`) | Each exploded die flagged; explosion-round dice append in round order; total stays correct. | `recordFromPhysical` / `assignRounds`; explosion-reconcile spike (#96/#97). |
-| **0 Hit Dice available** | Hit-Die throw unavailable — can't spend what you don't have. | gated on `hitDiceAvailable > 0`. |
+| **0 Hit Dice available** | Hit Die throw unavailable — can't spend what you don't have. | gated on `hitDiceAvailable > 0`. |
 | **Death saves already resolved** (stable / dead) | Death-save throw unavailable in that state. | `status` gate; `rollDeathSave` only meaningful while dying. |
 | **Reduced motion** | Instant-settle: no tumble, full total + per-die result. | US-D8. |
 | **Offline** | Full function, no runtime CDN call (precached, #45). | US-D8. |
@@ -268,7 +269,7 @@ These keep the tray trustworthy at the table; each distils into a red-green test
 - **Concentration save through the tray.** When damage lands while concentrating, the app already
   computes the DC (`concentrationDC`) and prompts the player to keep/drop (#112). Routing that CON
   save d20 through the *same* tray (throw → compare to DC → auto keep/drop) would be a clean,
-  thematic **fourth** "app-owns-the-rule" roll alongside death-save + Hit-Die. **But** PRD §5.3
+  thematic **fourth** "app-owns-the-rule" roll alongside death-save + Hit Die. **But** PRD §5.3
   enumerates only two shared rolls and `RollContext` deliberately omits concentration — so this is a
   spec expansion, not part of #75. Would need a `RollContext: "concentration"` value + a
   keep/drop-via-tray decision. **Surface to the owner before building.**
