@@ -144,6 +144,9 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
   return (
     <div className="dice-tray" data-open={open} aria-hidden={!open} role="dialog" aria-modal="true" aria-label="Dice tray">
       <div className="dice-tray__scrim" onClick={clearDice} aria-hidden="true" />
+      {/* Full-screen dice canvas — the whole screen IS the tray (walls at the
+          edges), with the controls floating on top. */}
+      <div className="dice-tray__canvas" id={CANVAS_ID} ref={canvasRef} aria-hidden="true" />
       <button type="button" className="dice-tray__close" aria-label="Close dice" onClick={handleClose}>
         ✕
       </button>
@@ -152,7 +155,6 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
       </button>
 
       <div className="dice-tray__stage">
-        <div className="dice-tray__canvas" id={CANVAS_ID} ref={canvasRef} aria-hidden="true" />
         {record && <DiceResult record={record} onApplyHeal={onApplyHeal} />}
       </div>
 

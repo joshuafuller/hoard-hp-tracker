@@ -43,6 +43,7 @@
 .dice-tray__scrim {
   position: absolute;
   inset: 0;
+  z-index: 0;
   background: rgba(8, 7, 5, 0.64);
   border: 0;
 }
@@ -87,13 +88,16 @@
   padding: 4rem 1rem 1rem;
   pointer-events: none; /* taps fall through to the scrim (tap-to-clear) */
 }
-/* the 3D canvas dice-box injects fills the whole tray */
+/* the 3D canvas dice-box injects fills the WHOLE screen (the full tray) so the
+   physics walls sit at the real screen edges and dice never roll off-screen.
+   It sits above the dimming scrim but below the floating controls. */
 .dice-tray__canvas {
   position: absolute;
   inset: 0;
   z-index: 1;
+  pointer-events: none; /* taps fall through to the scrim (tap-to-clear) */
 }
-.dice-tray__canvas canvas { width: 100% !important; height: 100% !important; }
+.dice-tray__canvas canvas { display: block; width: 100% !important; height: 100% !important; }
 
 /* ---- result readout ---- */
 .dice-result {

@@ -116,6 +116,22 @@ export async function createDiceTray(container: string | HTMLElement): Promise<D
   });
   await box.init();
 
+  // dice-box only refits on a `window` resize event — it ignores the canvas
+  // changing size on its own (tray opening from display:none, safe-area, device
+  // rotation). Observe the container and nudge dice-box to refit so the buffer
+  // always matches the display (correct aspect) and the physics walls sit at the
+  // real edges (dice never roll off-screen).
+  const target = typeof container === "string" ? document.querySelector<HTMLElement>(container) : container;
+  if (target && typeof ResizeObserver !== "undefined") {
+    let raf = 0;
+    const ro = new ResizeObserver(() => {
+      if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(raf);
+      const fire = () => window.dispatchEvent(new Event("resize"));
+      raf = typeof requestAnimationFrame === "function" ? requestAnimationFrame(fire) : (fire(), 0);
+    });
+    ro.observe(target);
+  }
+
   return {
     roll: (notation: string) =>
       new Promise<RollRecord>((resolve, reject) => {
