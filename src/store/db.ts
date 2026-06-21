@@ -11,6 +11,11 @@ export const HP_DB_NAME = "hoard-hp";
  */
 let reloading = false;
 export const isReloading = (): boolean => reloading;
+/** Test-only: reset the module-level reload flag so a reload test can't leak
+ * `reloading=true` into later tests (the flag has no production reset path). */
+export const resetReloadingForTests = (): void => {
+  reloading = false;
+};
 
 /** Test environments (jsdom / vitest) can't navigate; suppress location.reload there. */
 function isTestEnv(): boolean {

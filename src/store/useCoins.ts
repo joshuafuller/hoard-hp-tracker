@@ -11,6 +11,7 @@ import {
   totalGp,
 } from "../domain/coins";
 import { db as defaultDb, HP_ID, type HpDb, type HpRecord, isReloading } from "./db";
+import { reportSaveError } from "./saveError";
 
 export interface UseCoinsResult extends Coins {
   hydrated: boolean;
@@ -62,7 +63,7 @@ export function useCoins(db: HpDb = defaultDb): UseCoinsResult {
         // propagate so callers/UI can react instead of treating it as success
         // (which would be silent data loss).
         console.error("[hoard] coin write failed; the change was not saved", err2, err);
-        throw err2;
+        reportSaveError(); // surface to the UI; no throw — call sites are fire-and-forget (#101)
       }
     }
   };

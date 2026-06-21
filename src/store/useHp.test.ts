@@ -2,14 +2,18 @@ import "fake-indexeddb/auto";
 import Dexie from "dexie";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createHpDb, HP_ID, type HpDb } from "./db";
+import { createHpDb, HP_ID, type HpDb, resetReloadingForTests } from "./db";
 import { useHp } from "./useHp";
+import { clearSaveError, useSaveError } from "./saveError";
 
 const DB_NAME = "hoard-hp-test";
 
 let db: HpDb;
 
 beforeEach(async () => {
+  // Reset the module-level reload flag so a prior reload test can't leak
+  // `reloading=true` (which makes write() bail before reporting save errors).
+  resetReloadingForTests();
   // Delete via Dexie's captured factory so each test starts from a clean store
   // and the first-run `populate` seed fires deterministically.
   await Dexie.delete(DB_NAME);
@@ -918,30 +922,59 @@ describe("useHp write durability", () => {
     vi.restoreAllMocks();
   });
 
-  it("rejects (no silent data loss) when both the txn and the reopen-retry fail", async () => {
+  it("reports a save error (no silent loss, no unhandled rejection) when both the txn and reopen-retry fail", async () => {
+    clearSaveError();
     const { result } = renderHook(() => useHp(db));
+    const { result: saveErr } = renderHook(() => useSaveError());
     await waitFor(() => expect(result.current.hydrated).toBe(true));
 
     // Both the original transaction AND the reopen/retry hit db.hp.put, so a
-    // persistent put failure simulates quota/private-mode/blocked-upgrade where
-    // the write can never land. The action must surface the failure, not resolve.
+    // persistent put failure simulates quota/private-mode/blocked-upgrade. The
+    // action must surface the failure via the saveError signal WITHOUT rejecting
+    // (call sites are fire-and-forget — a rejection would be unhandled).
     vi.spyOn(db.hp, "put").mockRejectedValue(new Error("QuotaExceededError"));
 
     await act(async () => {
-      await expect(result.current.damage(3)).rejects.toThrow();
+      await result.current.damage(3); // resolves; no throw into the void
     });
+    await waitFor(() => expect(saveErr.current).toBe(true));
+    clearSaveError();
   });
 
   it("does not record the change as undoable when the write fails", async () => {
+    clearSaveError();
     const { result } = renderHook(() => useHp(db));
     await waitFor(() => expect(result.current.hydrated).toBe(true));
 
     vi.spyOn(db.hp, "put").mockRejectedValue(new Error("QuotaExceededError"));
 
     await act(async () => {
-      await expect(result.current.heal(3)).rejects.toThrow();
+      await result.current.heal(3);
     });
     // The undo pill must not appear for a write that never persisted.
     expect(result.current.lastChange).toBeNull();
+    clearSaveError();
+  });
+
+  it("clears the save-error signal once a later write succeeds", async () => {
+    clearSaveError();
+    const { result } = renderHook(() => useHp(db));
+    const { result: saveErr } = renderHook(() => useSaveError());
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+
+    // First write fails → signal set.
+    const spy = vi.spyOn(db.hp, "put").mockRejectedValue(new Error("QuotaExceededError"));
+    await act(async () => {
+      await result.current.damage(1);
+    });
+    await waitFor(() => expect(saveErr.current).toBe(true));
+
+    // A subsequent successful write clears the stale banner.
+    spy.mockRestore();
+    await act(async () => {
+      await result.current.heal(1);
+    });
+    await waitFor(() => expect(saveErr.current).toBe(false));
+    clearSaveError();
   });
 });
