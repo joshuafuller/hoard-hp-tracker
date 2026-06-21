@@ -7,6 +7,7 @@ import { playSfx } from "./sound/sfx";
 import { useHp } from "./store/useHp";
 import type { HpLastChange } from "./store/useHp";
 import { useCoins } from "./store/useCoins";
+import { useSaveError, clearSaveError } from "./store/saveError";
 import { CharacterName } from "./ui/CharacterName";
 import { ConcentrationToggle } from "./ui/ConcentrationToggle";
 import { ConcentrationPrompt } from "./ui/ConcentrationPrompt";
@@ -38,6 +39,7 @@ export function App() {
   const [editingMax, setEditingMax] = useState(false);
   const [keypadOpen, setKeypadOpen] = useState(false);
   const coins = useCoins();
+  const saveFailed = useSaveError();
   const [coinsOpen, setCoinsOpen] = useState(false);
   const [diceOpen, setDiceOpen] = useState(false);
 
@@ -83,6 +85,14 @@ export function App() {
 
   return (
     <main className="hp-tracker" data-tier={tierFor(current, max)} style={accentStyle}>
+      {saveFailed && (
+        <div className="save-error" role="alert">
+          <span>Couldn't save — your last change may not have persisted.</span>
+          <button type="button" className="save-error__dismiss" aria-label="Dismiss" onClick={clearSaveError}>
+            ×
+          </button>
+        </div>
+      )}
       <div className="hp-tracker__chrome">
         <CoinButton onOpen={() => { setKeypadOpen(false); setEditingMax(false); setCoinsOpen(true); }} />
         <DiceToken onOpen={() => { setKeypadOpen(false); setEditingMax(false); setCoinsOpen(false); setDiceOpen(true); }} />

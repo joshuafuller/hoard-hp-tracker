@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db as defaultDb, HP_ID, type HpDb, type HpRecord, isReloading } from "./db";
+import { clearSaveError, reportSaveError } from "./saveError";
 import {
   damage,
   heal,
@@ -153,19 +154,30 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
   // drop the write silently, so a tap appears to do nothing. Reopen once and
   // retry; if it still fails, surface it instead of failing invisibly. Skip the
   // retry when a reload is imminent (versionchange) so we don't fight it.
-  const write = (fn: (r: HpRecord) => HpRecord) => async (): Promise<void> => {
-    try {
-      await runTxn(fn);
-    } catch (err) {
-      if (isReloading()) return;
+  const write =
+    (fn: (r: HpRecord) => HpRecord, onSuccess?: () => void) =>
+    async (): Promise<void> => {
       try {
-        if (!db.isOpen()) await db.open();
         await runTxn(fn);
-      } catch (err2) {
-        console.error("[hoard] HP write failed; the change was not saved", err ?? err2);
+        clearSaveError(); // a successful write clears any prior save-error banner (#101)
+        onSuccess?.();
+      } catch (err) {
+        if (isReloading()) return;
+        try {
+          if (!db.isOpen()) await db.open();
+          await runTxn(fn);
+          clearSaveError();
+          onSuccess?.();
+        } catch (err2) {
+          // Both attempts failed (quota, private mode, blocked upgrade). Log the
+          // *retry* error, surface it via the saveError signal, and skip onSuccess
+          // so a failed write offers no Undo. No throw — call sites are
+          // fire-and-forget (#101).
+          console.error("[hoard] HP write failed; the change was not saved", err2, err);
+          reportSaveError();
+        }
       }
-    }
-  };
+    };
 
   // If the resulting HP is 0, concentration must drop (per 5e AC).
   // Only sets concentrating:false when the record was actually concentrating,
@@ -254,12 +266,15 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
     (kind: HpLastChange["kind"], producer: (r: HpRecord, n: number) => HpRecord) =>
     (n: number) => {
       let before: HpLastChange["before"] | null = null;
-      return write((r) => {
-        before = { current: r.current, temp: r.temp, successes: r.successes, failures: r.failures, concentrating: r.concentrating ?? false };
-        return producer(r, n);
-      })().then(() => {
-        if (before) setLastChange({ kind, amount: n, before });
-      });
+      return write(
+        (r) => {
+          before = { current: r.current, temp: r.temp, successes: r.successes, failures: r.failures, concentrating: r.concentrating ?? false };
+          return producer(r, n);
+        },
+        () => {
+          if (before) setLastChange({ kind, amount: n, before });
+        },
+      )();
     };
 
   // Restore only the HP-bearing fields, so an unrelated change (e.g. hit dice)
@@ -318,31 +333,27 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
         let before: HpLastChange["before"] | null = null;
         let wasConcentrating = false;
         let resultedInDown = false;
-        return write((r) => {
-          before = { current: r.current, temp: r.temp, successes: r.successes, failures: r.failures, concentrating: r.concentrating ?? false };
-          wasConcentrating = r.concentrating ?? false;
-          const hp = damage(hpOf(r), n);
-          resultedInDown = hp.current <= 0;
-          let saves = reconcile(hp.current, savesOf(r));
-          if (n > 0 && r.current === 0 && statusFor(r.current, saves) === "dying") {
-            saves = addFailure(saves, 1);
-          }
-          return { ...r, ...hp, ...saves, ...dropConcentrationIfDown(r, hp.current) };
-        })().then(() => {
-          if (before) setLastChange({ kind, amount: n, before });
-          // Show concentration check only when: was concentrating, damage > 0,
-          // and the hit didn't drop the character (dropping clears concentration, no save needed).
-          if (wasConcentrating && n > 0) {
-            if (resultedInDown) {
-              // Character dropped to 0 — concentration auto-clears, no save prompt.
-              setConcentrationCheck(null);
-            } else {
-              setConcentrationCheck({ dc: concentrationDC(n), damage: n });
+        return write(
+          (r) => {
+            before = { current: r.current, temp: r.temp, successes: r.successes, failures: r.failures, concentrating: r.concentrating ?? false };
+            wasConcentrating = r.concentrating ?? false;
+            const hp = damage(hpOf(r), n);
+            resultedInDown = hp.current <= 0;
+            let saves = reconcile(hp.current, savesOf(r));
+            if (n > 0 && r.current === 0 && statusFor(r.current, saves) === "dying") {
+              saves = addFailure(saves, 1);
             }
-          }
-          // If not concentrating, leave any existing check state alone (it was already
-          // dismissed or never set).
-        });
+            return { ...r, ...hp, ...saves, ...dropConcentrationIfDown(r, hp.current) };
+          },
+          () => {
+            if (before) setLastChange({ kind, amount: n, before });
+            // Concentration check only when: was concentrating, damage > 0, and the hit
+            // didn't drop the character (dropping clears concentration — no save prompt).
+            if (wasConcentrating && n > 0) {
+              setConcentrationCheck(resultedInDown ? null : { dc: concentrationDC(n), damage: n });
+            }
+          },
+        )();
       };
     })(),
     heal: undoable("heal", (r, n) => {

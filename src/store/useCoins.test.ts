@@ -1,14 +1,15 @@
 import "fake-indexeddb/auto";
 import Dexie from "dexie";
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHpDb, type HpDb } from "./db";
 import { useCoins } from "./useCoins";
+import { clearSaveError, useSaveError } from "./saveError";
 
 const DB_NAME = "hoard-hp-coins-test";
 let db: HpDb;
 beforeEach(async () => { await Dexie.delete(DB_NAME); db = createHpDb(DB_NAME); });
-afterEach(() => db.close());
+afterEach(() => { vi.restoreAllMocks(); db.close(); });
 
 describe("useCoins", () => {
   it("defaults all denominations to 0", async () => {
@@ -92,5 +93,22 @@ describe("useCoins", () => {
     await act(() => result.current.distill());
     await waitFor(() => expect(result.current.gp).toBe(2));
     expect(result.current.lastDistill).toBeNull();
+  });
+
+  it("reports a save error (no silent loss, no unhandled rejection) when both the txn and reopen-retry fail", async () => {
+    clearSaveError();
+    const { result } = renderHook(() => ({ coins: useCoins(db), saveFailed: useSaveError() }));
+    await waitFor(() => expect(result.current.coins.hydrated).toBe(true));
+
+    // A persistent put failure means neither the original txn nor the reopen retry
+    // can land the write. The coin op surfaces it via the saveError signal without
+    // rejecting (call sites are fire-and-forget).
+    vi.spyOn(db.hp, "put").mockRejectedValue(new Error("QuotaExceededError"));
+
+    await act(async () => {
+      await result.current.coins.add("gp", 5);
+    });
+    expect(result.current.saveFailed).toBe(true);
+    clearSaveError();
   });
 });
