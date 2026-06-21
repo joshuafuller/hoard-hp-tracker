@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { type CoinKind, type Coins, coinsEqual, distill } from "../domain/coins";
+import { type CoinKind, type Coins, canSpend, coinsEqual, distill } from "../domain/coins";
 import { AmountKeypad } from "./AmountKeypad";
 import { CoinRow } from "./CoinRow";
 import { DistillConfirm } from "./DistillConfirm";
@@ -167,6 +167,7 @@ export function CoinSheet({
               label={r.label}
               unit={r.unit}
               count={counts[r.kind]}
+              canSpend={canSpend(coins, r.kind, 1)}
               onAdd={() => onAdd(r.kind, 1)}
               onSpend={() => onSpend(r.kind, 1)}
               onEdit={() => setEditing(r.kind)}
