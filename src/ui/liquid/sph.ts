@@ -296,9 +296,17 @@ export class Sph {
       p.y += dt * p.vy;
     }
 
-    // 2. constraint solve on the predicted positions
+    // 2. constraint solve on the predicted positions. Build the neighbour grid
+    // once on the predicted positions, then rebuild it before every *subsequent*
+    // iteration: applyDeltaP moves particles, so a grid built once would go stale
+    // and mis-bucket any particle nudged into a new cell. The unconditional build
+    // also keeps the grid valid for the iterations === 0 case (constraint solve
+    // disabled), which still falls through to the XSPH neighbour pass below.
+    // (Iteration 0 is numerically unchanged — grid built on the predicted
+    // positions before the first applyDeltaP, exactly as before.)
     this.buildGrid();
     for (let iter = 0; iter < this.params.iterations; iter++) {
+      if (iter > 0) this.buildGrid();
       this.computeLambda();
       this.applyDeltaP();
     }
