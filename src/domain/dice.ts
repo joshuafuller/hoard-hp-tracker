@@ -33,8 +33,10 @@ export interface RolledDie {
   sides: number;
   value: number;
   dropped: boolean;
-  /** True if this die triggered an explosion (the next die in sequence is its result). */
+  /** True if this die rolled its max and triggered an explosion. */
   exploded?: boolean;
+  /** Explosion round (≥2); omitted for the initial round-1 dice. */
+  round?: number;
 }
 
 /** A recorded roll: the notation thrown, the grand total, the kept result, every die. */
@@ -131,25 +133,51 @@ function isDropped(entry: ParserRollEntry): boolean {
 }
 
 /**
- * Collect every die from a parser result tree by gathering all `rolls[]` arrays
- * anywhere in the structure (mirrors the parser's own `recursiveSearch("rolls")`).
+ * Assign explosion ROUNDS to a die group's rolls. The parser appends explosion
+ * dice at the END, batched by round: the first `count` dice are round 1; each die
+ * that exploded contributes one die to the next round, and so on. So round N+1 has
+ * exactly as many dice as exploded in round N. (round 1 is left implicit.)
+ */
+function assignRounds(rolls: ParserRollEntry[], count: number, out: RolledDie[]): void {
+  let round = 1;
+  let remaining = count > 0 ? count : rolls.length; // dice left in the current round
+  let exploded = 0; // explosions seen this round → size of the next round
+  for (const entry of rolls) {
+    const die: RolledDie = {
+      sides: entry.die ?? 0,
+      value: entry.value,
+      dropped: isDropped(entry),
+    };
+    if (entry.explode) {
+      die.exploded = true;
+      exploded++;
+    }
+    if (round > 1) die.round = round;
+    out.push(die);
+    remaining--;
+    if (remaining === 0 && exploded > 0) {
+      round++;
+      remaining = exploded;
+      exploded = 0;
+    }
+  }
+}
+
+/**
+ * Collect every die from a parser result tree. Each die-group node carries its
+ * initial `count` and a flat `rolls[]` (initial dice + explosion rounds appended);
+ * {@link assignRounds} tags each die with its explosion round.
  */
 function collectDice(node: unknown, out: RolledDie[]): void {
   if (!node || typeof node !== "object") return;
-  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
-    if (key === "rolls" && Array.isArray(value)) {
-      for (const entry of value as ParserRollEntry[]) {
-        const die: RolledDie = {
-          sides: entry.die ?? 0,
-          value: entry.value,
-          dropped: isDropped(entry),
-        };
-        if (entry.explode) die.exploded = true;
-        out.push(die);
-      }
-    } else if (value && typeof value === "object") {
-      collectDice(value, out);
-    }
+  const obj = node as Record<string, unknown>;
+  if (Array.isArray(obj.rolls)) {
+    const count = (obj.count as { value?: number } | undefined)?.value;
+    assignRounds(obj.rolls as ParserRollEntry[], typeof count === "number" ? count : obj.rolls.length, out);
+  }
+  for (const [key, value] of Object.entries(obj)) {
+    if (key === "rolls") continue; // already handled (with round batching)
+    if (value && typeof value === "object") collectDice(value, out);
   }
 }
 
