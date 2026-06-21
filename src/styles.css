@@ -1276,6 +1276,7 @@ body {
   appearance: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
   padding: 0.15rem 0.7rem; border-radius: var(--radius-pill);
   font-size: 1rem; font-weight: 700; color: var(--hp-temp);
+  font-variant-numeric: tabular-nums; /* #95 — stable digit width for legibility */
   background: color-mix(in oklab, var(--hp-temp) 18%, transparent);
   border: 1px solid color-mix(in oklab, var(--hp-temp) 40%, transparent);
   box-shadow: 0 0 16px color-mix(in oklab, var(--hp-temp) 30%, transparent);
