@@ -3,6 +3,7 @@ import { type CoinKind, type Coins, coinsEqual, distill } from "../domain/coins"
 import { AmountKeypad } from "./AmountKeypad";
 import { CoinRow } from "./CoinRow";
 import { DistillConfirm } from "./DistillConfirm";
+import { Glyph } from "./icons/Glyph";
 
 export interface CoinSheetProps {
   pp: number;
@@ -149,7 +150,7 @@ export function CoinSheet({
         <div className="coins__head">
           <span className="coins__label">HOARD</span>
           <button type="button" className="coins__close" aria-label="Close" onClick={onClose}>
-            ✕
+            <Glyph name="close" />
           </button>
         </div>
         <div className="coins__hero">

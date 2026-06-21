@@ -15,7 +15,7 @@ import { createDiceTray, rollHeadless, type DiceTray as DiceTrayEngine } from ".
 import { DiceControls } from "./DiceControls";
 import { DiceResult } from "./DiceResult";
 import { DiceHistory } from "./DiceHistory";
-import { DiceGlyph } from "./DiceGlyph";
+import { Glyph } from "../icons/Glyph";
 
 export interface DiceTrayProps {
   open: boolean;
@@ -157,10 +157,10 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
     <div className="dice-tray" data-open={open} aria-hidden={!open} role="dialog" aria-modal="true" aria-label="Dice tray">
       <div className="dice-tray__scrim" onClick={clearDice} aria-hidden="true" />
       <button type="button" className="dice-tray__close" aria-label="Close dice" onClick={handleClose}>
-        <DiceGlyph name="close" />
+        <Glyph name="close" />
       </button>
       <button type="button" className="dice-tray__log" aria-label="Roll log" onClick={() => setShowLog((v) => !v)}>
-        <DiceGlyph name="log" />
+        <Glyph name="log" />
         <span>log</span>
       </button>
 

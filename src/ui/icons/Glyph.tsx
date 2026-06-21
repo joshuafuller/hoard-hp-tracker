@@ -8,9 +8,9 @@
  * geometrically centred every time, font-independent. So: never use text glyphs
  * for icon buttons — use this.
  */
-export type DiceGlyphName = "close" | "log" | "clear" | "heal";
+export type GlyphName = "close" | "log" | "clear" | "heal";
 
-const PATHS: Record<DiceGlyphName, React.ReactNode> = {
+const PATHS: Record<GlyphName, React.ReactNode> = {
   // an X — two crossed lines centred on (12,12)
   close: (
     <>
@@ -42,7 +42,7 @@ const PATHS: Record<DiceGlyphName, React.ReactNode> = {
   ),
 };
 
-export function DiceGlyph({ name }: { name: DiceGlyphName }) {
+export function Glyph({ name }: { name: GlyphName }) {
   return (
     <svg
       className="dice-glyph"
