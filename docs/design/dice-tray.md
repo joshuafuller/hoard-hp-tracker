@@ -14,13 +14,19 @@ total reads across the table.
 - **Dock:** a slim translucent dock anchored low (thumb-reach) holds the controls; dice + the giant
   **Fraunces total** own the centre. Tap-the-tray clears; ✕ / Escape closes; the tray is inert when closed.
 
-## Controls (zero-typing core)
-- **Die chips** d4–d100 (gold-medallion when active); **d20 pre-selected** on open.
-- **Modifier** stepper; **last modifier remembered** between throws.
-- **Adv/Dis = one symmetric segment** *Disadvantage · Normal · Advantage* — **co-equal** (Advantage lights
-  gold, Disadvantage lights ruby). Never a lopsided advantage-only control.
-- **Notation** escape hatch behind a ⌨ glyph (JetBrains Mono) — secondary, never required for the core path.
-- Interaction budget: plain d20 ≤ 3 interactions; advantage / a modifier add at most one tap each.
+## Controls — dice-pool builder (zero-typing core)
+The chip bar is a **pool builder**, not a single-select (revised 2026-06-20 per user):
+- **Die chips** d4–d100: **tap to add one** die of that size (a badge shows the count); five taps of
+  d20 = `5d20`, mix freely (`2d6 + 1d4`). Chips are **flexible pills** so all seven always fit the row
+  (no horizontal clipping at any phone width — guarded by e2e).
+- **Removable tags + live expression**: the built pool shows as removable tags and a live notation
+  string that is **the same roll the notation field edits** — buttons and typed notation are two views
+  of one roll, so **every permutation is reachable both ways**. **Clear** resets the pool.
+- **Modifier** stepper; **remembered** between throws.
+- **Adv/Dis = one symmetric segment** *Disadvantage · Normal · Advantage* — **co-equal**, but enabled
+  **only for a lone d20** (the 5e keep-high/low rule; "advantage on 3d6" is meaningless, so it dims).
+- **Notation** escape hatch behind a ⌨ glyph — secondary, never required for the core path.
+- Interaction budget: a plain d20 is ≤ 3 interactions; advantage / a modifier add at most one tap each.
 
 ## The five build states (see the mockup)
 1. **Ready** — d20 pre-selected, "flick to throw".
