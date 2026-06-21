@@ -25,11 +25,13 @@ function dicePath(file: string): string {
 
 /**
  * Indirect dynamic import. The engine is a `/public` file (served as-is, with its
- * own worker), not a source module — a literal `import()` makes Vite's dev server
- * try to resolve it from the module graph and fail. Routing through `Function`
- * hides the URL from Vite so the browser fetches it same-origin at runtime.
+ * own worker), not a source module — Vite must NOT try to resolve it from the
+ * module graph (it would fail / try to bundle the worker). The `@vite-ignore`
+ * annotation on the import below tells Vite to leave this `import()` alone so the
+ * browser fetches it same-origin at runtime. Preferred over `new Function(...)`,
+ * which is eval-like and blocked by a strict CSP (`unsafe-eval`).
  */
-const importModule = new Function("url", "return import(url)") as (url: string) => Promise<unknown>;
+const importModule = (url: string): Promise<unknown> => import(/* @vite-ignore */ url);
 
 interface DieGroup {
   qty: number;

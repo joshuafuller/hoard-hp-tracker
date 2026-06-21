@@ -90,6 +90,44 @@ describe("DiceTray", () => {
     expect(onApplyHeal).toHaveBeenCalledWith(23);
   });
 
+  it("clears the rendered result after applying as heal (no stale roll on reopen)", async () => {
+    open();
+    await addD20();
+    await userEvent.click(screen.getByRole("button", { name: /^throw/i }));
+    await waitFor(() => expect(screen.getByText("23")).toBeInTheDocument());
+    await userEvent.click(screen.getByRole("button", { name: /apply.*heal/i }));
+    // The result plate (and its total) must be gone so it can't reappear on reopen.
+    await waitFor(() => expect(screen.queryByText("23")).toBeNull());
+  });
+
+  it("preserves hand-edited notation when stepping the modifier", async () => {
+    open();
+    const field = screen.getByRole("textbox", { name: /dice notation/i });
+    await userEvent.clear(field);
+    await userEvent.type(field, "4d6kh3!");
+    await userEvent.click(screen.getByRole("button", { name: /increase modifier/i }));
+    // The hand-typed expression must NOT be rewritten from the (empty) pool.
+    expect(field).toHaveValue("4d6kh3!");
+  });
+
+  it("lets the Normal button reset Advantage after the field is hand-edited (no stuck state)", async () => {
+    open();
+    // Pick Advantage on a lone d20, then hand-edit the notation → manual mode.
+    await addD20();
+    await userEvent.click(screen.getByRole("button", { name: /^advantage/i }));
+    const adv = screen.getByRole("button", { name: /^advantage/i });
+    expect(adv).toHaveAttribute("aria-pressed", "true");
+    const field = screen.getByRole("textbox", { name: /dice notation/i });
+    await userEvent.clear(field);
+    await userEvent.type(field, "4d6kh3!");
+    // Normal stays enabled in manual mode; clicking it must reset the mode (so the
+    // adv/dis pressed+disabled state clears) WITHOUT rewriting the typed notation.
+    await userEvent.click(screen.getByRole("button", { name: /^normal/i }));
+    expect(screen.getByRole("button", { name: /^normal/i })).toHaveAttribute("aria-pressed", "true");
+    expect(adv).toHaveAttribute("aria-pressed", "false");
+    expect(field).toHaveValue("4d6kh3!");
+  });
+
   it("closes from the ✕", async () => {
     const onClose = vi.fn();
     open({ onClose });
@@ -105,5 +143,32 @@ describe("DiceTray", () => {
   it("does not load the engine while closed", () => {
     render(<DiceTray open={false} onClose={vi.fn()} onApplyHeal={vi.fn()} db={db} reducedMotion={false} />);
     expect(createDiceTray).not.toHaveBeenCalled();
+  });
+
+  it("a fast open→close→reopen mid-load neither loses nor double-inits the engine", async () => {
+    // First open kicks off a load we hold pending. Close + reopen while it's still
+    // in flight, then let it resolve. The tray must end up with EXACTLY ONE live
+    // engine — not lost (→ headless fallback) and not re-initialized (→ leaked tray).
+    const tray = { roll: vi.fn(async () => ({ notation: "1d20+5", total: 23, result: [18], dice: [{ sides: 20, value: 18, dropped: false }] })), clear: vi.fn() };
+    let resolveLoad!: (t: typeof tray) => void;
+    createDiceTray.mockImplementationOnce(() => new Promise((res) => { resolveLoad = res; }));
+
+    const onClose = vi.fn();
+    const onApplyHeal = vi.fn();
+    const { rerender } = render(<DiceTray open onClose={onClose} onApplyHeal={onApplyHeal} db={db} reducedMotion={false} />);
+    await waitFor(() => expect(createDiceTray).toHaveBeenCalledTimes(1));
+    // Close, then reopen, both while the single load is still pending.
+    rerender(<DiceTray open={false} onClose={onClose} onApplyHeal={onApplyHeal} db={db} reducedMotion={false} />);
+    rerender(<DiceTray open onClose={onClose} onApplyHeal={onApplyHeal} db={db} reducedMotion={false} />);
+    // Let that one load resolve.
+    resolveLoad(tray);
+
+    // The engine is used on the next throw — proving it wasn't lost (no headless).
+    await userEvent.click(screen.getByRole("button", { name: "Add d20" }));
+    await userEvent.click(screen.getByRole("button", { name: /^throw/i }));
+    await waitFor(() => expect(tray.roll).toHaveBeenCalled());
+    expect(rollHeadless).not.toHaveBeenCalled();
+    // And it was only ever initialized once — no double-init / leaked second tray.
+    expect(createDiceTray).toHaveBeenCalledTimes(1);
   });
 });

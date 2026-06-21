@@ -33,7 +33,7 @@ export function DiceResult({ record, onApplyHeal, heal = false }: DiceResultProp
                 {added && <span className="dice-result__plus" aria-hidden="true">+</span>}
                 <span
                   className="dice-result__chip"
-                  data-testid={`die-${d.value}`}
+                  data-testid={`die-${i}`}
                   data-dropped={d.dropped}
                   data-crit={crit}
                 >
