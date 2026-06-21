@@ -170,7 +170,10 @@ node -e 'const fs=require("fs"),cp=require("child_process");
   const pc=new Set([...sw.matchAll(/"([^"]+\.(?:js|css|html|woff2|wasm|png|jpg|json|ico|webp|svg|webmanifest))"/g)].map(m=>m[1]));
   const files=cp.execSync("find dist -type f").toString().trim().split("\n").map(f=>f.replace(/^dist\//,""));
   for(const f of files){ if(/^(sw\.js|workbox-)/.test(f))continue;
-    if(![...pc].some(p=>p===f||f.endsWith(p)))console.log("MISSING:",f); }
+    // Match either direction: precache URLs may carry a base-path prefix
+    // (e.g. /hoard-hp-tracker/beta/assets/...), so check p ends with the
+    // relative dist file f (and the exact-equal case for unprefixed URLs).
+    if(![...pc].some(p=>p===f||p.endsWith(f)))console.log("MISSING:",f); }
   console.log("done — nothing above means all runtime files are precached");'
 
 # Scan dist for any external URL (expect: only inert error-message strings):
