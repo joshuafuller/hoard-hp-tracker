@@ -148,14 +148,37 @@ function collectDice(node: unknown, out: RolledDie[]): void {
   }
 }
 
+/** Sum every literal modifier (`type: "number"`) node in the parser tree. */
+function sumModifiers(node: unknown): number {
+  if (!node || typeof node !== "object") return 0;
+  const obj = node as Record<string, unknown>;
+  let sum = 0;
+  if (obj.type === "number" && typeof obj.value === "number" && Number.isFinite(obj.value)) {
+    sum += obj.value;
+  }
+  for (const value of Object.values(obj)) {
+    if (value && typeof value === "object") sum += sumModifiers(value);
+  }
+  return sum;
+}
+
 /**
  * Normalize a parser result tree into a {@link RollRecord}: the total is the
  * tree's grand `value`, the dice are every landed die with its kept/dropped flag,
  * and the result is just the kept dice.
+ *
+ * Defensive: the 3D engine occasionally returns a die without a value on huge
+ * pools (seen on 100d20), which would make the total `NaN`. We drop any non-finite
+ * die and, if the parser's grand total is itself non-finite, recompute it from the
+ * kept dice plus the literal modifiers — so a roll never displays `NaN`.
  */
 export function toRollRecord(result: ParserResult, notation: string): RollRecord {
-  const dice: RolledDie[] = [];
-  collectDice(result, dice);
+  const all: RolledDie[] = [];
+  collectDice(result, all);
+  const dice = all.filter((d) => Number.isFinite(d.value));
   const kept = dice.filter((d) => !d.dropped).map((d) => d.value);
-  return { notation, total: result.value, result: kept, dice };
+  const total = Number.isFinite(result.value)
+    ? result.value
+    : kept.reduce((a, b) => a + b, 0) + sumModifiers(result);
+  return { notation, total, result: kept, dice };
 }

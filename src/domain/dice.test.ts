@@ -182,6 +182,32 @@ describe("toRollRecord (real parser)", () => {
     ]);
   });
 
+  it("drops a non-finite (NaN) die the engine occasionally returns, and never emits NaN", () => {
+    // dice-box can return a die without a value on huge pools → NaN total (seen
+    // on 100d20). Hand-built tree: one good die, one NaN; top value is NaN.
+    const tree = {
+      value: NaN,
+      dice: [{ rolls: [{ die: 20, value: 7, valid: true }, { die: 20, value: NaN, valid: true }] }],
+    } as unknown as Parameters<typeof toRollRecord>[0];
+    const rec = toRollRecord(tree, "2d20");
+    expect(rec.dice).toEqual([{ sides: 20, value: 7, dropped: false }]);
+    expect(rec.result).toEqual([7]);
+    expect(Number.isFinite(rec.total)).toBe(true);
+    expect(rec.total).toBe(7);
+  });
+
+  it("recovers the modifier when falling back from a NaN total", () => {
+    const tree = {
+      value: NaN,
+      dice: [
+        { rolls: [{ die: 20, value: 7, valid: true }, { die: 20, value: NaN, valid: true }] },
+        { type: "number", value: 5 },
+      ],
+    } as unknown as Parameters<typeof toRollRecord>[0];
+    const rec = toRollRecord(tree, "2d20+5");
+    expect(rec.total).toBe(12); // 7 (finite die) + 5 (modifier)
+  });
+
   it("4d6 drop-lowest keeps three, struck-out one", () => {
     const rec = roll("4d6kh3", [
       { v: 6, sides: 6 },
