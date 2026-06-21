@@ -1,14 +1,14 @@
 import "fake-indexeddb/auto";
 import Dexie from "dexie";
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHpDb, type HpDb } from "./db";
 import { useCoins } from "./useCoins";
 
 const DB_NAME = "hoard-hp-coins-test";
 let db: HpDb;
 beforeEach(async () => { await Dexie.delete(DB_NAME); db = createHpDb(DB_NAME); });
-afterEach(() => db.close());
+afterEach(() => { vi.restoreAllMocks(); db.close(); });
 
 describe("useCoins", () => {
   it("defaults all denominations to 0", async () => {
@@ -92,5 +92,18 @@ describe("useCoins", () => {
     await act(() => result.current.distill());
     await waitFor(() => expect(result.current.gp).toBe(2));
     expect(result.current.lastDistill).toBeNull();
+  });
+
+  it("rejects (no silent data loss) when both the txn and the reopen-retry fail", async () => {
+    const { result } = renderHook(() => useCoins(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+
+    // A persistent put failure means neither the original txn nor the reopen
+    // retry can land the write. The coin op must surface it, not resolve.
+    vi.spyOn(db.hp, "put").mockRejectedValue(new Error("QuotaExceededError"));
+
+    await act(async () => {
+      await expect(result.current.add("gp", 5)).rejects.toThrow();
+    });
   });
 });

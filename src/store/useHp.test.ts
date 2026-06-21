@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import Dexie from "dexie";
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHpDb, HP_ID, type HpDb } from "./db";
 import { useHp } from "./useHp";
 
@@ -910,5 +910,38 @@ describe("useHp concentration", () => {
     await act(() => result.current.undo());
     await waitFor(() => expect(result.current.current).toBe(10));
     expect(result.current.concentrating).toBe(true);
+  });
+});
+
+describe("useHp write durability", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("rejects (no silent data loss) when both the txn and the reopen-retry fail", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+
+    // Both the original transaction AND the reopen/retry hit db.hp.put, so a
+    // persistent put failure simulates quota/private-mode/blocked-upgrade where
+    // the write can never land. The action must surface the failure, not resolve.
+    vi.spyOn(db.hp, "put").mockRejectedValue(new Error("QuotaExceededError"));
+
+    await act(async () => {
+      await expect(result.current.damage(3)).rejects.toThrow();
+    });
+  });
+
+  it("does not record the change as undoable when the write fails", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+
+    vi.spyOn(db.hp, "put").mockRejectedValue(new Error("QuotaExceededError"));
+
+    await act(async () => {
+      await expect(result.current.heal(3)).rejects.toThrow();
+    });
+    // The undo pill must not appear for a write that never persisted.
+    expect(result.current.lastChange).toBeNull();
   });
 });

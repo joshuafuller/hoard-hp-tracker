@@ -162,7 +162,12 @@ export function useHp(db: HpDb = defaultDb): UseHpResult {
         if (!db.isOpen()) await db.open();
         await runTxn(fn);
       } catch (err2) {
-        console.error("[hoard] HP write failed; the change was not saved", err ?? err2);
+        // Both attempts failed (quota, private mode, blocked upgrade). Log the
+        // *retry* error (the relevant one) with the original as context, then
+        // propagate so callers/UI can react instead of treating it as success
+        // (which would be silent data loss).
+        console.error("[hoard] HP write failed; the change was not saved", err2, err);
+        throw err2;
       }
     }
   };
