@@ -1158,22 +1158,22 @@ body {
 .vessel__fallback { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; }
 .vessel__fallback-fill {
   width: 100%;
-  /* flex:none so a temp band above it can't make flexbox shrink the HP fill when
-     ratio + tempRatio > 100% (full HP + any temp). Temp overflows + clips on the
-     orb instead, matching the WebGL layering. */
-  flex: none;
   background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 85%, white 5%), color-mix(in oklab, var(--accent) 70%, black));
   box-shadow: 0 0 24px var(--accent-glow);
   transition: height var(--dur-flow) cubic-bezier(0.34, 1.2, 0.5, 1), background var(--dur-flow) ease;
 }
-/* #110: temp HP as a sapphire ward band stacked above the HP fill in the static
-   fallback, matching the WebGL temp layer (uses the same --hp-temp token). */
+/* #110: temp HP as a sapphire ward band that rides on top of the HP surface in
+   the static fallback, matching the WebGL temp layer (same --hp-temp token).
+   Absolutely positioned + bottom-anchored (clamped in JSX) so it stays visible
+   at full HP instead of being pushed out the top — Codex P2 on #119. Painting
+   over the static in-flow fill is automatic per stacking order; no z-index. */
 .vessel__fallback-temp {
+  position: absolute;
+  left: 0;
   width: 100%;
-  flex: none;
   background: linear-gradient(180deg, color-mix(in oklab, var(--hp-temp) 80%, white 8%), color-mix(in oklab, var(--hp-temp) 70%, black));
   box-shadow: 0 0 18px color-mix(in oklab, var(--hp-temp) 45%, transparent);
-  transition: height var(--dur-flow) cubic-bezier(0.34, 1.2, 0.5, 1);
+  transition: bottom var(--dur-flow) cubic-bezier(0.34, 1.2, 0.5, 1), height var(--dur-flow) cubic-bezier(0.34, 1.2, 0.5, 1);
 }
 
 /* Brushed-gold FOIL over the fluid — fine metal grain + a specular sweep that

@@ -144,12 +144,23 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
           <canvas ref={canvasRef} className="vessel__canvas" aria-hidden="true" />
         ) : (
           <div className="vessel__fallback" aria-hidden="true">
-            {/* temp HP sits as a sapphire ward band ABOVE the HP fill, mirroring
-                the WebGL layer — #110 (fallback previously omitted temp). */}
-            {tempRatio > 0 && (
-              <div className="vessel__fallback-temp" style={{ height: `${Math.min(1, tempRatio) * 100}%` }} />
-            )}
             <div className="vessel__fallback-fill" style={{ height: `${ratio * 100}%` }} />
+            {/* temp HP as a sapphire ward band that rides ON the HP surface, like
+                the WebGL temp layer. Absolutely positioned (not stacked in flow)
+                and its bottom anchor is clamped so a full-HP character still sees
+                the band at the brim instead of it clipping out the top — #110,
+                Codex P2 on #119. */}
+            {tempRatio > 0 &&
+              (() => {
+                const tempH = Math.min(1, tempRatio);
+                const tempBottom = Math.min(ratio, 1 - tempH); // never push the top past the brim
+                return (
+                  <div
+                    className="vessel__fallback-temp"
+                    style={{ bottom: `${tempBottom * 100}%`, height: `${tempH * 100}%` }}
+                  />
+                );
+              })()}
           </div>
         )}
         <div className="vessel__foil" aria-hidden="true" ref={foilRef} />

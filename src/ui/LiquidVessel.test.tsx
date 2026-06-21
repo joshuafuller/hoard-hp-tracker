@@ -59,6 +59,22 @@ describe("LiquidVessel orb-drag input", () => {
     expect(onEditCurrent).toHaveBeenCalled();
   });
 
+  it("shows a temp-HP band in the static fallback, even at full HP (#110, Codex P2)", () => {
+    // jsdom has no WebGL2, so LiquidVessel renders the static fallback path.
+    const { container } = render(<LiquidVessel current={40} max={40} temp={10} />);
+    const band = container.querySelector(".vessel__fallback-temp") as HTMLElement;
+    expect(band).toBeTruthy();
+    // bottom anchor is clamped so the band stays inside the orb at full HP:
+    // tempH = 10/40 = .25 → bottom = min(1, 1-.25) = .75
+    expect(band.style.bottom).toBe("75%");
+    expect(band.style.height).toBe("25%");
+  });
+
+  it("omits the temp band when there is no temp HP", () => {
+    const { container } = render(<LiquidVessel current={20} max={40} temp={0} />);
+    expect(container.querySelector(".vessel__fallback-temp")).toBeNull();
+  });
+
   it("a vertical drag that starts on the readout overlay applies damage too (#105)", () => {
     const { orb, onDamage } = setup();
     // The readout sits over the orb; its drag must scale to the ORB's height.
