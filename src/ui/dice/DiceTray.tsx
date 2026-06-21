@@ -97,6 +97,12 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
     async (expr: string) => {
       setShowLog(false);
       setRolling(true);
+      // A short haptic on the throw (matches the rest-control haptics). Audio is
+      // intentionally absent: dice-box ships no sounds and the synth cue was wrong;
+      // real dice clatter is pending a properly-licensed asset (see #42).
+      if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+        navigator.vibrate(12);
+      }
       try {
         const rec = reduced || !engineRef.current ? rollHeadless(expr) : await engineRef.current.roll(expr);
         setRecord(rec);
