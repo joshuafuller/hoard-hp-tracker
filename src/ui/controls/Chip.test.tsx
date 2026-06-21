@@ -42,13 +42,61 @@ describe("Chip", () => {
   it("shows a remove affordance and fires onRemove", async () => {
     const onRemove = vi.fn();
     render(
-      <Chip removable onRemove={onRemove} aria-label="d6">
+      <Chip removable onRemove={onRemove}>
         d6
       </Chip>,
     );
     const remove = screen.getByRole("button", { name: "Remove d6" });
     await userEvent.click(remove);
     expect(onRemove).toHaveBeenCalledTimes(1);
+  });
+
+  it("derives a specific remove name and is not polluted by an action aria-label", () => {
+    render(
+      <Chip removable onRemove={vi.fn()} aria-label="Add d6">
+        d6
+      </Chip>,
+    );
+    // The remove control reads "Remove d6" (from children), NOT "Remove Add d6".
+    expect(
+      screen.getByRole("button", { name: "Remove d6" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Remove Add d6" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("honors an explicit removeLabel", () => {
+    render(
+      <Chip removable onRemove={vi.fn()} removeLabel="Remove gold">
+        gp
+      </Chip>,
+    );
+    expect(
+      screen.getByRole("button", { name: "Remove gold" }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not render a dead remove button when onRemove is missing", () => {
+    render(<Chip removable>d6</Chip>);
+    // Only the chip itself is a button — no orphaned, do-nothing × control.
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(
+      screen.queryByRole("button", { name: /^remove/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("disables the remove button when the chip is disabled", async () => {
+    const onRemove = vi.fn();
+    render(
+      <Chip removable disabled onRemove={onRemove}>
+        d6
+      </Chip>,
+    );
+    const remove = screen.getByRole("button", { name: "Remove d6" });
+    expect(remove).toBeDisabled();
+    await userEvent.click(remove);
+    expect(onRemove).not.toHaveBeenCalled();
   });
 
   it("fires onClick when tapped", async () => {

@@ -11,8 +11,9 @@
      (copied from dice.css) so a primitive renders correctly even where dice.css
      isn't loaded.
    - The NEW tokens the spec invents (--btn-h-*, --ring-gold, --hairline) are
-     scoped here on .ctl-scope rather than added to :root, so this PR does not
-     touch the global token surface that phase 2 owns. */
+     declared on the shared .ctl-* control-class list below (NOT promoted to
+     :root), so this PR does not touch the global token surface that phase 2
+     owns. */
 
 .ctl-btn,
 .ctl-icon-btn,
@@ -255,6 +256,13 @@
   border: var(--hairline);
   color: var(--ink-300, #c9bca0);
   cursor: pointer;
+}
+.ctl-chip__remove:active:not(:disabled) {
+  transform: scale(0.9);
+}
+.ctl-chip__remove:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* -------------------------------------------------------------- Segment ---- */
