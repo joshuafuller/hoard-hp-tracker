@@ -70,6 +70,36 @@ test.describe("mobile layout", () => {
     expect(Math.abs(boxAfter!.y - boxBefore!.y)).toBeLessThanOrEqual(2);
   });
 
+  test("dice tray: all die chips fit within the viewport (no clipping)", async ({ page }) => {
+    const vw = page.viewportSize()!.width;
+    const vh = page.viewportSize()!.height;
+
+    // Open the tray and build a mixed pool to stress the chip row + dock.
+    await page.getByLabel("Roll dice").click();
+    await page.getByLabel("Add d20").click();
+    await page.getByLabel("Add d6").click();
+    await page.getByLabel("Add d6").click();
+    await page.getByLabel("Add d4").click();
+
+    // Every die chip must sit fully within the viewport width (the pre-rework
+    // overflow:auto circles clipped d100 on narrow phones — this guards it).
+    const chips = page.locator(".dice-chip");
+    const count = await chips.count();
+    expect(count).toBe(7);
+    for (let i = 0; i < count; i++) {
+      const box = await chips.nth(i).boundingBox();
+      expect(box, "chip must be laid out").not.toBeNull();
+      expect(box!.x).toBeGreaterThanOrEqual(-2);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(vw + 2);
+    }
+
+    // The dock itself must not overflow the screen bottom (one-screen budget).
+    const dock = page.locator(".dice-tray__dock");
+    const dockBox = await dock.boundingBox();
+    expect(dockBox, "dock must be laid out").not.toBeNull();
+    expect(dockBox!.y + dockBox!.height).toBeLessThanOrEqual(vh + 2);
+  });
+
   test("keypad opens with adequately-sized keys", async ({ page }) => {
     // Tapping the current-HP number opens the quick-entry keypad.
     await page.getByLabel("Edit current HP").click();

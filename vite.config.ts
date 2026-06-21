@@ -26,7 +26,12 @@ export default defineConfig({
       registerType: "autoUpdate",
       manifest,
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,png,ico,webp,woff2}"],
+        // Includes the vendored dice-box engine + worker (js), themes (json/png/jpg)
+        // and the Ammo physics (wasm) so 3D dice rolling works fully offline (#45).
+        globPatterns: ["**/*.{js,css,html,svg,png,jpg,ico,webp,woff2,json,wasm}"],
+        // The BabylonJS world bundle is ~1.4MB — lift the precache ceiling above the
+        // 2MiB default so the engine is never silently skipped from the offline cache.
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         ...(isBeta ? {} : { navigateFallbackDenylist: [/\/beta(\/|$)/] }),
       },
     }),
