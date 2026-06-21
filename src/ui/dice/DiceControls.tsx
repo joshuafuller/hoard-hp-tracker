@@ -1,4 +1,5 @@
 import { advantageApplies, poolToNotation, type DiePool, type RollMode } from "../../domain/dice";
+import { DiceGlyph } from "./DiceGlyph";
 
 /** The die sizes offered as chips, in glance order. */
 export const DICE_SIDES = [4, 6, 8, 10, 12, 20, 100] as const;
@@ -78,7 +79,7 @@ export function DiceControls({
         />
         {!isEmpty && (
           <button type="button" className="dice-pool__clear" aria-label="Clear dice" onClick={onClear}>
-            ⟲
+            <DiceGlyph name="clear" />
           </button>
         )}
       </div>

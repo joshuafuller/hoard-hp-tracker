@@ -66,8 +66,10 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  font-size: 1.05rem;
+  justify-content: center; /* centre the single icon horizontally */
 }
+/* SVG icons are centred by geometry (square viewBox) — never use text glyphs. */
+.dice-glyph { display: block; }
 .dice-tray__log {
   right: calc(env(safe-area-inset-right, 0px) + 0.9rem);
   padding: 7px 13px;
@@ -210,11 +212,13 @@
 .dice-pool:focus-within { border-color: color-mix(in oklab, var(--coin-gold) 45%, var(--obsidian-600)); }
 .dice-pool__clear {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: 0;
   color: var(--ink-500);
   cursor: pointer;
-  font-size: 0.95rem;
   padding: 2px 4px;
 }
 

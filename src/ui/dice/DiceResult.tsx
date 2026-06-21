@@ -1,4 +1,5 @@
 import type { RollRecord } from "../../domain/dice";
+import { DiceGlyph } from "./DiceGlyph";
 
 export interface DiceResultProps {
   record: RollRecord;
@@ -29,7 +30,8 @@ export function DiceResult({ record, onApplyHeal, heal = false }: DiceResultProp
       </div>
       {onApplyHeal && (
         <button type="button" className="dice-applyheal" onClick={() => onApplyHeal(record.total)}>
-          ✚ Apply as heal
+          <DiceGlyph name="heal" />
+          Apply as heal
         </button>
       )}
     </div>

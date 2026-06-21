@@ -15,6 +15,7 @@ import { createDiceTray, rollHeadless, type DiceTray as DiceTrayEngine } from ".
 import { DiceControls } from "./DiceControls";
 import { DiceResult } from "./DiceResult";
 import { DiceHistory } from "./DiceHistory";
+import { DiceGlyph } from "./DiceGlyph";
 
 export interface DiceTrayProps {
   open: boolean;
@@ -156,10 +157,11 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
     <div className="dice-tray" data-open={open} aria-hidden={!open} role="dialog" aria-modal="true" aria-label="Dice tray">
       <div className="dice-tray__scrim" onClick={clearDice} aria-hidden="true" />
       <button type="button" className="dice-tray__close" aria-label="Close dice" onClick={handleClose}>
-        ✕
+        <DiceGlyph name="close" />
       </button>
       <button type="button" className="dice-tray__log" aria-label="Roll log" onClick={() => setShowLog((v) => !v)}>
-        ⟲ log
+        <DiceGlyph name="log" />
+        <span>log</span>
       </button>
 
       {/* The dice "field" is the full-WIDTH area ABOVE the dock — walls at the
