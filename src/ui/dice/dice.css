@@ -228,6 +228,17 @@
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
 }
 
+/* Contextual roll dock (death save / Hit Die): a heading + a single Throw, locked
+   to the one roll — no pool builder. */
+.dice-tray__dock--intent { text-align: center; }
+.dice-tray__intent-label {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  color: #e8d6a8;
+  padding-bottom: 0.1rem;
+}
+
 .dice-controls { display: flex; flex-direction: column; gap: 0.55rem; }
 
 /* live expression line: built notation + clear + notation-field toggle */

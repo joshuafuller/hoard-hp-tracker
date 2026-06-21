@@ -24,7 +24,7 @@ import { UndoPill } from "./ui/UndoPill";
 import { CoinButton } from "./ui/CoinButton";
 import { CoinSheet } from "./ui/CoinSheet";
 import { DiceToken } from "./ui/dice/DiceToken";
-import { DiceTray } from "./ui/dice/DiceTray";
+import { DiceTray, type DiceIntent } from "./ui/dice/DiceTray";
 
 /**
  * The composed HP Tracker: reactive state from `useHp` flows into the
@@ -42,6 +42,16 @@ export function App() {
   const saveFailed = useSaveError();
   const [coinsOpen, setCoinsOpen] = useState(false);
   const [diceOpen, setDiceOpen] = useState(false);
+  // The active dice-tray intent: null = ad-hoc builder; otherwise a contextual roll
+  // (death save / Hit Die) whose 5e rule the app applies on settle.
+  const [diceIntent, setDiceIntent] = useState<DiceIntent | null>(null);
+  const openDice = (intent: DiceIntent | null = null) => {
+    setKeypadOpen(false);
+    setEditingMax(false);
+    setCoinsOpen(false);
+    setDiceIntent(intent);
+    setDiceOpen(true);
+  };
 
   // The panel slot is a shared scroll container for Hit Dice and Death Saves.
   // Reset its scroll whenever the two swap, so the incoming panel starts at the
@@ -95,7 +105,7 @@ export function App() {
       )}
       <div className="hp-tracker__chrome">
         <CoinButton onOpen={() => { setKeypadOpen(false); setEditingMax(false); setCoinsOpen(true); }} />
-        <DiceToken onOpen={() => { setKeypadOpen(false); setEditingMax(false); setCoinsOpen(false); setDiceOpen(true); }} />
+        <DiceToken onOpen={() => openDice(null)} />
         <SoundToggle />
         <ConcentrationToggle
           concentrating={hp.concentrating}
@@ -126,10 +136,7 @@ export function App() {
             status={hp.status}
             onSetSuccesses={hp.setSuccesses}
             onSetFailures={hp.setFailures}
-            onRoll={() => {
-              playSfx("roll");
-              return hp.rollDeathSave();
-            }}
+            onRoll={() => openDice({ kind: "death-save" })}
           />
         ) : (
           <HitDicePanel
@@ -149,10 +156,7 @@ export function App() {
             keypad (the desktop click path). Only rests live down here. */}
         <RestControls
           hitDiceAvailable={hp.hitDiceAvailable}
-          onShortRest={() => {
-            playSfx("shortRest");
-            return hp.shortRest();
-          }}
+          onShortRest={() => openDice({ kind: "hit-die", sides: hp.hitDieSize, conMod: hp.conMod })}
           onLongRest={() => {
             playSfx("longRest");
             return hp.longRest();
@@ -201,8 +205,11 @@ export function App() {
           remounting — keeps the lazy-loaded 3D engine warm between opens. */}
       <DiceTray
         open={diceOpen}
-        onClose={() => setDiceOpen(false)}
+        intent={diceIntent}
+        onClose={() => { setDiceOpen(false); setDiceIntent(null); }}
         onApplyHeal={(n) => { playSfx("heal"); setDiceOpen(false); return hp.heal(n); }}
+        onDeathSave={(d20) => hp.rollDeathSave(d20)}
+        onHitDie={(roll) => { playSfx("heal"); hp.shortRest(roll); }}
       />
 
       {hp.lastChange && (
