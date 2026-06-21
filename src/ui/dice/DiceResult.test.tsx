@@ -79,6 +79,23 @@ describe("DiceResult", () => {
     expect(container.querySelectorAll(".dice-result__plus")).toHaveLength(2);
   });
 
+  it("does not put a + between an explosion and a following normal die group (1d6!+1d4)", () => {
+    // parser path order: d6 round 1, its explosion round 2, then the d4 (round 1 again).
+    const rec: RollRecord = {
+      notation: "1d6!+1d4",
+      total: 13,
+      result: [6, 3, 4],
+      dice: [
+        { sides: 6, value: 6, dropped: false, exploded: true }, // r1
+        { sides: 6, value: 3, dropped: false, round: 2 }, // r2 (the explosion)
+        { sides: 4, value: 4, dropped: false }, // r1 — different group, no "+"
+      ],
+    };
+    const { container } = render(<DiceResult record={rec} />);
+    // exactly one "+" (the round 1→2 increase), none for the 2→1 drop into the d4 group
+    expect(container.querySelectorAll(".dice-result__plus")).toHaveLength(1);
+  });
+
   it("shows no + for a single-round (non-exploding) roll", () => {
     const rec: RollRecord = {
       notation: "2d6+1d4",

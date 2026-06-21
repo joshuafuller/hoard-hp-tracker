@@ -13,7 +13,7 @@
  */
 // @ts-expect-error — the parser ships no types
 import DiceParser from "@3d-dice/dice-parser-interface";
-import { isPlausibleRoll, recordFromPhysical, toRollRecord, type RollRecord } from "../../domain/dice";
+import { isPlausibleRoll, recordFromPhysical, toRollRecord, physicalRecordApplies, type RollRecord } from "../../domain/dice";
 
 /** Gold dice tuned to Molten Hoard; tray physics tuned in the spike. */
 const THEME_COLOR = "#e8b45a";
@@ -166,7 +166,7 @@ export async function createDiceTray(container: string | HTMLElement): Promise<D
             // straight from the physical dice the user sees. Keep the parser path
             // for everything else (it carries keep/drop semantics and matches
             // physics when no dice are added).
-            const rec = notation.includes("!")
+            const rec = physicalRecordApplies(notation)
               ? recordFromPhysical(results, notation)
               : toRollRecord(parser.parseFinalResults(results), notation);
             // Last-resort safety net: never show a malformed result.

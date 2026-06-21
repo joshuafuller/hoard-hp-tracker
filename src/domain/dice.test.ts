@@ -13,6 +13,7 @@ import {
   recordFromPhysical,
   removeFromPool,
   toRollRecord,
+  physicalRecordApplies,
   type DiceSelection,
   type DiePool,
   type RollRecord,
@@ -178,6 +179,24 @@ describe("notationModifier", () => {
     expect(notationModifier("1d20-2")).toBe(-2);
     expect(notationModifier("2d20kh1+5")).toBe(5);
     expect(notationModifier("3d6+2-1")).toBe(1);
+  });
+
+  it("tolerates whitespace around the modifier", () => {
+    expect(notationModifier("8d6! + 3")).toBe(3);
+    expect(notationModifier("1d20 - 2")).toBe(-2);
+  });
+});
+
+describe("physicalRecordApplies (engine routing)", () => {
+  it("routes additive exploding rolls to the physical builder", () => {
+    for (const n of ["8d6!", "3d6!", "1d6!!", "4dF!"]) expect(physicalRecordApplies(n)).toBe(true);
+  });
+
+  it("keeps non-exploding and keep/drop rolls on the parser path", () => {
+    // no explosion → parser path
+    for (const n of ["8d6", "2d6+3", "2d20kh1", "1d20"]) expect(physicalRecordApplies(n)).toBe(false);
+    // keep/drop/success WITH explode → parser (physical can't apply keep/drop semantics)
+    for (const n of ["4d6kh3!", "2d20kl1!", "10d6>4!"]) expect(physicalRecordApplies(n)).toBe(false);
   });
 });
 

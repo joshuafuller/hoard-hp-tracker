@@ -241,10 +241,21 @@ export function toRollRecord(result: ParserResult, notation: string): RollRecord
 export function notationModifier(notation: string): number {
   let mod = 0;
   for (const term of notation.match(/[+-]?[^+-]+/g) ?? []) {
-    const m = /^([+-]?)(\d+)$/.exec(term.trim());
+    const m = /^([+-]?)(\d+)$/.exec(term.replace(/\s+/g, "")); // tolerate "8d6! + 3"
     if (m) mod += (m[1] === "-" ? -1 : 1) * Number(m[2]);
   }
   return mod;
+}
+
+/**
+ * Whether the engine should build the record from the PHYSICAL dice
+ * ({@link recordFromPhysical}) rather than the parser. True only for additive
+ * exploding rolls: the parser desyncs once dice are added (#97), but keep/drop and
+ * success-count notations need the parser's semantics (physical dice carry no
+ * drop/valid flags), so those stay on the parser path even when they also explode.
+ */
+export function physicalRecordApplies(notation: string): boolean {
+  return notation.includes("!") && !/k[hl]|d[hl]|[<>]/i.test(notation);
 }
 
 /** The explosion round encoded in a physical die's rollId: integer ⇒ 1; `"X.n"` ⇒ n+1. */
