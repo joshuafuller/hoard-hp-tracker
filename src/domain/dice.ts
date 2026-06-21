@@ -232,3 +232,71 @@ export function toRollRecord(result: ParserResult, notation: string): RollRecord
     : kept.reduce((a, b) => a + b, 0) + sumModifiers(result);
   return { notation, total, result: kept, dice };
 }
+
+/**
+ * Sum the standalone integer terms in a notation (the `+N` / `-N` modifiers),
+ * ignoring dice/keep terms like `8d6` or `kh1`. Used to add the flat modifier when
+ * building a record from physical dice (which carry no modifier node).
+ */
+export function notationModifier(notation: string): number {
+  let mod = 0;
+  for (const term of notation.match(/[+-]?[^+-]+/g) ?? []) {
+    const m = /^([+-]?)(\d+)$/.exec(term.trim());
+    if (m) mod += (m[1] === "-" ? -1 : 1) * Number(m[2]);
+  }
+  return mod;
+}
+
+/** The explosion round encoded in a physical die's rollId: integer ⇒ 1; `"X.n"` ⇒ n+1. */
+function roundOfRollId(rollId: number | string): number {
+  const dot = String(rollId).split(".");
+  return dot.length < 2 ? 1 : Number(dot[1]) + 1;
+}
+
+interface PhysicalRoll {
+  rollId: number | string;
+  sides: number;
+  value: number;
+}
+
+/** Gather the physical dice (with their `rollId`) from a dice-box results tree. */
+function collectPhysical(node: unknown, out: PhysicalRoll[]): void {
+  if (!node || typeof node !== "object") return;
+  const obj = node as Record<string, unknown>;
+  if (Array.isArray(obj.rolls)) {
+    for (const r of obj.rolls as Array<Record<string, unknown>>) {
+      if (r && typeof r.value === "number") {
+        out.push({ rollId: (r.rollId as number | string) ?? 0, sides: Number(r.sides) || 0, value: r.value });
+      }
+    }
+  }
+  for (const [key, value] of Object.entries(obj)) {
+    if (key === "rolls") continue;
+    if (value && typeof value === "object") collectPhysical(value, out);
+  }
+}
+
+/**
+ * Build a {@link RollRecord} from the PHYSICAL dice-box results — the dice the user
+ * actually sees on the table — instead of the parser's re-roll, which desyncs from
+ * physics / returns garbage on explosions (#97). Values come straight from physics;
+ * rounds from each die's `rollId` (`"2.1"` ⇒ round 2); the modifier from the notation.
+ * For additive / exploding rolls — keep/drop semantics still route through the parser.
+ */
+export function recordFromPhysical(results: unknown, notation: string): RollRecord {
+  const physical: PhysicalRoll[] = [];
+  collectPhysical(results, physical);
+  const explodes = notation.includes("!");
+  const dice: RolledDie[] = physical.map((r) => {
+    const round = roundOfRollId(r.rollId);
+    const die: RolledDie = { sides: r.sides, value: r.value, dropped: false };
+    if (round > 1) die.round = round;
+    if (explodes && r.value === r.sides) die.exploded = true;
+    return die;
+  });
+  // round-1 dice first, then round 2, … (stable within a round) so the "+" reads right.
+  dice.sort((a, b) => (a.round ?? 1) - (b.round ?? 1));
+  const kept = dice.filter((d) => !d.dropped).map((d) => d.value);
+  const total = kept.reduce((a, b) => a + b, 0) + notationModifier(notation);
+  return { notation, total, result: kept, dice };
+}
