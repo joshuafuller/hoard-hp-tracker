@@ -22,9 +22,11 @@ export interface LiquidEngineOpts {
   onUnsupported?: () => void;
 }
 
-const SUBSTEPS = 3;
 const SIM_DT = 0.006;
 const MAX_DPR = 2;
+/** Clamp a frame's real delta so a long stall (tab switch, GC pause) can't queue
+ * a huge backlog of sub-steps and lock the loop up — the "spiral of death". */
+const MAX_FRAME_DT = 1 / 30;
 
 /**
  * Owns the fluid sim, the WebGL renderer, and the animation loop. Particle counts
@@ -87,8 +89,14 @@ export function useLiquidEngine(opts: LiquidEngineOpts): void {
     let raf = 0;
     let running = true;
     let time = 0;
+    // wall-clock pacing: advance the sim by the real elapsed time (a fixed-DT
+    // accumulator) instead of one fixed slice per frame, so a 90/120 Hz display
+    // doesn't run the fluid 1.5–2× too fast. `last = null` reseeds the clock on
+    // the first frame and after every resume (visibility) so the gap isn't paid.
+    let last: number | null = null;
+    let acc = 0;
 
-    const frame = () => {
+    const frame = (now: number) => {
       if (!running) return;
       if (!sim) {
         build();
@@ -97,7 +105,13 @@ export function useLiquidEngine(opts: LiquidEngineOpts): void {
           return;
         }
       }
-      time += 1 / 60;
+      // real seconds since the previous frame, clamped against the spiral of death
+      if (last === null) last = now;
+      let dt = (now - last) / 1000;
+      last = now;
+      if (dt > MAX_FRAME_DT) dt = MAX_FRAME_DT;
+      else if (dt < 0) dt = 0; // guard a non-monotonic timestamp
+      time += dt; // shimmer tracks real time
       const cap = sim.capacity;
       const ease = Math.max(1, Math.ceil(cap * 0.05));
 
@@ -122,7 +136,13 @@ export function useLiquidEngine(opts: LiquidEngineOpts): void {
       }
 
       const g = latest.current.gravity.current;
-      for (let st = 0; st < SUBSTEPS; st++) sim.step(SIM_DT, g.x, g.y);
+      // drain the accumulator in fixed SIM_DT slices (the sim needs a fixed
+      // timestep to stay stable); the clamp above bounds the slice count.
+      acc += dt;
+      while (acc >= SIM_DT) {
+        sim.step(SIM_DT, g.x, g.y);
+        acc -= SIM_DT;
+      }
       renderer.render(sim.particles, {
         color: latest.current.color,
         deep: latest.current.deep,
@@ -139,6 +159,7 @@ export function useLiquidEngine(opts: LiquidEngineOpts): void {
         cancelAnimationFrame(raf);
       } else if (!running) {
         running = true;
+        last = null; // reseed the clock so the hidden gap isn't replayed as one huge step
         raf = requestAnimationFrame(frame);
       }
     };

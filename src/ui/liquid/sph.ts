@@ -296,9 +296,13 @@ export class Sph {
       p.y += dt * p.vy;
     }
 
-    // 2. constraint solve on the predicted positions
-    this.buildGrid();
+    // 2. constraint solve on the predicted positions. Rebuild the neighbour grid
+    // at the top of every iteration: applyDeltaP moves particles, so a grid built
+    // once would go stale and mis-bucket any particle nudged into a new cell.
+    // (Iteration 0 is unchanged — the grid is still built on the predicted
+    // positions before the first applyDeltaP.)
     for (let iter = 0; iter < this.params.iterations; iter++) {
+      this.buildGrid();
       this.computeLambda();
       this.applyDeltaP();
     }
