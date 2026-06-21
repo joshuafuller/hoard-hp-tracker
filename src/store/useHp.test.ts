@@ -49,6 +49,52 @@ describe("createHpDb seeding", () => {
   });
 });
 
+describe("createHpDb migration", () => {
+  // Fix 5: a legacy record (written before `concentrating` existed) must be
+  // backfilled to `false` on upgrade. Assert on the RAW record — the hook masks
+  // a missing field with `?? false`, which would hide a missing migration.
+  it("backfills concentrating:false on legacy records (v6 -> v7)", async () => {
+    // Open the store at v6 (has the rolls table but predates `concentrating`),
+    // seed a roll + an hp record with the field absent, then reopen via
+    // createHpDb to run the v7 upgrade.
+    const legacy = new Dexie(DB_NAME);
+    legacy.version(6).stores({ hp: "id", rolls: "++id" });
+    await legacy.open();
+    await legacy.table("hp").put({
+      id: HP_ID,
+      current: 7,
+      max: 10,
+      temp: 0,
+      successes: 0,
+      failures: 0,
+      hitDieSize: 8,
+      hitDiceTotal: 1,
+      hitDiceAvailable: 1,
+      conMod: 0,
+      pp: 0,
+      gp: 0,
+      sp: 0,
+      cp: 0,
+      name: "",
+      // concentrating intentionally omitted (legacy record)
+    });
+    await legacy.table("rolls").add({ value: 17 });
+    legacy.close();
+
+    const upgraded = createHpDb(DB_NAME);
+    try {
+      const record = await upgraded.hp.get(HP_ID);
+      expect(record?.concentrating).toBe(false);
+      // Untouched fields survive the upgrade.
+      expect(record?.current).toBe(7);
+      // The v6 rolls table is preserved (not dropped) by the v7 schema.
+      expect(await upgraded.table("rolls").count()).toBe(1);
+    } finally {
+      upgraded.close();
+    }
+  });
+});
+
 describe("useHp", () => {
   it("exposes the seeded state once loaded", async () => {
     const { result } = renderHook(() => useHp(db));
@@ -772,6 +818,97 @@ describe("useHp concentration", () => {
     await waitFor(() => expect(result.current.current).toBe(5));
     await act(() => result.current.heal(3));
     await waitFor(() => expect(result.current.current).toBe(8));
+    expect(result.current.concentrating).toBe(true);
+  });
+
+  // Fix 1: clearing the transient prompt on down via setCurrent. A lingering
+  // prompt (dismissed-but-still-set via a prior hit) must not survive a drop.
+  it("setCurrent to 0 clears a pending concentration check", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+    // Raise a check via a non-lethal hit, then drop to 0 with setCurrent.
+    await act(() => result.current.damage(3));
+    await waitFor(() => expect(result.current.concentrationCheck).not.toBeNull());
+
+    await act(() => result.current.setCurrent(0));
+    await waitFor(() => expect(result.current.current).toBe(0));
+    expect(result.current.concentrationCheck).toBeNull();
+  });
+
+  // Fix 1: clearing the transient prompt on down via stepCurrent.
+  it("stepCurrent to 0 clears concentration and a pending check", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+    await act(() => result.current.damage(3)); // 10 -> 7, raises a check
+    await waitFor(() => expect(result.current.concentrationCheck).not.toBeNull());
+
+    await act(() => result.current.stepCurrent(-7)); // 7 -> 0
+    await waitFor(() => expect(result.current.current).toBe(0));
+    expect(result.current.concentrating).toBe(false);
+    expect(result.current.concentrationCheck).toBeNull();
+  });
+
+  // Fix 2: long rest must also clear the transient prompt, not just the flag.
+  it("long rest clears a pending concentration check", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+    await act(() => result.current.damage(3)); // raises a check
+    await waitFor(() => expect(result.current.concentrationCheck).not.toBeNull());
+
+    await act(() => result.current.longRest());
+    await waitFor(() => expect(result.current.concentrating).toBe(false));
+    expect(result.current.concentrationCheck).toBeNull();
+  });
+
+  // Fix 3: turning concentration off should clear any visible prompt.
+  it("setConcentrating(false) clears a pending concentration check", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+    await act(() => result.current.damage(3)); // raises a check, stays alive
+    await waitFor(() => expect(result.current.concentrationCheck).not.toBeNull());
+
+    await act(() => result.current.setConcentrating(false));
+    await waitFor(() => expect(result.current.concentrating).toBe(false));
+    expect(result.current.concentrationCheck).toBeNull();
+  });
+
+  // Fix 4: undo after being downed restores the concentrating flag.
+  it("undo after being downed restores concentration", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+
+    await act(() => result.current.damage(10)); // 10 -> 0, drops concentration
+    await waitFor(() => expect(result.current.current).toBe(0));
+    expect(result.current.concentrating).toBe(false);
+
+    await act(() => result.current.undo()); // un-down AND re-concentrate
+    await waitFor(() => expect(result.current.current).toBe(10));
+    expect(result.current.concentrating).toBe(true);
+  });
+
+  // Fix 4 (setCurrent path): undo restores concentration there too.
+  it("undo after setCurrent(0) restores concentration", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+
+    await act(() => result.current.setCurrent(0));
+    await waitFor(() => expect(result.current.current).toBe(0));
+    expect(result.current.concentrating).toBe(false);
+
+    await act(() => result.current.undo());
+    await waitFor(() => expect(result.current.current).toBe(10));
     expect(result.current.concentrating).toBe(true);
   });
 });

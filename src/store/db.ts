@@ -125,7 +125,19 @@ export function createHpDb(name: string = HP_DB_NAME): HpDb {
   // v6 adds the dice roll-history table. New empty table — existing `hp` records
   // are untouched (the schema string just re-declares hp + adds rolls).
   db.version(6).stores({ hp: "id", rolls: "++id" });
-
+  // v7 adds concentration; backfill existing records as not concentrating.
+  // Keep `rolls` in the schema string so the v6 table is preserved (omitting it
+  // would drop the table); bumping to 7 ensures users already on v6 run the backfill.
+  db.version(7)
+    .stores({ hp: "id", rolls: "++id" })
+    .upgrade((tx) =>
+      tx
+        .table<HpRecord, number>("hp")
+        .toCollection()
+        .modify((r) => {
+          r.concentrating ??= false;
+        }),
+    );
   // Return the add() promise so the seed write completes inside the populate
   // transaction before the database open resolves (avoids a timing-dependent seed).
   db.on("populate", () =>
