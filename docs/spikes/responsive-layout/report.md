@@ -1,12 +1,21 @@
 # Spike — Responsive layout strategy
 
 > **Issue:** #84 (time-boxed design spike). **Feeds:** #88 (responsive-layout implementation).
-> **Status:** report only — no production code changed beyond throwaway analysis.
+> **Status:** docs-only — this PR adds this report and changes no source code.
 > **Method note:** No browser was available in this environment. The breakage inventory
 > below is **derived from reading the CSS** (`src/styles.css`, `src/App.css`,
 > `playwright.config.ts`, `src/pwa-manifest.ts`), not from screenshots. Every predicted
 > issue is tagged **[verify]** where an in-browser screenshot is needed to confirm before
-> the fix lands. Capturing that screenshot inventory is folded into the #88 AC seeds.
+> the fix lands.
+>
+> **#84 is NOT fully satisfied by this report alone.** Issue #84's first acceptance
+> criterion requires a **screenshot inventory across the viewport matrix** (≤320 / 360 /
+> 390 / 430 / 768 / 1024 / landscape / ultrawide). That artifact **could not be produced
+> headless here and is still outstanding.** It is **deferred to #88**, where a browser is
+> available during implementation/QA — the reason being that the screenshots are most
+> useful captured against the *fixed* layout (before/after), and #88 already must run the
+> Playwright layout guard at every breakpoint. Until that inventory is captured and
+> attached, #84's screenshot AC remains open. See §7 AC seeds.
 
 ---
 
@@ -63,12 +72,15 @@ Ordered by viewport, smallest to largest. Each is a hypothesis from the cascade 
 - Covered by `mobile-chrome-390`. The "good on common portrait phones" baseline.
 
 ### 430 (large phone — iPhone Pro Max 430×932)
-- **Orb stops growing — the headline complaint.** `max-height: min(76vw, 340px)` caps the orb at
-  **340px** even though 76vw = 327px… so on a 430-wide phone the orb is bounded by the 340px cap and
-  by `max-width: 76vw` (327px). The card is `max-width: 30rem` (480px). Net: **large screen, small
-  orb floating in dead space** — exactly the "card/orb doesn't fill the page" report. `[verify]`
+- **Orb stops growing — the headline complaint.** At 430px wide, `76vw` ≈ **327px**, so
+  `max-height: min(76vw, 340px)` resolves to **327px** (the `76vw` branch wins — the 340px ceiling
+  never binds at this width) and `max-width: 76vw` independently caps the orb's width at **327px**.
+  **The active constraint at 430 is `76vw` on both axes, not the 340px ceiling.** The card is
+  `max-width: 30rem` (480px). Net: **large screen, ~327px orb floating in dead space** — exactly the
+  "card/orb doesn't fill the page" report. *(The 340px ceiling only starts to bind above ~447px
+  wide, e.g. landscape; on portrait phones `76vw` is the binding cap.)* `[verify]`
 - **Card is narrower than the screen.** 30rem = 480px > 430px, so on a Pro Max the card *does* fill
-  width — but the orb inside still tops out at 340px, so vertical dead space grows above/below.
+  width — but the orb inside is still pinned to 76vw, so vertical dead space grows above/below.
 
 ### 768 / 1024 (tablet — iPad portrait/landscape)
 - **Tiny island on a big canvas `[verify]`.** Card frozen at `max-width: 30rem` (480px) centered on a
@@ -114,16 +126,21 @@ desk." 600–767 is a buffer zone that stays in fill mode (covers small tablets 
 
 ---
 
-## 3. Card behavior — fill-the-viewport vs centered
+## 3. Card behaviour — fill-the-viewport vs centered
 
 **Decision (per the issue's stated preference): edge-to-edge fill on phones; inset centered canvas at tablet (≥768).**
 
 ### Phones (`xs`/`sm`/`lg`) — *fill, trending edge-to-edge*
-The two caps that currently block "fill" and must change:
-- `.vessel { max-height: min(76vw, 340px) }` — the **340px ceiling is the root cause** of the small orb
-  on large phones. On phones, drive the orb from the **available stage height** (and width budget), not
-  a fixed 340px. Recommended: `max-height: min(82vw, 82svh)` with **no hard px cap below `lg`** (or a
-  much higher cap, e.g. 460px), so the orb grows with the device.
+The caps that currently block "fill" and must change. **All three must be addressed together** —
+raising any one alone leaves another binding:
+- `.vessel { max-width: 76vw }` — **this is the constraint that actually binds on portrait phones**
+  (at 430px, 76vw ≈ 327px). Raising only the 340px `max-height` ceiling would leave a 430-class phone
+  unchanged. Raise/remove this width cap on phones.
+- `.vessel { max-height: min(76vw, 340px) }` — the `76vw` term mirrors the width cap above; the 340px
+  ceiling only binds above ~447px wide (landscape, tablet). On phones, drive the orb from the
+  **available stage height** and width budget, not a fixed 340px. Recommended: `max-height: min(82vw,
+  82svh)` with **no hard px cap below `lg`** (or a much higher cap, e.g. 460px), so the orb grows with
+  the device.
 - `.hp-tracker__card { max-width: 30rem }` — on phones let the card width follow the viewport
   (`max-width: none` / `100%`), and **dissolve the card chrome toward edge-to-edge**: reduce/zero the
   card's own horizontal padding and let the `.hp-tracker` safe-area padding be the only inset. The
@@ -179,7 +196,7 @@ invariant. Per breakpoint:
 | Breakpoint | Orb | Panel slot | Footer/controls | Chrome |
 |------------|-----|------------|-----------------|--------|
 | `xs` ≤359 | smallest; floor protects footer (orb shrinks first via `flex:1`+`min-height:0`) | `clamp(5rem,...)` low end | rest buttons may need to **not wrap** — give them a `flex-shrink` path or stack intentionally | 44px controls fixed |
-| `sm`/`lg` | grows with stage; **remove 340px cap** | unchanged | unchanged | unchanged |
+| `sm`/`lg` | grows with stage; **raise the `76vw` caps (both axes) + 340px ceiling** | unchanged | unchanged | unchanged |
 | `tab` | larger cap (≤520px) | can grow | comfortable | unchanged |
 | `land` | left column, height-driven | right column | right column, stacked | top-right, clear of inset |
 
@@ -239,9 +256,11 @@ Copy these into #88 as checkbox acceptance criteria; tighten thresholds during i
 - [ ] **Breakpoints committed in code** matching §2: base (phone, mobile-first) + `min-width:768px`
       (centered canvas) + landscape modifier `(orientation:landscape) and (max-height:540px)` +
       optional `min-width:1024px` cap. No other width breakpoints unless justified.
-- [ ] **Orb fills the viewport on phones:** the 340px `max-height` cap on `.vessel` is removed/raised so
-      the orb grows with the device on `lg` (430-class) phones; visually verified to no longer float in
-      dead space. **[screenshot]**
+- [ ] **Orb fills the viewport on phones:** the binding caps on `.vessel` are raised/removed so the orb
+      grows with the device on `lg` (430-class) phones — this means the **`max-width: 76vw` *and*
+      `max-height: min(76vw, 340px)`** caps (the `76vw` term binds on portrait phones; the 340px ceiling
+      binds only above ~447px wide). Raising the 340px ceiling alone does **not** change a 430-class
+      phone. Visually verified to no longer float in dead space. **[screenshot]**
 - [ ] **Edge-to-edge phone canvas:** `.hp-tracker__card` width follows the viewport on phones and the
       card chrome (border/radius/shadow) is dissolved/edge-to-edge; **content stays inside
       `env(safe-area-inset-*)`** (no text/control under a notch, portrait or landscape). **[screenshot]**
