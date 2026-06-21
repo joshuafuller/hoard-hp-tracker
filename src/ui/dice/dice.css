@@ -85,7 +85,10 @@
   align-items: center;
   justify-content: center;
   gap: 0.9rem;
-  padding: 0; /* canvas fills the whole field: full width, top to the dock */
+  /* Safe-area inset for the dice field: the canvas (and dice-box's physics walls)
+     sit inside this padding, so dice settle with a margin and never clip the screen
+     edges. Top clears the chrome buttons; a little breathing room on the sides/bottom. */
+  padding: 3.5rem 0.75rem 0.5rem;
   pointer-events: none; /* taps fall through to the scrim (tap-to-clear) */
 }
 /* the 3D canvas dice-box injects fills the WHOLE screen (the full tray) so the
@@ -93,11 +96,26 @@
    It sits above the dimming scrim but below the floating controls. */
 .dice-tray__canvas {
   position: absolute;
-  inset: 0;
+  /* Explicit safe-area insets (NOT inset:0 — an absolutely-positioned inset:0
+     child fills the padding box, so container padding wouldn't push it in). These
+     put dice-box's physics walls inside the screen so dice can't clip the edges. */
+  inset: 3.5rem 0.75rem 0.5rem;
   z-index: 1;
   pointer-events: none; /* taps fall through to the scrim (tap-to-clear) */
+  border-radius: 18px;
+  overflow: hidden; /* round the dice tray's corners (felt-tray feel) */
 }
 .dice-tray__canvas canvas { display: block; width: 100% !important; height: 100% !important; }
+/* a faint frame so the safe area reads as a contained tray */
+.dice-tray__stage::after {
+  content: "";
+  position: absolute;
+  inset: 3.5rem 0.75rem 0.5rem;
+  border: 1px solid color-mix(in oklab, var(--coin-gold) 14%, transparent);
+  border-radius: 18px;
+  pointer-events: none;
+  z-index: 2;
+}
 
 /* ---- result readout ---- */
 .dice-result {

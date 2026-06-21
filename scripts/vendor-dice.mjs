@@ -5,7 +5,7 @@
 // Vite-bundled import would break the worker path — we load the vendored copy at
 // runtime instead. Run by `predev`/`prebuild` (see package.json); output is
 // git-ignored and regenerated from node_modules.
-import { cp, rm, readdir } from "node:fs/promises";
+import { cp, rm, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -27,5 +27,26 @@ await cp(src, dest, {
   },
 });
 
+// Quality patch (#81): dice-box 1.1.4 has no antialias / device-pixel-ratio option,
+// so it renders jagged + soft on high-DPI. We use the on-screen renderer
+// (offscreen:false) and patch its engine options here: enable MSAA and Babylon's
+// adaptToDeviceRatio (renders at the device's real pixel density). Guarded — if the
+// pattern ever stops matching (dice-box upgrade), the build FAILS loudly instead of
+// silently shipping low quality.
+const worldFile = join(dest, "world.onscreen.min.js");
+const before = await readFile(worldFile, "utf8");
+const needle = "antialias:!1,failIfMajorPerformanceCaveat:!1";
+if (!before.includes(needle)) {
+  throw new Error(
+    `[vendor-dice] quality patch FAILED: engine options pattern not found in world.onscreen.min.js. ` +
+      `dice-box may have changed — re-check the antialias/DPR patch (#81).`,
+  );
+}
+const after = before.replace(
+  needle,
+  "antialias:!0,adaptToDeviceRatio:!0,failIfMajorPerformanceCaveat:!1",
+);
+await writeFile(worldFile, after);
+
 const files = await readdir(dest);
-console.log(`[vendor-dice] copied ${files.length} entries → public/dice/`);
+console.log(`[vendor-dice] copied ${files.length} entries → public/dice/ (quality patch applied)`);

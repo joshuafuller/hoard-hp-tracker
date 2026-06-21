@@ -86,6 +86,7 @@ interface DiceBoxOptions {
   themeColor: string;
   scale: number;
   gravity: number;
+  offscreen?: boolean;
 }
 interface DiceBoxInstance {
   init: () => Promise<unknown>;
@@ -113,6 +114,10 @@ export async function createDiceTray(container: string | HTMLElement): Promise<D
     themeColor: THEME_COLOR,
     scale: 7,
     gravity: 1.4,
+    // Use the on-screen renderer (not the offscreen worker): it exposes the engine
+    // options we patch for quality (antialiasing + device-pixel-ratio) in
+    // scripts/vendor-dice.mjs. Fine for a tray that rolls occasionally.
+    offscreen: false,
   });
   await box.init();
 
