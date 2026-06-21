@@ -56,8 +56,9 @@ const RECIPES: Record<SfxName, Voice[]> = {
   ],
   // Soft, quick tick.
   step: [{ type: "triangle", freq: 440, gain: 0.08, duration: 0.05 }],
-  // A quick descending rattle to suggest a tumbling die.
-  roll: [{ type: "square", freq: 880, endFreq: 220, gain: 0.1, duration: 0.22 }],
+  // The roll cue is a noise CLATTER (see playClatter) rather than an oscillator —
+  // left empty here so playSfx routes "roll" to the clatter path.
+  roll: [],
   // Clear, reassuring chime.
   stabilize: [
     { type: "sine", freq: 659.25, gain: 0.16, duration: 0.16 },
@@ -127,6 +128,55 @@ function playVoice(context: AudioContext, voice: Voice): void {
   osc.stop(end);
 }
 
+/** Shared short white-noise buffer, created once per context for the clatter. */
+let noiseBuffer: AudioBuffer | null = null;
+function getNoise(context: AudioContext): AudioBuffer {
+  if (noiseBuffer && noiseBuffer.sampleRate === context.sampleRate) return noiseBuffer;
+  const len = Math.floor(context.sampleRate * 0.2);
+  const buf = context.createBuffer(1, len, context.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+  noiseBuffer = buf;
+  return buf;
+}
+
+/** One dice "tick": a band-passed noise burst with a fast attack + short decay. */
+function playTick(context: AudioContext, at: number, freq: number, gain: number, duration: number): void {
+  const src = context.createBufferSource();
+  src.buffer = getNoise(context);
+  const band = context.createBiquadFilter();
+  band.type = "bandpass";
+  band.frequency.value = freq;
+  band.Q.value = 1.4;
+  const amp = context.createGain();
+  amp.gain.setValueAtTime(0.0001, at);
+  amp.gain.exponentialRampToValueAtTime(gain, at + 0.004);
+  amp.gain.exponentialRampToValueAtTime(0.0001, at + duration);
+  src.connect(band);
+  band.connect(amp);
+  amp.connect(context.destination);
+  src.start(at);
+  src.stop(at + duration);
+}
+
+/**
+ * The dice-clatter cue: a flurry of short noise ticks — dense at the throw, then
+ * tapering as the dice settle — to sound like real dice tumbling on a table
+ * (rather than a synth tone). Timing/pitch are jittered per roll for variety.
+ */
+function playClatter(context: AudioContext): void {
+  const now = context.currentTime;
+  const ticks = 7;
+  for (let i = 0; i < ticks; i++) {
+    const p = i / (ticks - 1); // 0 → 1 across the clatter
+    // Clustered early, scattered late; total span ~0.55s.
+    const at = now + p * 0.5 + Math.random() * 0.05;
+    const freq = 1600 + Math.random() * 2200; // clicky mid/high band
+    const gain = (0.14 - p * 0.08) * (0.8 + Math.random() * 0.4); // taper + jitter
+    playTick(context, at, freq, Math.max(0.03, gain), 0.04 + Math.random() * 0.03);
+  }
+}
+
 /**
  * Play a sound cue by name. No-ops silently when muted, when the name is
  * unknown, or when Web Audio is unavailable.
@@ -138,6 +188,10 @@ export function playSfx(name: SfxName): void {
   const context = ensureContext();
   if (!context) return;
   try {
+    if (name === "roll") {
+      playClatter(context); // noise clatter, not an oscillator recipe
+      return;
+    }
     for (const voice of recipe) playVoice(context, voice);
   } catch {
     /* never let an audio glitch break an interaction */

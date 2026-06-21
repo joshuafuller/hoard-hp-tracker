@@ -10,6 +10,7 @@ import {
 } from "../../domain/dice";
 import { type HpDb } from "../../store/db";
 import { useDiceHistory } from "../../store/useDiceHistory";
+import { playSfx } from "../../sound/sfx";
 import { createDiceTray, rollHeadless, type DiceTray as DiceTrayEngine } from "./diceEngine";
 import { DiceControls } from "./DiceControls";
 import { DiceResult } from "./DiceResult";
@@ -97,9 +98,9 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
     async (expr: string) => {
       setShowLog(false);
       setRolling(true);
-      // A short haptic on the throw (matches the rest-control haptics). Audio is
-      // intentionally absent: dice-box ships no sounds and the synth cue was wrong;
-      // real dice clatter is pending a properly-licensed asset (see #42).
+      // Feel: a synthesized dice-clatter cue (mute-aware) + a short haptic, matching
+      // the rest-control haptics. Reduced motion still gets the sound.
+      playSfx("roll");
       if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
         navigator.vibrate(12);
       }

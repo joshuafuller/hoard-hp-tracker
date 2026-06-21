@@ -16,6 +16,9 @@ const { createDiceTray, rollHeadless } = vi.hoisted(() => {
 });
 vi.mock("./diceEngine", () => ({ createDiceTray, rollHeadless }));
 
+const playSfx = vi.hoisted(() => vi.fn());
+vi.mock("../../sound/sfx", () => ({ playSfx }));
+
 import { DiceTray } from "./DiceTray";
 
 const DB_NAME = "hoard-hp-tray-test";
@@ -40,6 +43,13 @@ describe("DiceTray", () => {
     await waitFor(() => expect(rollHeadless).toHaveBeenCalled());
     expect(createDiceTray).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.getByText("23")).toBeInTheDocument());
+  });
+
+  it("plays the dice-clatter cue when dice are thrown", async () => {
+    open();
+    await addD20();
+    await userEvent.click(screen.getByRole("button", { name: /^throw/i }));
+    await waitFor(() => expect(playSfx).toHaveBeenCalledWith("roll"));
   });
 
   it("records the roll into history", async () => {
