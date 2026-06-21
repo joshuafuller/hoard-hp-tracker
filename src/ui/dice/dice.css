@@ -149,16 +149,19 @@
 .dice-result__total::before {
   content: "";
   position: absolute;
-  inset: -0.35em -0.7em;
+  inset: -0.5em -0.95em;
   z-index: -1;
   border-radius: 50%;
+  /* Near-solid dark core with a wide plateau before fading — strong enough to read
+     the total over bright gold dice (#82). */
   background: radial-gradient(
-    ellipse 58% 52% at 50% 50%,
-    rgba(0, 0, 0, 0.82) 0%,
-    rgba(0, 0, 0, 0.5) 42%,
-    transparent 74%
+    ellipse 72% 64% at 50% 50%,
+    rgba(0, 0, 0, 0.96) 0%,
+    rgba(0, 0, 0, 0.92) 38%,
+    rgba(0, 0, 0, 0.6) 62%,
+    transparent 82%
   );
-  filter: blur(7px);
+  filter: blur(5px);
   pointer-events: none;
 }
 .dice-result[data-heal="true"] .dice-result__total {
@@ -382,7 +385,27 @@
 }
 .dice-history__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
 .dice-history__title { font-family: "Fraunces", Georgia, serif; font-weight: 600; color: var(--ink-200); }
-.dice-history__clear { background: none; border: 0; color: var(--ink-500); font-size: 0.74rem; cursor: pointer; }
+.dice-history__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--obsidian-600);
+  color: var(--ink-300);
+  cursor: pointer;
+}
+.dice-history__foot { display: flex; justify-content: center; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--obsidian-600); }
+.dice-history__clear {
+  background: none;
+  border: 0;
+  color: var(--ink-500);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 4px 12px;
+}
 .dice-history__list { list-style: none; margin: 0; padding: 0; max-height: 40vh; overflow-y: auto; }
 .dice-history__item {
   display: flex;

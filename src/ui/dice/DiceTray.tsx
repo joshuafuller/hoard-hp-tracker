@@ -174,7 +174,7 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
 
       {showLog ? (
         <div className="dice-tray__sheet">
-          <DiceHistory rolls={history.rolls} onClear={history.clear} />
+          <DiceHistory rolls={history.rolls} onClear={history.clear} onClose={() => setShowLog(false)} />
         </div>
       ) : (
         <div className="dice-tray__dock">

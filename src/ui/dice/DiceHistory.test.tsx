@@ -12,7 +12,7 @@ const rolls: DiceRollRecord[] = [
 
 describe("DiceHistory", () => {
   it("lists each roll's notation and total in the given (newest-first) order", () => {
-    render(<DiceHistory rolls={rolls} onClear={vi.fn()} />);
+    render(<DiceHistory rolls={rolls} onClear={vi.fn()} onClose={vi.fn()} />);
     const items = screen.getAllByRole("listitem");
     expect(items).toHaveLength(3);
     expect(items[0]).toHaveTextContent("2d20kh1+5");
@@ -21,7 +21,7 @@ describe("DiceHistory", () => {
   });
 
   it("labels the death-save and hit-die context", () => {
-    render(<DiceHistory rolls={rolls} onClear={vi.fn()} />);
+    render(<DiceHistory rolls={rolls} onClear={vi.fn()} onClose={vi.fn()} />);
     expect(screen.getByText(/death save/i)).toBeInTheDocument();
     expect(screen.getByText(/hit die/i)).toBeInTheDocument();
   });
@@ -32,21 +32,29 @@ describe("DiceHistory", () => {
       { ...rolls[0]!, at: now - 120_000 }, // 2 minutes ago
       { ...rolls[1]!, at: now - 2 * 3_600_000 }, // 2 hours ago
     ];
-    render(<DiceHistory rolls={stamped} onClear={vi.fn()} now={now} />);
+    render(<DiceHistory rolls={stamped} onClear={vi.fn()} onClose={vi.fn()} now={now} />);
     expect(screen.getByText(/2m ago/)).toBeInTheDocument();
     expect(screen.getByText(/2h ago/)).toBeInTheDocument();
   });
 
-  it("clears the history", async () => {
+  it("closes the log from the X in the header", async () => {
+    const onClose = vi.fn();
+    render(<DiceHistory rolls={rolls} onClear={vi.fn()} onClose={onClose} />);
+    await userEvent.click(screen.getByRole("button", { name: /close log/i }));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("clears the history from a control separate from the close X", async () => {
     const onClear = vi.fn();
-    render(<DiceHistory rolls={rolls} onClear={onClear} />);
+    render(<DiceHistory rolls={rolls} onClear={onClear} onClose={vi.fn()} />);
     await userEvent.click(screen.getByRole("button", { name: /clear/i }));
     expect(onClear).toHaveBeenCalled();
   });
 
-  it("shows an empty state and no clear button when there are no rolls", () => {
-    render(<DiceHistory rolls={[]} onClear={vi.fn()} />);
+  it("shows a close X even when empty, but no clear button", () => {
+    render(<DiceHistory rolls={[]} onClear={vi.fn()} onClose={vi.fn()} />);
     expect(screen.getByText(/no rolls yet/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /clear/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /close log/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^clear/i })).toBeNull();
   });
 });

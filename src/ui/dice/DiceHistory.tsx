@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import type { DiceRollRecord, RollContext } from "../../store/db";
 import { relativeTime } from "./relativeTime";
+import { Glyph } from "../icons/Glyph";
 
 export interface DiceHistoryProps {
   rolls: DiceRollRecord[];
   onClear: () => void;
+  /** Close the log panel (back to the dice dock). */
+  onClose: () => void;
   /** Injectable clock for tests; live (ticking) otherwise. */
   now?: number;
 }
@@ -26,12 +29,12 @@ function clock(atMs: number): string {
 }
 
 /**
- * The roll log: recent rolls newest-first (notation + per-die + total), each
- * timestamped with the wall-clock time and a relative "how long ago" so past
- * rolls are easy to find. The relative label ticks every 30s while open.
- * Presentational — ordering/persistence live in `useDiceHistory`.
+ * The roll log: a header with a close X, the recent rolls (notation + per-die +
+ * total, each timestamped with clock time + relative "how long ago"), and a Clear
+ * control in the footer (kept separate from the close X). The relative labels tick
+ * every 30s while open. Presentational — ordering/persistence live in `useDiceHistory`.
  */
-export function DiceHistory({ rolls, onClear, now }: DiceHistoryProps) {
+export function DiceHistory({ rolls, onClear, onClose, now }: DiceHistoryProps) {
   const [tick, setTick] = useState(() => now ?? Date.now());
   useEffect(() => {
     if (now !== undefined) return; // fixed clock (tests)
@@ -40,43 +43,48 @@ export function DiceHistory({ rolls, onClear, now }: DiceHistoryProps) {
   }, [now]);
   const nowMs = now ?? tick;
 
-  if (rolls.length === 0) {
-    return (
-      <div className="dice-history dice-history--empty">
-        <p className="dice-history__empty">No rolls yet — throw some dice.</p>
-      </div>
-    );
-  }
   return (
     <div className="dice-history">
       <div className="dice-history__head">
         <span className="dice-history__title">Recent rolls</span>
-        <button type="button" className="dice-history__clear" onClick={onClear}>
-          Clear
+        <button type="button" className="dice-history__close" aria-label="Close log" onClick={onClose}>
+          <Glyph name="close" />
         </button>
       </div>
-      <ul className="dice-history__list">
-        {rolls.map((r) => {
-          const ctx = CONTEXT_LABEL[r.context];
-          return (
-            <li key={r.id} className="dice-history__item">
-              <div className="dice-history__line">
-                <span className="dice-history__notation">{r.notation}</span>
-                <b className="dice-history__total">{r.total}</b>
-              </div>
-              <div className="dice-history__meta">
-                <span className="dice-history__dice">
-                  {diceSummary(r)}
-                  {ctx ? ` · ${ctx}` : ""}
-                </span>
-                <span className="dice-history__time">
-                  {clock(r.at)} · {relativeTime(r.at, nowMs)}
-                </span>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+
+      {rolls.length === 0 ? (
+        <p className="dice-history__empty">No rolls yet — throw some dice.</p>
+      ) : (
+        <>
+          <ul className="dice-history__list">
+            {rolls.map((r) => {
+              const ctx = CONTEXT_LABEL[r.context];
+              return (
+                <li key={r.id} className="dice-history__item">
+                  <div className="dice-history__line">
+                    <span className="dice-history__notation">{r.notation}</span>
+                    <b className="dice-history__total">{r.total}</b>
+                  </div>
+                  <div className="dice-history__meta">
+                    <span className="dice-history__dice">
+                      {diceSummary(r)}
+                      {ctx ? ` · ${ctx}` : ""}
+                    </span>
+                    <span className="dice-history__time">
+                      {clock(r.at)} · {relativeTime(r.at, nowMs)}
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="dice-history__foot">
+            <button type="button" className="dice-history__clear" onClick={onClear}>
+              Clear history
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
