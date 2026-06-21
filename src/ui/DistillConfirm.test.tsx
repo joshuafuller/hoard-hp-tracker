@@ -42,4 +42,34 @@ describe("DistillConfirm", () => {
     expect(p.onConfirm).not.toHaveBeenCalled();
     expect(p.onClose).toHaveBeenCalledTimes(3);
   });
+
+  it("traps Tab focus within the dialog (wraps last → first)", async () => {
+    setup();
+    const dialog = screen.getByRole("dialog", { name: /distill coins/i });
+    const all = Array.from(
+      dialog.querySelectorAll<HTMLElement>(
+        'button, input, [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+    const first = all[0]!;
+    const last = all[all.length - 1]!;
+    last.focus();
+    await userEvent.tab();
+    expect(first).toHaveFocus();
+  });
+
+  it("traps Shift+Tab focus within the dialog (wraps first → last)", async () => {
+    setup();
+    const dialog = screen.getByRole("dialog", { name: /distill coins/i });
+    const all = Array.from(
+      dialog.querySelectorAll<HTMLElement>(
+        'button, input, [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+    const first = all[0]!;
+    const last = all[all.length - 1]!;
+    first.focus();
+    await userEvent.tab({ shift: true });
+    expect(last).toHaveFocus();
+  });
 });
