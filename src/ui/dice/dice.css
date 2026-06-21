@@ -173,19 +173,20 @@
   border: 1px solid var(--obsidian-600);
   border-radius: 14px;
 }
-.dice-pool__hint { color: var(--ink-700); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.85rem; }
+/* the expression IS the editable notation field — tap it and type */
 .dice-pool__expr {
   flex: 1;
   min-width: 0;
+  background: none;
+  border: 0;
+  outline: none;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 0.95rem;
   color: var(--ink-100);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-.dice-pool__clear,
-.dice-pool__kbd {
+.dice-pool__expr::placeholder { color: var(--ink-700); }
+.dice-pool:focus-within { border-color: color-mix(in oklab, var(--coin-gold) 45%, var(--obsidian-600)); }
+.dice-pool__clear {
   flex: none;
   background: none;
   border: 0;
@@ -194,7 +195,6 @@
   font-size: 0.95rem;
   padding: 2px 4px;
 }
-.dice-pool__hint + .dice-pool__kbd { margin-left: auto; }
 
 /* removable pool tags (a misclick isn't fatal) */
 .dice-pool__tags { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -318,38 +318,6 @@
   border-radius: 12px;
   display: grid;
   place-items: center;
-  background: var(--obsidian-700);
-  border: 1px solid var(--obsidian-600);
-  color: var(--ink-300);
-  cursor: pointer;
-}
-
-/* notation escape hatch */
-.dice-notation { display: flex; gap: 0.5rem; align-items: center; }
-.dice-notation__input {
-  flex: 1;
-  background: var(--obsidian-800);
-  border: 1px solid var(--obsidian-600);
-  border-radius: 14px;
-  padding: 11px 13px;
-  color: var(--ink-100);
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 0.9rem;
-}
-.dice-notation__go {
-  appearance: none;
-  border: 0;
-  padding: 11px 16px;
-  border-radius: 14px;
-  font-weight: 800;
-  color: #2a1c06;
-  background: var(--gold-body);
-  cursor: pointer;
-}
-.dice-notation__back {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
   background: var(--obsidian-700);
   border: 1px solid var(--obsidian-600);
   color: var(--ink-300);

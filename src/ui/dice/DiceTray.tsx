@@ -47,18 +47,25 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
   const [pool, setPool] = useState<DiePool>([]);
   const [modifier, setModifier] = useState(0); // remembered across opens (tray stays mounted)
   const [mode, setMode] = useState<RollMode>("normal");
+  // The notation to roll AND the value of the editable expression field. Builder
+  // actions write it; typing into the field overrides it (one field, no panel).
+  const [notation, setNotation] = useState("");
 
-  // Adding/removing dice can invalidate advantage (only a lone d20 qualifies) —
-  // reset the mode to normal whenever the pool stops being a lone d20.
-  const updatePool = (next: DiePool) => {
-    setPool(next);
-    if (!advantageApplies(next)) setMode("normal");
+  // Apply a builder change and keep the notation field in sync. Advantage only
+  // survives for a lone d20, so it resets to normal for any other pool.
+  const applyBuild = (next: { pool?: DiePool; modifier?: number; mode?: RollMode }) => {
+    const np = next.pool ?? pool;
+    const nmod = next.modifier ?? modifier;
+    const nmode = advantageApplies(np) ? next.mode ?? mode : "normal";
+    setPool(np);
+    setModifier(nmod);
+    setMode(nmode);
+    setNotation(poolToNotation(np, nmod, nmode));
   };
+
   const [record, setRecord] = useState<RollRecord | null>(null);
   const [rolling, setRolling] = useState(false);
   const [showLog, setShowLog] = useState(false);
-  const [notationOpen, setNotationOpen] = useState(false);
-  const [notationText, setNotationText] = useState("");
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<DiceTrayEngine | null>(null);
@@ -87,12 +94,11 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
   }, [open, reduced]);
 
   const doRoll = useCallback(
-    async (notation: string) => {
+    async (expr: string) => {
       setShowLog(false);
       setRolling(true);
       try {
-        const rec =
-          reduced || !engineRef.current ? rollHeadless(notation) : await engineRef.current.roll(notation);
+        const rec = reduced || !engineRef.current ? rollHeadless(expr) : await engineRef.current.roll(expr);
         setRecord(rec);
         await history.record(rec, { context: "ad-hoc" });
       } catch (err) {
@@ -104,14 +110,9 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
     [reduced, history],
   );
 
-  const rollFromChips = () => {
-    const notation = poolToNotation(pool, modifier, mode);
-    if (notation) doRoll(notation);
-  };
-  const submitNotation = (e: React.FormEvent) => {
-    e.preventDefault();
-    const n = notationText.trim();
-    if (n) doRoll(n);
+  const rollNow = () => {
+    const expr = notation.trim();
+    if (expr) doRoll(expr);
   };
 
   // Tap the tray (the dimmed area) to clear the dice; ✕ / Escape closes it.
@@ -154,38 +155,20 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
         </div>
       ) : (
         <div className="dice-tray__dock">
-          {notationOpen ? (
-            <form className="dice-notation" onSubmit={submitNotation}>
-              <input
-                className="dice-notation__input"
-                aria-label="Dice notation"
-                placeholder="2d6+1d4+3"
-                value={notationText}
-                autoFocus
-                onChange={(e) => setNotationText(e.target.value)}
-              />
-              <button type="submit" className="dice-notation__go" disabled={rolling}>
-                Throw
-              </button>
-              <button type="button" className="dice-notation__back" aria-label="Back to dice" onClick={() => setNotationOpen(false)}>
-                ◂
-              </button>
-            </form>
-          ) : (
-            <DiceControls
-              pool={pool}
-              modifier={modifier}
-              mode={mode}
-              rolling={rolling}
-              onAddDie={(s) => updatePool(addToPool(pool, s))}
-              onRemoveDie={(s) => updatePool(removeFromPool(pool, s))}
-              onClear={() => updatePool([])}
-              onSetMode={setMode}
-              onStepModifier={(d) => setModifier((m) => m + d)}
-              onRoll={rollFromChips}
-              onOpenNotation={() => setNotationOpen(true)}
-            />
-          )}
+          <DiceControls
+            pool={pool}
+            modifier={modifier}
+            mode={mode}
+            notation={notation}
+            rolling={rolling}
+            onAddDie={(s) => applyBuild({ pool: addToPool(pool, s) })}
+            onRemoveDie={(s) => applyBuild({ pool: removeFromPool(pool, s) })}
+            onClear={() => applyBuild({ pool: [] })}
+            onSetMode={(m) => applyBuild({ mode: m })}
+            onStepModifier={(d) => applyBuild({ modifier: modifier + d })}
+            onNotationChange={setNotation}
+            onRoll={rollNow}
+          />
         </div>
       )}
     </div>

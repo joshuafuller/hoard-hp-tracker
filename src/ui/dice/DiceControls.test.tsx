@@ -2,21 +2,26 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { DiceControls } from "./DiceControls";
-import type { DiePool } from "../../domain/dice";
+import { poolToNotation, type DiePool } from "../../domain/dice";
 
 const setup = (over: Partial<React.ComponentProps<typeof DiceControls>> = {}) => {
+  const pool = (over.pool ?? []) as DiePool;
+  const modifier = over.modifier ?? 0;
+  const mode = over.mode ?? "normal";
   const props = {
-    pool: [] as DiePool,
-    modifier: 0,
-    mode: "normal" as const,
+    pool,
+    modifier,
+    mode,
     rolling: false,
+    // by default the notation mirrors the built pool (as the tray keeps it)
+    notation: over.notation ?? poolToNotation(pool, modifier, mode),
     onAddDie: vi.fn(),
     onRemoveDie: vi.fn(),
     onClear: vi.fn(),
     onStepModifier: vi.fn(),
     onSetMode: vi.fn(),
     onRoll: vi.fn(),
-    onOpenNotation: vi.fn(),
+    onNotationChange: vi.fn(),
     ...over,
   };
   render(<DiceControls {...props} />);
@@ -35,9 +40,15 @@ describe("DiceControls (pool builder)", () => {
 
   it("shows a count badge and the built notation for the current pool", () => {
     setup({ pool: [{ sides: 6, count: 2 }, { sides: 4, count: 1 }], modifier: 3 });
-    expect(screen.getByText("2d6+1d4+3")).toBeInTheDocument();
-    // the d6 add-chip carries a ×2 badge
+    expect(screen.getByRole("textbox", { name: /dice notation/i })).toHaveValue("2d6+1d4+3");
     expect(screen.getByRole("button", { name: "Add d6" })).toHaveTextContent("2");
+  });
+
+  it("lets you type notation directly into the same expression field (no separate panel)", async () => {
+    const { onNotationChange } = setup({ pool: [{ sides: 20, count: 1 }] });
+    const field = screen.getByRole("textbox", { name: /dice notation/i });
+    await userEvent.type(field, "!");
+    expect(onNotationChange).toHaveBeenCalled();
   });
 
   it("removes one die when its pool tag is tapped", async () => {
@@ -46,16 +57,22 @@ describe("DiceControls (pool builder)", () => {
     expect(onRemoveDie).toHaveBeenCalledWith(6);
   });
 
-  it("clears the pool (Clear shown only when non-empty)", async () => {
+  it("hides the removable tags when the notation has been hand-edited", () => {
+    // notation diverges from the built pool → manual mode → no tags
+    setup({ pool: [{ sides: 6, count: 2 }], notation: "3d6!" });
+    expect(screen.queryByRole("button", { name: /remove one d6/i })).toBeNull();
+  });
+
+  it("clears the pool (Clear shown only when there's something to clear)", async () => {
     const { onClear } = setup({ pool: [{ sides: 20, count: 1 }] });
     await userEvent.click(screen.getByRole("button", { name: /clear dice/i }));
     expect(onClear).toHaveBeenCalled();
   });
 
-  it("hides Clear and disables Throw when the pool is empty", () => {
-    setup({ pool: [] });
+  it("hides Clear and disables Throw when the field is empty", () => {
+    setup({ pool: [], notation: "" });
     expect(screen.queryByRole("button", { name: /clear dice/i })).toBeNull();
-    expect(screen.getByRole("button", { name: /throw/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^throw/i })).toBeDisabled();
   });
 
   it("enables advantage only for a lone d20", async () => {
@@ -79,11 +96,5 @@ describe("DiceControls (pool builder)", () => {
     expect(onStepModifier).toHaveBeenCalledWith(1);
     await userEvent.click(screen.getByRole("button", { name: /^throw/i }));
     expect(onRoll).toHaveBeenCalled();
-  });
-
-  it("opens the notation field", async () => {
-    const { onOpenNotation } = setup({ pool: [{ sides: 20, count: 1 }] });
-    await userEvent.click(screen.getByRole("button", { name: /notation/i }));
-    expect(onOpenNotation).toHaveBeenCalled();
   });
 });
