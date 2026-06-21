@@ -1085,6 +1085,9 @@ body {
   opacity: 0.95;
   animation: lv-aura-a 16s ease-in-out infinite;
   transition: background var(--dur-flow) ease;
+  /* #106: the aura extends far past the orb (inset:-65%) — without this it would
+     hit-test over the character-name button above the stage on compact layouts. */
+  pointer-events: none;
 }
 .vessel__aura::before,
 .vessel__aura::after {
@@ -1092,6 +1095,9 @@ body {
   position: absolute;
   inset: 0;
   border-radius: 50%;
+  /* #106: match the base element's transition so a tier/accent colour change
+     cross-fades on the blobs too, instead of snapping. */
+  transition: background var(--dur-flow) ease;
 }
 .vessel__aura::before {
   background: radial-gradient(32% 32% at 62% 58%, var(--accent-glow) 0%, transparent 72%);
@@ -1152,9 +1158,22 @@ body {
 .vessel__fallback { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; }
 .vessel__fallback-fill {
   width: 100%;
+  /* flex:none so a temp band above it can't make flexbox shrink the HP fill when
+     ratio + tempRatio > 100% (full HP + any temp). Temp overflows + clips on the
+     orb instead, matching the WebGL layering. */
+  flex: none;
   background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 85%, white 5%), color-mix(in oklab, var(--accent) 70%, black));
   box-shadow: 0 0 24px var(--accent-glow);
   transition: height var(--dur-flow) cubic-bezier(0.34, 1.2, 0.5, 1), background var(--dur-flow) ease;
+}
+/* #110: temp HP as a sapphire ward band stacked above the HP fill in the static
+   fallback, matching the WebGL temp layer (uses the same --hp-temp token). */
+.vessel__fallback-temp {
+  width: 100%;
+  flex: none;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--hp-temp) 80%, white 8%), color-mix(in oklab, var(--hp-temp) 70%, black));
+  box-shadow: 0 0 18px color-mix(in oklab, var(--hp-temp) 45%, transparent);
+  transition: height var(--dur-flow) cubic-bezier(0.34, 1.2, 0.5, 1);
 }
 
 /* Brushed-gold FOIL over the fluid — fine metal grain + a specular sweep that
@@ -1165,7 +1184,8 @@ body {
   inset: 0;
   border-radius: 50%;
   pointer-events: none;
-  z-index: 1;
+  /* #110: no explicit z-index — rely on DOM order (foil < rim < shine, all
+     before the readout) so the numerals always paint on top. */
   /* Smooth spherical shade — bright near the top-left falling to a soft dark
      terminator at the lower edge, so the orb reads as a polished 3D gold ball.
      No grain: the Claude Design reference is glass-smooth, not brushed. */
@@ -1204,7 +1224,6 @@ body {
   inset: 0;
   border-radius: 50%;
   pointer-events: none;
-  z-index: 2;
   box-shadow:
     inset 0 3px 8px rgba(255, 248, 222, 0.28),
     inset 0 -10px 22px rgba(24, 15, 3, 0.35);
@@ -1217,7 +1236,6 @@ body {
   height: 20%;
   border-radius: 50%;
   pointer-events: none;
-  z-index: 2;
   background: radial-gradient(closest-side, rgba(255, 250, 235, 0.32), transparent);
   filter: blur(3px);
 }
@@ -1249,7 +1267,12 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-  pointer-events: none;
+  /* #105: the readout is a drag target too — a vertical drag that starts on the
+     numerals (the most natural grab) must damage/heal like a drag on the orb.
+     Taps on the value buttons still fall through to their own onClick. */
+  pointer-events: auto;
+  touch-action: none;
+  cursor: ns-resize;
 }
 .vessel__nums { display: flex; align-items: baseline; gap: 0.4rem; line-height: 1; }
 .vessel__current {
@@ -1263,12 +1286,17 @@ body {
   text-shadow: 0 1.5px 0 rgba(255, 244, 206, 0.4), 0 2px 10px rgba(20, 12, 2, 0.25);
 }
 .vessel__max { font-family: var(--font-num); font-size: clamp(0.9rem, 11cqmin, 1.8rem); font-weight: 700; color: rgba(42, 28, 6, 0.66); text-shadow: 0 1px 0 rgba(255, 244, 206, 0.35); font-variant-numeric: tabular-nums; }
-/* On the low-HP ruby/down states the body goes dark — flip numerals back to light. */
+/* On the low-HP states the engraved dark numerals lose their gold backing: the
+   fill only reaches the lower orb so the upper half (where the centered numerals
+   sit) is dark glass. #110 — flip numerals to light from bloodied down so they
+   stay legible when the fill no longer backs them. */
+.vessel[data-tier="bloodied"] .vessel__current,
 .vessel[data-tier="critical"] .vessel__current,
 .vessel[data-tier="down"] .vessel__current {
   color: var(--ink-100);
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7), 0 0 30px var(--accent-glow);
 }
+.vessel[data-tier="bloodied"] .vessel__max,
 .vessel[data-tier="critical"] .vessel__max,
 .vessel[data-tier="down"] .vessel__max { color: var(--ink-300); text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7); }
 .vessel__edit { appearance: none; background: none; border: none; padding: 0 0.2rem; border-radius: 14px; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent; }

@@ -58,4 +58,29 @@ describe("LiquidVessel orb-drag input", () => {
     fireEvent.click(screen.getByTestId("hp-current"));
     expect(onEditCurrent).toHaveBeenCalled();
   });
+
+  it("a vertical drag that starts on the readout overlay applies damage too (#105)", () => {
+    const { orb, onDamage } = setup();
+    // The readout sits over the orb; its drag must scale to the ORB's height.
+    const readout = orb.parentElement?.querySelector(".vessel__readout") as HTMLElement;
+    expect(readout).toBeTruthy();
+    fireEvent.pointerDown(readout, { clientY: 0, pointerId: 2, button: 0 });
+    fireEvent.pointerMove(readout, { clientY: 100, pointerId: 2 });
+    fireEvent.pointerUp(readout, { clientY: 100, pointerId: 2 });
+    expect(onDamage).toHaveBeenCalledWith(20); // 100/200 * 40, measured off the orb
+  });
+
+  it("a browser/OS-cancelled drag clears state WITHOUT committing damage/heal (#105)", () => {
+    const { orb, onDamage, onHeal } = setup();
+    fireEvent.pointerDown(orb, { clientY: 0, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(orb, { clientY: 100, pointerId: 1 }); // would be -20 HP on commit
+    fireEvent.pointerCancel(orb, { clientY: 100, pointerId: 1 });
+    expect(onDamage).not.toHaveBeenCalled();
+    expect(onHeal).not.toHaveBeenCalled();
+
+    // and the drag state is cleared: a later tap still opens the keypad, not a stale drag
+    fireEvent.pointerUp(orb, { clientY: 100, pointerId: 1 });
+    expect(onDamage).not.toHaveBeenCalled();
+    expect(onHeal).not.toHaveBeenCalled();
+  });
 });

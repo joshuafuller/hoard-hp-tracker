@@ -31,6 +31,7 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
   const flash = useChangeFlash(current + temp);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const orbRef = useRef<HTMLDivElement | null>(null);
   const foilRef = useRef<HTMLDivElement | null>(null);
   const { gravity } = useGyro();
 
@@ -72,17 +73,27 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
 
   function onOrbPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (e.button > 0) return;
-    const orb = e.currentTarget;
+    // The drag can start on the orb OR on the centered readout overlay (the
+    // numerals are the most natural grab target). Either way, scale to the ORB's
+    // height — fall back to the event target if the orb ref isn't measured yet.
+    const orb = orbRef.current ?? e.currentTarget;
     const orbPx = orb.clientHeight || orb.getBoundingClientRect().height;
     dragRef.current = { startY: e.clientY, orbPx, moved: false };
-    orb.setPointerCapture?.(e.pointerId);
+    // NB: pointer capture is deferred to the first real move (below). Capturing on
+    // a *tap* of a numeral retargets the synthesized click to the capture element,
+    // so the value buttons would never open their editor. Taps must not capture.
   }
   function onOrbPointerMove(e: React.PointerEvent<HTMLDivElement>) {
     const st = dragRef.current;
     if (!st) return;
     const dy = e.clientY - st.startY;
     if (!st.moved && isTap(dy)) return;
-    st.moved = true;
+    if (!st.moved) {
+      // First frame that counts as a real drag — now capture so tracking
+      // continues even if the pointer leaves the element.
+      st.moved = true;
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+    }
     setDrag(dragAmount(dy, st.orbPx, max));
   }
   function onOrbPointerUp(e: React.PointerEvent<HTMLDivElement>) {
@@ -100,6 +111,12 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
       }
     }
   }
+  // pointercancel (browser/OS yanked the gesture — scroll takeover, app switch,
+  // palm rejection) must NOT compute or commit an amount. Just drop the drag.
+  function onOrbPointerCancel() {
+    dragRef.current = null;
+    setDrag(null);
+  }
   function onOrbClickCapture(e: React.MouseEvent<HTMLDivElement>) {
     if (suppressClick.current) {
       suppressClick.current = false;
@@ -116,16 +133,22 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
         data-testid="hp-bar"
         data-tier={tier}
         data-dragging={drag ? "" : undefined}
+        ref={orbRef}
         onPointerDown={onOrbPointerDown}
         onPointerMove={onOrbPointerMove}
         onPointerUp={onOrbPointerUp}
-        onPointerCancel={onOrbPointerUp}
+        onPointerCancel={onOrbPointerCancel}
         onClickCapture={onOrbClickCapture}
       >
         {active ? (
           <canvas ref={canvasRef} className="vessel__canvas" aria-hidden="true" />
         ) : (
           <div className="vessel__fallback" aria-hidden="true">
+            {/* temp HP sits as a sapphire ward band ABOVE the HP fill, mirroring
+                the WebGL layer — #110 (fallback previously omitted temp). */}
+            {tempRatio > 0 && (
+              <div className="vessel__fallback-temp" style={{ height: `${Math.min(1, tempRatio) * 100}%` }} />
+            )}
             <div className="vessel__fallback-fill" style={{ height: `${ratio * 100}%` }} />
           </div>
         )}
@@ -140,7 +163,14 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
         )}
       </div>
 
-      <div className="vessel__readout">
+      <div
+        className="vessel__readout"
+        onPointerDown={onOrbPointerDown}
+        onPointerMove={onOrbPointerMove}
+        onPointerUp={onOrbPointerUp}
+        onPointerCancel={onOrbPointerCancel}
+        onClickCapture={onOrbClickCapture}
+      >
         <output
           role="status"
           className="vessel__nums"
@@ -190,7 +220,11 @@ function useFoilTilt(
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (reducedMotion || typeof requestAnimationFrame !== "function") {
+    // No reason to spin a per-frame loop when there's no input to read: under
+    // reduced motion, with no rAF, or on a device with no orientation sensor
+    // (desktop, #100) gravity.x never moves — rest the highlight centered once.
+    const hasSensor = typeof window !== "undefined" && "DeviceOrientationEvent" in window;
+    if (reducedMotion || typeof requestAnimationFrame !== "function" || !hasSensor) {
       el.style.setProperty("--foil-shift", "0%");
       return;
     }
