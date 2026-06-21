@@ -243,15 +243,42 @@ describe("toRollRecord (real parser)", () => {
     expect(rec.total).toBe(12); // 7 (finite die) + 5 (modifier)
   });
 
-  it("captures exploding dice with the total = sum (no early/over tally)", () => {
+  it("captures exploding dice with the total = sum, the trigger flagged, and the added die in round 2", () => {
     // 1d6! where the 6 explodes into a 3 → both dice recorded, total 9.
     const rec = roll("1d6!", [{ v: 6, sides: 6 }, { v: 3, sides: 6 }]);
     expect(rec.total).toBe(9);
     expect(rec.result).toEqual([6, 3]);
     expect(rec.dice).toEqual([
-      { sides: 6, value: 6, dropped: false, exploded: true }, // the 6 triggered the explosion
-      { sides: 6, value: 3, dropped: false }, // the added die
+      { sides: 6, value: 6, dropped: false, exploded: true }, // round 1 (implicit) — triggered the explosion
+      { sides: 6, value: 3, dropped: false, round: 2 }, // the added die, round 2
     ]);
+  });
+
+  it("batches explosion ROUNDS by count, not per-die (the parser appends them at the end)", () => {
+    // Hand-built 2d6! tree: round 1 = [6(explode), 4]; the explosion adds round 2 = [5].
+    const tree = {
+      value: 15,
+      dice: [
+        {
+          count: { value: 2 },
+          die: { value: 6 },
+          rolls: [
+            { die: 6, value: 6, explode: true },
+            { die: 6, value: 4 },
+            { die: 6, value: 5 }, // appended explosion → round 2
+          ],
+        },
+      ],
+    } as unknown as Parameters<typeof toRollRecord>[0];
+    const rec = toRollRecord(tree, "2d6!");
+    expect(rec.dice).toEqual([
+      { sides: 6, value: 6, dropped: false, exploded: true }, // round 1
+      { sides: 6, value: 4, dropped: false }, // round 1
+      { sides: 6, value: 5, dropped: false, round: 2 }, // round 2 (the explosion)
+    ]);
+    // exactly one round boundary
+    expect(rec.dice.filter((d) => d.round === 2)).toHaveLength(1);
+    expect(rec.total).toBe(15);
   });
 
   it("4d6 drop-lowest keeps three, struck-out one", () => {

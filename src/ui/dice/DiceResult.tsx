@@ -25,8 +25,8 @@ export function DiceResult({ record, onApplyHeal, heal = false }: DiceResultProp
           {record.dice.map((d, i) => {
             // Nat 1 / nat 20 on a d20 are gameplay-critical — outline ruby / emerald.
             const crit = d.sides === 20 && d.value === 20 ? "hit" : d.sides === 20 && d.value === 1 ? "miss" : undefined;
-            // A die produced by an explosion follows one flagged `exploded` — show a "+".
-            const added = i > 0 && record.dice[i - 1]?.exploded;
+            // One "+" at each explosion-round boundary (round 1 is implicit/undefined).
+            const added = i > 0 && (d.round ?? 1) !== (record.dice[i - 1]?.round ?? 1);
             return (
               <span key={i} className="dice-result__chipwrap">
                 {added && <span className="dice-result__plus" aria-hidden="true">+</span>}
