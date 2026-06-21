@@ -20,6 +20,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
+      # Type-check the Playwright specs + config (excluded from the root
+      # typecheck); no browser needed, so it lives here, not in the e2e job.
+      - run: pnpm typecheck:e2e
       - run: pnpm test
       - run: pnpm build
 
