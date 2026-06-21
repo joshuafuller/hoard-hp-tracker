@@ -8,9 +8,12 @@ import {
   buildNotation,
   isPlausibleRoll,
   notationHasDice,
+  notationModifier,
   poolToNotation,
+  recordFromPhysical,
   removeFromPool,
   toRollRecord,
+  physicalRecordApplies,
   type DiceSelection,
   type DiePool,
   type RollRecord,
@@ -165,6 +168,162 @@ describe("isPlausibleRoll (engine result guard)", () => {
   it("notationHasDice detects dice vs bare modifiers", () => {
     for (const n of ["1d20", "2d6+3", "4d6kh3", "3d6!", "1dF", "1d%"]) expect(notationHasDice(n)).toBe(true);
     for (const n of ["+5", "5", "-2", ""]) expect(notationHasDice(n)).toBe(false);
+  });
+});
+
+describe("notationModifier", () => {
+  it("sums standalone integer terms, ignoring dice terms", () => {
+    expect(notationModifier("8d6!")).toBe(0);
+    expect(notationModifier("8d6!+3")).toBe(3);
+    expect(notationModifier("2d6+1d4")).toBe(0);
+    expect(notationModifier("1d20-2")).toBe(-2);
+    expect(notationModifier("2d20kh1+5")).toBe(5);
+    expect(notationModifier("3d6+2-1")).toBe(1);
+  });
+
+  it("tolerates whitespace around the modifier", () => {
+    expect(notationModifier("8d6! + 3")).toBe(3);
+    expect(notationModifier("1d20 - 2")).toBe(-2);
+  });
+
+  it("is 0 for an empty string or a pure dice term (no standalone integer)", () => {
+    expect(notationModifier("")).toBe(0);
+    expect(notationModifier("8d6")).toBe(0); // the trailing digits of a die are NOT a modifier
+    expect(notationModifier("d20")).toBe(0);
+  });
+
+  it("treats a leading sign correctly and sums multiple modifiers", () => {
+    expect(notationModifier("+7")).toBe(7);
+    expect(notationModifier("2d6+10-4")).toBe(6);
+    expect(notationModifier("1d4-1-1")).toBe(-2);
+  });
+});
+
+describe("physicalRecordApplies (engine routing)", () => {
+  it("routes additive exploding rolls to the physical builder", () => {
+    for (const n of ["8d6!", "3d6!", "1d6!!", "4dF!"]) expect(physicalRecordApplies(n)).toBe(true);
+  });
+
+  it("keeps non-exploding and keep/drop rolls on the parser path", () => {
+    // no explosion → parser path
+    for (const n of ["8d6", "2d6+3", "2d20kh1", "1d20"]) expect(physicalRecordApplies(n)).toBe(false);
+    // keep/drop/success WITH explode → parser (physical can't apply keep/drop semantics)
+    for (const n of ["4d6kh3!", "2d20kl1!", "10d6>4!"]) expect(physicalRecordApplies(n)).toBe(false);
+  });
+});
+
+describe("recordFromPhysical (physics-authoritative record)", () => {
+  // dice-box onRollComplete shape: groups carrying a flat `rolls[]` of physical dice.
+  const group = (rolls: Array<{ rollId: number | string; sides: number; value: number }>) => [{ rolls }];
+
+  it("builds the record from the physical dice the user sees (captured 8d6! explosion)", () => {
+    // From the spike: 8 initial (the 6 is rollId 2) + the explosion rollId "2.1" = 5.
+    const results = group([
+      { rollId: 0, sides: 6, value: 4 },
+      { rollId: 1, sides: 6, value: 3 },
+      { rollId: 2, sides: 6, value: 6 },
+      { rollId: 3, sides: 6, value: 1 },
+      { rollId: 4, sides: 6, value: 5 },
+      { rollId: 5, sides: 6, value: 2 },
+      { rollId: 6, sides: 6, value: 1 },
+      { rollId: 7, sides: 6, value: 5 },
+      { rollId: "2.1", sides: 6, value: 5 }, // the explosion — value matches the table
+    ]);
+    const rec = recordFromPhysical(results, "8d6!");
+    expect(rec.dice).toHaveLength(9);
+    expect(rec.total).toBe(32); // 4+3+6+1+5+2+1+5 + 5
+    // the explosion die carries its physical value AND round 2
+    const explosion = rec.dice[8]!;
+    expect(explosion.value).toBe(5);
+    expect(explosion.round).toBe(2);
+    // exactly one round boundary
+    expect(rec.dice.filter((d) => d.round === 2)).toHaveLength(1);
+    // the triggering 6 is flagged exploded
+    expect(rec.dice[2]!.exploded).toBe(true);
+    expect(rec.dice[0]!.exploded).toBeUndefined();
+  });
+
+  it("groups multi-round chains by rollId (1d6! → 6 → 6 → 3)", () => {
+    const results = group([
+      { rollId: 0, sides: 6, value: 6 },
+      { rollId: "0.1", sides: 6, value: 6 },
+      { rollId: "0.2", sides: 6, value: 3 },
+    ]);
+    const rec = recordFromPhysical(results, "1d6!");
+    expect(rec.total).toBe(15);
+    expect(rec.dice.map((d) => d.round ?? 1)).toEqual([1, 2, 3]);
+  });
+
+  it("handles a plain roll with a modifier (no rounds, no explode flags)", () => {
+    const results = group([
+      { rollId: 0, sides: 6, value: 4 },
+      { rollId: 1, sides: 6, value: 2 },
+    ]);
+    const rec = recordFromPhysical(results, "2d6+3");
+    expect(rec.total).toBe(9);
+    expect(rec.dice.every((d) => d.round === undefined)).toBe(true);
+    expect(rec.dice.every((d) => d.exploded === undefined)).toBe(true);
+    expect(rec.result).toEqual([4, 2]);
+  });
+
+  it("orders dice round-1-first even if the engine appends rounds out of order", () => {
+    const results = group([
+      { rollId: 0, sides: 6, value: 2 },
+      { rollId: "0.1", sides: 6, value: 4 }, // round 2 appended amid round 1
+      { rollId: 1, sides: 6, value: 6 },
+    ]);
+    const rec = recordFromPhysical(results, "2d6!");
+    // round 1 dice come before round 2 dice
+    expect(rec.dice.map((d) => d.round ?? 1)).toEqual([1, 1, 2]);
+  });
+
+  it("maps rollId to round exactly: integer→1, X.1→2, X.2→3", () => {
+    const results = group([
+      { rollId: 0, sides: 6, value: 6 },
+      { rollId: "0.1", sides: 6, value: 6 },
+      { rollId: "0.2", sides: 6, value: 2 },
+    ]);
+    const rec = recordFromPhysical(results, "1d6!");
+    expect(rec.dice[0]!.round).toBeUndefined(); // round 1 is implicit
+    expect(rec.dice[1]!.round).toBe(2);
+    expect(rec.dice[2]!.round).toBe(3);
+  });
+
+  it("only flags exploded when the notation explodes AND the die rolled its max", () => {
+    const withBang = recordFromPhysical(group([{ rollId: 0, sides: 6, value: 6 }, { rollId: 1, sides: 6, value: 3 }]), "2d6!");
+    expect(withBang.dice[0]!.exploded).toBe(true); // 6 on a d6! → exploded
+    expect(withBang.dice[1]!.exploded).toBeUndefined(); // 3 → not
+    // same dice WITHOUT the bang → never flagged exploded
+    const noBang = recordFromPhysical(group([{ rollId: 0, sides: 6, value: 6 }]), "2d6");
+    expect(noBang.dice[0]!.exploded).toBeUndefined();
+  });
+
+  it("totals every physical die plus the modifier (no dropped dice)", () => {
+    const rec = recordFromPhysical(group([{ rollId: 0, sides: 6, value: 6 }, { rollId: 1, sides: 6, value: 5 }]), "2d6!+4");
+    expect(rec.total).toBe(15); // 6 + 5 + 4 — proves dice aren't filtered out
+    expect(rec.result).toEqual([6, 5]);
+  });
+
+  it("defaults a missing rollId to round 1 and a missing sides to 0", () => {
+    const rec = recordFromPhysical([{ rolls: [{ value: 4 }] }], "1d6!");
+    expect(rec.dice).toEqual([{ sides: 0, value: 4, dropped: false }]);
+    expect(rec.total).toBe(4);
+  });
+
+  it("skips entries without a numeric value and recurses into nested results", () => {
+    // value-less entry is skipped; a nested sub-object's rolls are still collected
+    const results = [
+      { rolls: [{ rollId: 0, sides: 6, value: 5 }, { rollId: 1, sides: 6 }] },
+      { group: { rolls: [{ rollId: 2, sides: 6, value: 3 }] } },
+    ];
+    const rec = recordFromPhysical(results, "3d6!");
+    expect(rec.result).toEqual([5, 3]); // the value-less middle die is skipped
+    expect(rec.total).toBe(8);
+  });
+
+  it("returns just the modifier when there are no physical dice", () => {
+    expect(recordFromPhysical(null, "1d6!+2").total).toBe(2);
+    expect(recordFromPhysical({}, "1d6!").dice).toEqual([]);
   });
 });
 

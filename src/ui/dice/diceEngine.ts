@@ -13,7 +13,7 @@
  */
 // @ts-expect-error — the parser ships no types
 import DiceParser from "@3d-dice/dice-parser-interface";
-import { isPlausibleRoll, toRollRecord, type RollRecord } from "../../domain/dice";
+import { isPlausibleRoll, recordFromPhysical, toRollRecord, physicalRecordApplies, type RollRecord } from "../../domain/dice";
 
 /** Gold dice tuned to Molten Hoard; tray physics tuned in the spike. */
 const THEME_COLOR = "#e8b45a";
@@ -161,10 +161,15 @@ export async function createDiceTray(container: string | HTMLElement): Promise<D
               box.add(rerolls, { newStartPoint: false });
               return;
             }
-            const final = parser.parseFinalResults(results);
-            const rec = toRollRecord(final, notation);
-            // The engine occasionally yields a malformed result (bogus total, no
-            // dice). Don't show garbage — recover with a clean headless roll.
+            // Exploding rolls desync from the physical dice (parseFinalResults
+            // returns garbage once extra dice are added, #97) — build the record
+            // straight from the physical dice the user sees. Keep the parser path
+            // for everything else (it carries keep/drop semantics and matches
+            // physics when no dice are added).
+            const rec = physicalRecordApplies(notation)
+              ? recordFromPhysical(results, notation)
+              : toRollRecord(parser.parseFinalResults(results), notation);
+            // Last-resort safety net: never show a malformed result.
             if (!isPlausibleRoll(rec, notation)) {
               console.warn("[hoard] engine returned a malformed roll; using headless fallback", rec);
               resolve(rollHeadless(notation));
