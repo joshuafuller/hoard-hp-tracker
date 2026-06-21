@@ -35,7 +35,9 @@ Latin; preload the display weight used on first paint.
   Character name, headers, big moments ("You are bloodied").
 - **Body / UI / Labels:** **DM Sans** — clean, legible, humanist-geometric.
 - **Numerals / Data:** **DM Sans** with `font-variant-numeric: tabular-nums lining-nums` — HP,
-  coin counts, anything that updates in place must not reflow or shimmer.
+  coin counts, anything that updates in place must not reflow or shimmer. This includes every
+  **large total/readout** (orb HP, coin total, **dice total**) — they share the `--font-num`
+  token so they read as one face. Fraunces is for identity/headings only, **never** numerals.
 - **Mono accent (optional):** **JetBrains Mono** — dice expressions / technical readouts only.
 - **Loading:** self-host woff2 (do **not** depend on a network font — see PRD §5.4 / #45).
 - **Scale (rem, 16px base):** 0.69 / 0.81 / 0.94 (body) / 1.13 / 1.5 / 2.0 / 3.0 / 3.75 (hero HP).

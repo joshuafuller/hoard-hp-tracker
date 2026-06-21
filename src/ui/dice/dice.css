@@ -142,10 +142,11 @@
   pointer-events: auto; /* the card is a solid object; the heal button is clickable */
 }
 .dice-result__total {
-  font-family: "Fraunces", Georgia, serif;
-  font-weight: 600;
+  font-family: var(--font-num); /* match the HP orb numeral, not Fraunces (#114) */
+  font-weight: 800;
   font-size: 3.6rem;
   line-height: 1;
+  letter-spacing: -0.04em;
   color: var(--coin-gold);
   font-variant-numeric: tabular-nums;
   text-shadow: 0 0 26px color-mix(in oklab, var(--coin-gold) 35%, transparent);
