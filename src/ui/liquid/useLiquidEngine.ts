@@ -111,7 +111,11 @@ export function useLiquidEngine(opts: LiquidEngineOpts): void {
       last = now;
       if (dt > MAX_FRAME_DT) dt = MAX_FRAME_DT;
       else if (dt < 0) dt = 0; // guard a non-monotonic timestamp
-      time += dt; // shimmer tracks real time
+      // `time` is the (clamped) sim clock that drives the shimmer — deliberately
+      // NOT true wall-clock: it advances by the same clamped dt the sim steps on,
+      // so a long stall/GC pause skips ahead at most MAX_FRAME_DT (the spiral-of-
+      // death guard) instead of jumping, keeping shimmer in lockstep with the fluid.
+      time += dt;
       const cap = sim.capacity;
       const ease = Math.max(1, Math.ceil(cap * 0.05));
 

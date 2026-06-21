@@ -156,7 +156,7 @@ describe("Sph.step — neighbour grid is rebuilt between constraint iterations",
   it("rebuilds the grid once per constraint iteration", () => {
     const iterations = 4;
     const sim = makeSim(60, { iterations });
-    // buildGrid is private; spy through the prototype.
+    // buildGrid is private; spy on it via a cast on the instance.
     const spy = vi.spyOn(sim as unknown as { buildGrid: () => void }, "buildGrid");
     sim.step(0.004, 0, 1);
     expect(spy).toHaveBeenCalledTimes(iterations);
