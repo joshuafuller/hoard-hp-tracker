@@ -105,7 +105,18 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
         navigator.vibrate(12);
       }
       try {
-        const rec = reduced || !engineRef.current ? rollHeadless(expr) : await engineRef.current.roll(expr);
+        let rec: RollRecord;
+        if (reduced || !engineRef.current) {
+          rec = rollHeadless(expr);
+        } else {
+          // Safety: if the physics never settles (dice jam / engine hiccup), don't
+          // hang on "Throwing" forever — fall back to a headless result after a
+          // few seconds so the player always gets a number and the button resets.
+          const timeout = new Promise<RollRecord>((res) =>
+            setTimeout(() => res(rollHeadless(expr)), 6000),
+          );
+          rec = await Promise.race([engineRef.current.roll(expr), timeout]);
+        }
         setRecord(rec);
         await history.record(rec, { context: "ad-hoc" });
       } catch (err) {
@@ -144,9 +155,6 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
   return (
     <div className="dice-tray" data-open={open} aria-hidden={!open} role="dialog" aria-modal="true" aria-label="Dice tray">
       <div className="dice-tray__scrim" onClick={clearDice} aria-hidden="true" />
-      {/* Full-screen dice canvas — the whole screen IS the tray (walls at the
-          edges), with the controls floating on top. */}
-      <div className="dice-tray__canvas" id={CANVAS_ID} ref={canvasRef} aria-hidden="true" />
       <button type="button" className="dice-tray__close" aria-label="Close dice" onClick={handleClose}>
         ✕
       </button>
@@ -154,7 +162,11 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
         ⟲ log
       </button>
 
+      {/* The dice "field" is the full-WIDTH area ABOVE the dock — walls at the
+          screen sides, floor at the dock's top edge — so dice land in view and
+          never roll behind the controls. */}
       <div className="dice-tray__stage">
+        <div className="dice-tray__canvas" id={CANVAS_ID} ref={canvasRef} aria-hidden="true" />
         {record && <DiceResult record={record} onApplyHeal={onApplyHeal} />}
       </div>
 

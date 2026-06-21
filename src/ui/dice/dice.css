@@ -85,7 +85,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.9rem;
-  padding: 4rem 1rem 1rem;
+  padding: 0; /* canvas fills the whole field: full width, top to the dock */
   pointer-events: none; /* taps fall through to the scrim (tap-to-clear) */
 }
 /* the 3D canvas dice-box injects fills the WHOLE screen (the full tray) so the
