@@ -169,12 +169,20 @@
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85), 0 0 30px color-mix(in oklab, #4fb477 42%, transparent);
 }
 .dice-result__expr {
+  display: inline-block;
+  max-width: 92vw;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 0.82rem;
-  color: var(--ink-300);
+  color: var(--ink-100);
+  /* A dark pill behind the per-die line so it stays legible over dice / the orb. */
+  background: rgba(8, 7, 5, 0.72);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  backdrop-filter: blur(3px);
 }
-.dice-result__die[data-dropped="true"] { color: var(--ink-700); }
-.dice-result__die s { color: var(--ink-700); }
+.dice-result__notation { color: var(--ink-300); }
+.dice-result__die[data-dropped="true"] { color: var(--ink-500); }
+.dice-result__die s { color: var(--ink-500); }
 .dice-applyheal {
   margin-top: 0.4rem;
   display: inline-flex;
