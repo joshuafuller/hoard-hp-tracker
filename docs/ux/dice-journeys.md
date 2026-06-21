@@ -85,7 +85,8 @@ dice↔HP rule — §5, a decision to ratify.)*
 ### Journey E — "Wait, what did I just roll?" *(recovery / trust)*
 Mid-argument about a number, Marcus glances at the **roll history** in the tray — the last several
 rolls with notation + result, newest first — confirms his **18 ▸ +5 = 23**, and moves on. History
-persists across the session so he can reopen the tray and check. No re-roll needed to remember.
+persists **durably** (the last 50 rolls, in IndexedDB), so he can close the tray — or the whole app —
+reopen, and the roll's still there. No re-roll needed to remember.
 
 ### Journey F — Quiet table / motion-sensitive *(accessibility, Gate 2)*
 Priya plays in a library group and has reduced-motion on. She rolls; the dice **settle instantly**
@@ -133,8 +134,10 @@ not gated behind an animation she can't use.
 - **Acceptance Criteria**
   - **Given** I have rolled at least once, **When** I look at the tray, **Then** I see a history of
     recent rolls (newest first) each showing notation + per-die result + total.
-  - **and** each roll is recorded as `{notation, total, result, dice[]}` (per the spike) and persists
-    for the session.
+  - **and** each roll is persisted as `{notation, total, result, dice[]}` **plus a `context` tag
+    (`ad-hoc` / `death-save` / `hit-die`) and a timestamp**, durably in IndexedDB (newest-first,
+    capped at the 50 most recent) — so history survives a full reload, not just the session.
+    *(Shipped: `RollRecord` + `useDiceHistory`, `DICE_HISTORY_CAP = 50`.)*
 
 ### US-D5 — Death save through the shared tray *(safety net; Priya)*
 - **Summary:** Roll a death save in the tray and have the app apply the outcome.
@@ -144,6 +147,8 @@ not gated behind an animation she can't use.
   - **Given** I'm at 0 HP with death saves showing, **When** I roll the death save, **Then** one d20
     throws in the tray and the app marks a success (≥10) or failure (<10) pip itself.
   - **and** a natural 20 revives me to 1 HP and a natural 1 marks two failures.
+  - **and** the d20 result feeds the existing `rollDeathSave(roll?)` seam (which already accepts an
+    optional roll) and is recorded with `context: "death-save"`.
   - *(Depends on §6 shared-tray refactor.)*
 
 ### US-D6 — Hit Die through the shared tray, into HP *(recovery; dice↔HP)*
@@ -153,7 +158,8 @@ not gated behind an animation she can't use.
 - **Acceptance Criteria**
   - **Given** I spend a Hit Die, **When** it rolls in the tray, **Then** I'm offered to apply
     `roll + CON modifier` as healing to my HP, and confirming raises my current HP (capped at max).
-  - **and** the roll is recorded in history.
+  - **and** the roll feeds the existing `shortRest(roll?)` seam and is recorded with
+    `context: "hit-die"`.
   - *(Depends on §5 dice↔HP decision + §6 refactor.)*
 
 ### US-D7 — Notation escape hatch *(experienced Marcus; lower frequency)*
@@ -176,6 +182,16 @@ not gated behind an animation she can't use.
   - **and Given** `prefers-reduced-motion`, **When** I roll, **Then** the dice settle instantly
     (no tumble) but I still get the full total + per-die result.
   - **and** the engine loads **lazily on first open**, never on app start.
+
+### US-D9 — Throw again without leaving the tray *(successive rolls; the #93 trap)*
+- **Summary:** Roll, then roll again in place — the previous result clears cleanly, no stale dice.
+- **As** Marcus, **I want to** throw a second time without exiting the tray, **so that** I take my
+  next attack or re-roll immediately.
+- **Acceptance Criteria**
+  - **Given** a result is showing, **When** I throw again, **Then** the previous dice, total, and any
+    open count/result affordance are cleared *before* the new throw — no leftover dice, no stale
+    total. *(Regression guard for #93, where a successive roll left the count modal up.)*
+  - **and** clearing the table never erases history — the prior roll stays in the record.
 
 ---
 
@@ -200,6 +216,11 @@ working, tested features**, not greenfield. The e2e layout guard already bit onc
 so this carries regression risk. **Treat it as a careful, separate fast-follow** (its own PR, its own
 red-green tests) **after** the standalone tray lands — not bundled into the first slice.
 
+**Lower-risk than it first reads:** the seams already exist — `rollDeathSave(roll?)` and
+`shortRest(roll?)` already take an injected roll, and `RollContext` already enumerates `death-save` /
+`hit-die`. The refactor feeds the tray's physical result into those parameters; it does **not**
+reshape the HP / death-save domain.
+
 ---
 
 ## 7. Build order *(decided 2026-06-20: whole module at once)*
@@ -210,7 +231,8 @@ the *build sequence* (each step TDD red-green-refactor), not separate releases:
 1. **Table-throw tray** — lazy-loaded full-screen overlay; d20 token entry from the chrome; inert
    when closed; tap-to-clear / ✕ to exit. *(US-D1)*
 2. **Zero-typing core rolling** — die chips + modifier + **one-tap advantage/disadvantage**, showing
-   total + per-die + notation, dropped dice struck. *(US-D1, US-D2, US-D3)*
+   total + per-die + notation, dropped dice struck; successive throws clear the table cleanly.
+   *(US-D1, US-D2, US-D3, US-D9)*
 3. **Recorded model + session history** — `{notation, total, result, dice[]}`, persisted. *(US-D4)*
 4. **Notation escape hatch** — secondary field, full Roll20 grammar. *(US-D7)*
 5. **Death-save + Hit-Dice routing through the tray, with heal-apply into HP** — the shared mechanic
@@ -223,3 +245,55 @@ because it touches shipped death-save/Hit-Dice code and the e2e layout guard. Ra
 
 Whole module: brainstorm → spec (#73 AC) → plan → TDD across the steps above → PR into `beta` →
 review → promote to `main`.
+
+---
+
+## 8. Edge cases & failure modes *(what the tray does when things aren't nominal)*
+
+These keep the tray trustworthy at the table; each distils into a red-green test for #75.
+
+| Case | Expected behavior | Grounding |
+|------|-------------------|-----------|
+| **Empty pool** (no dice, bare modifier) | Throw disabled / no-op; nothing recorded. | `poolToNotation([], …) → ""`; `notationHasDice` false. |
+| **Invalid typed notation** | Inline error, tray stays open, no crash, nothing recorded. | notation field is the only free-text seam. |
+| **Engine returns a bogus result** (static "21", no dice on a re-roll) | Detected and silently re-rolled headless — the player never sees a stuck number. | `isPlausibleRoll` → headless fallback (shipped). |
+| **Exploding roll** (`3d6!`) | Each exploded die flagged; explosion-round dice append in round order; total stays correct. | `recordFromPhysical` / `assignRounds`; explosion-reconcile spike (#96/#97). |
+| **0 Hit Dice available** | Hit-Die throw unavailable — can't spend what you don't have. | gated on `hitDiceAvailable > 0`. |
+| **Death saves already resolved** (stable / dead) | Death-save throw unavailable in that state. | `status` gate; `rollDeathSave` only meaningful while dying. |
+| **Reduced motion** | Instant-settle: no tumble, full total + per-die result. | US-D8. |
+| **Offline** | Full function, no runtime CDN call (precached, #45). | US-D8. |
+
+## 9. Candidate follow-ups *(out of scope for #75 — need owner approval)*
+
+- **Concentration save through the tray.** When damage lands while concentrating, the app already
+  computes the DC (`concentrationDC`) and prompts the player to keep/drop (#112). Routing that CON
+  save d20 through the *same* tray (throw → compare to DC → auto keep/drop) would be a clean,
+  thematic **fourth** "app-owns-the-rule" roll alongside death-save + Hit-Die. **But** PRD §5.3
+  enumerates only two shared rolls and `RollContext` deliberately omits concentration — so this is a
+  spec expansion, not part of #75. Would need a `RollContext: "concentration"` value + a
+  keep/drop-via-tray decision. **Surface to the owner before building.**
+- **Radial "purse" entry** (#74) for the dice token — already a separate follow-up.
+
+---
+
+## Appendix — Loop scorecard *(this doc, scored against one checklist)*
+
+Scored 1–5 (5 = outstanding); rule: *improve the weakest safe area, re-score, stop on no-gain or a
+required-approval gate.*
+
+| Quality dimension | Pass 1 | Pass 2 | What changed |
+|-------------------|:-----:|:-----:|--------------|
+| Persona specificity & fit | 5 | 5 | Marcus + Priya; no new personas. |
+| Hero-path clarity | 5 | 5 | Journey A + storyboard. |
+| Story format (Cohn + Gherkin, testable) | 4 | 5 | + US-D9; ACs single-intent. |
+| Journey coverage (entry → core → recovery → exit) | 4 | 5 | + successive-roll recovery (US-D9). |
+| **Edge / failure states** | 2 | 5 | **weakest in pass 1** → new §8. |
+| Grounding in shipped code (record model, seams) | 3 | 5 | durable history + `context`/`at` + inject-roll seams. |
+| Accessibility / offline | 5 | 5 | US-D8 + §8. |
+| Scope discipline (Scope-Fit gates) | 4 | 5 | concentration parked in §9, not threaded in. |
+| **Total** | **32/40** | **40/40** | |
+
+**Stop reason:** *success* — pass 2 meets the bar on every dimension. The one remaining idea
+(concentration routing) is gated on **owner approval** (a defined stop condition), not a doc defect,
+so the loop halts rather than forcing a third pass. **Screenshots: N/A** — no built UI flow yet; this
+is the pre-build experience spec, so there's nothing to capture in a browser.
