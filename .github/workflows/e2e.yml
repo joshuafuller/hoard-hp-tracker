@@ -6,10 +6,11 @@ on:
   pull_request:
     branches: [main, beta]
 
-# Mirror the CI workflow: cancel superseded PR runs for the same ref so only the
-# latest commit's Playwright run holds a runner.
+# Mirror the CI workflow: PR runs are grouped per PR number and superseded ones
+# are cancelled; push runs (main/beta) fall back to the unique `github.run_id`
+# so each push gets its own group and production E2E is never cancelled.
 concurrency:
-  group: e2e-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: e2e-${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -21,17 +22,19 @@ jobs:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
+        id: node
         with:
           node-version: 22
           cache: pnpm
-      # Cache the installed node_modules tree keyed on the lockfile, so a cache
-      # hit skips the install's link/build step (pnpm `cache: pnpm` only
-      # restores the global store, not node_modules).
+      # Cache the installed node_modules tree keyed on the lockfile + the exact
+      # resolved Node version, so a Node patch bump never restores binary deps
+      # built under a different runtime. A cache hit skips the install's
+      # link/build step (pnpm `cache: pnpm` only restores the global store).
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
           path: node_modules
-          key: node_modules-${{ runner.os }}-node22-${{ hashFiles('pnpm-lock.yaml') }}
+          key: node_modules-${{ runner.os }}-node${{ steps.node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm install --frozen-lockfile
       # Cache the downloaded Chromium binary keyed on the pinned Playwright
       # version (from the lockfile) so a cache hit skips the multi-hundred-MB
