@@ -19,10 +19,12 @@
  *     3. commit            (tap Damage)    ┘ "interactions" the PRD counts
  *
  * The PRD's "two taps → done" (and the issue's "open keypad → enter → Damage"
- * example) counts the two value-bearing taps and treats opening the surface as
- * free. We measure *every* tap from the default screen for a conservative
- * regression guard: the budget is **3 total = 1 to open + 2 to apply**. The
- * test asserts that exact count, so it goes red the moment anyone adds a tap.
+ * example) counts the two value-bearing taps (enter + commit) and treats
+ * opening the surface as free. We measure *every* tap from the default screen
+ * for a conservative regression guard: the enforced budget is **3 total = 1 to
+ * open + 2 to apply** (the same two interactions the PRD counts, plus the
+ * opener). The test asserts `count <= 3`, so it goes red the moment anyone adds
+ * a tap to the core path, while still passing if the flow is ever shortened.
  *
  * "No OS keyboard" is asserted structurally: the keypad is entirely
  * button-driven and contains no <input>/<textarea>, so it can never raise the
@@ -34,11 +36,14 @@ import { test, expect, type Page } from "@playwright/test";
 /** The full tap budget for a core HP action: 1 to open the keypad + 2 to apply. */
 const INTERACTION_BUDGET = 3;
 
+/** A locator with a `.click()` — the surface `tapCounter` drives. */
+type Tappable = { click: () => Promise<void> };
+
 /** A tiny tap-counter so the spec asserts the real number of user interactions. */
-function tapCounter(page: Page) {
+function tapCounter() {
   let taps = 0;
   return {
-    async tap(locator: ReturnType<Page["locator"]>) {
+    async tap(locator: Tappable) {
       taps += 1;
       await locator.click();
     },
@@ -67,11 +72,11 @@ test.describe("core action interaction budget (PRD §6)", () => {
     await page.waitForSelector(".hp-tracker", { state: "visible" });
   });
 
-  test("apply 9 damage in ≤ 2 interactions (open + enter + Damage), no OS keyboard", async ({
+  test("apply 9 damage in ≤ 3 taps (1 open + 2 apply), no OS keyboard", async ({
     page,
   }) => {
     const before = await readCurrentHp(page);
-    const interactions = tapCounter(page);
+    const interactions = tapCounter();
 
     // 1) Open the keypad by tapping the HP number.
     await interactions.tap(page.getByLabel("Edit current HP"));
@@ -101,7 +106,7 @@ test.describe("core action interaction budget (PRD §6)", () => {
     ).toBeLessThanOrEqual(INTERACTION_BUDGET);
   });
 
-  test("heal N in ≤ 2 interactions (open + enter + Heal), no OS keyboard", async ({
+  test("heal N in ≤ 3 taps (1 open + 2 apply), no OS keyboard", async ({
     page,
   }) => {
     // ARRANGE (uncounted): the first-run seed is 10/10/0 (current == max), so a
@@ -120,7 +125,7 @@ test.describe("core action interaction budget (PRD §6)", () => {
 
     // ACT (counted): heal 5 from the wounded state.
     const before = await readCurrentHp(page);
-    const interactions = tapCounter(page);
+    const interactions = tapCounter();
 
     // 1) Open the keypad.
     await interactions.tap(page.getByLabel("Edit current HP"));
