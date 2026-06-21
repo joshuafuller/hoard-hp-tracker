@@ -41,10 +41,16 @@ export function HitDicePanel({
   const sheetRef = useRef<HTMLDivElement>(null);
 
   // The editor opens as a bottom-sheet overlay (not inline) so it gets full
-  // room instead of overflowing the fixed panel slot. Escape closes it; Tab is
-  // trapped within the dialog so focus can't wander to the page behind it.
+  // room instead of overflowing the fixed panel slot. On open, move focus into
+  // the dialog (matching HpValueEditor/AmountKeypad) so keyboard users land
+  // inside it; Escape closes it; Tab is trapped so focus can't wander out.
   useEffect(() => {
     if (!open) return;
+    sheetRef.current
+      ?.querySelector<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )
+      ?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setOpen(false);
@@ -54,7 +60,7 @@ export function HitDicePanel({
       const sheet = sheetRef.current;
       if (!sheet) return;
       const focusable = sheet.querySelectorAll<HTMLElement>(
-        'button, input, select, [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
       );
       const first = focusable[0];
       const last = focusable[focusable.length - 1];

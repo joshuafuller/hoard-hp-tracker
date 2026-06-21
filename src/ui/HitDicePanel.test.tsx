@@ -155,7 +155,7 @@ describe("HitDicePanel", () => {
     // full ordered focusable set the trap will see.
     const all = Array.from(
       dialog.querySelectorAll<HTMLElement>(
-        'button, input, select, [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
       ),
     );
     const first = all[0]!;
@@ -172,7 +172,7 @@ describe("HitDicePanel", () => {
     const dialog = screen.getByRole("dialog", { name: /hit dice/i });
     const all = Array.from(
       dialog.querySelectorAll<HTMLElement>(
-        'button, input, select, [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
       ),
     );
     const first = all[0]!;

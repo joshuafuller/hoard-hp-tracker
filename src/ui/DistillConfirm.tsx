@@ -45,7 +45,7 @@ export function DistillConfirm({ coins, onConfirm, onClose }: DistillConfirmProp
       const sheet = sheetRef.current;
       if (!sheet) return;
       const focusable = sheet.querySelectorAll<HTMLElement>(
-        'button, input, [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
       );
       const first = focusable[0];
       const last = focusable[focusable.length - 1];

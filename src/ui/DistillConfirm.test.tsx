@@ -48,7 +48,7 @@ describe("DistillConfirm", () => {
     const dialog = screen.getByRole("dialog", { name: /distill coins/i });
     const all = Array.from(
       dialog.querySelectorAll<HTMLElement>(
-        'button, input, [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
       ),
     );
     const first = all[0]!;
@@ -63,7 +63,7 @@ describe("DistillConfirm", () => {
     const dialog = screen.getByRole("dialog", { name: /distill coins/i });
     const all = Array.from(
       dialog.querySelectorAll<HTMLElement>(
-        'button, input, [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
       ),
     );
     const first = all[0]!;
