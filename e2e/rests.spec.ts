@@ -52,4 +52,25 @@ test.describe("rest controls", () => {
     await page.getByRole("button", { name: "Confirm Long Rest" }).click();
     await expect(current(page)).toHaveText("10");
   });
+
+  test("death save rolls through the shared tray and resolves the rule (#75 step 5)", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    // Drop to 0 → dying → death saves appear (damage 10 via the keypad).
+    await page.getByLabel("Edit current HP").click();
+    const kp = page.getByRole("dialog", { name: "Apply amount to HP" });
+    await kp.getByRole("button", { name: "1", exact: true }).click();
+    await kp.getByRole("button", { name: "0", exact: true }).click();
+    await kp.getByRole("button", { name: /^damage/i }).click();
+    await expect(current(page)).toHaveText("0");
+
+    // Roll Death Save opens the tray locked to the d20; throwing resolves it.
+    await page.getByRole("button", { name: /Roll Death Save/i }).click();
+    const tray = page.getByRole("dialog", { name: "Death save roll" });
+    await expect(tray).toBeVisible();
+    await tray.getByRole("button", { name: /^throw/i }).click();
+    // The contextual outcome renders (the app applied the rule), then Done closes.
+    await expect(tray.getByText(/death save —/i)).toBeVisible();
+    await tray.getByRole("button", { name: /done/i }).click();
+    await expect(tray).toBeHidden();
+  });
 });
