@@ -56,14 +56,19 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
   // Apply a builder change and keep the notation field in sync. Advantage only
   // survives for a lone d20, so it resets to normal for any other pool.
   const applyBuild = (next: { pool?: DiePool; modifier?: number; mode?: RollMode }) => {
-    // If the field was hand-edited (it no longer matches the structured pool) and
-    // this change doesn't touch the pool itself, the stepper/mode controls are
-    // inert — leave the typed notation (and the structured state) alone. Otherwise
-    // tapping +/− would clobber e.g. "4d6kh3!" with a rewrite from the (empty) pool
-    // (and a stray modifier would resurface the moment a die is later added). Pool
-    // edits (add/remove/clear) re-enter build mode and resync the field.
+    // Hand-edited field = "manual" mode: the typed notation no longer matches the
+    // structured pool, so it's the source of truth and must NOT be rewritten by the
+    // builder controls.
     const manual = notation.trim() !== "" && notation !== poolToNotation(pool, modifier, mode);
-    if (manual && next.pool === undefined) return;
+    if (manual && next.pool === undefined) {
+      // A mode change (e.g. the still-enabled "Normal" button) must still update the
+      // structured mode so a previously-pressed Advantage/Disadvantage can be reset
+      // — but it leaves the typed notation alone. The modifier stepper stays fully
+      // inert here (clobbering "4d6kh3!" or resurfacing a stray modifier on a later
+      // add-die would surprise the user).
+      if (next.mode !== undefined) setMode(advantageApplies(pool) ? next.mode : "normal");
+      return;
+    }
 
     const np = next.pool ?? pool;
     const nmod = next.modifier ?? modifier;

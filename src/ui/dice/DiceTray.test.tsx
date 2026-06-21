@@ -110,6 +110,24 @@ describe("DiceTray", () => {
     expect(field).toHaveValue("4d6kh3!");
   });
 
+  it("lets the Normal button reset Advantage after the field is hand-edited (no stuck state)", async () => {
+    open();
+    // Pick Advantage on a lone d20, then hand-edit the notation → manual mode.
+    await addD20();
+    await userEvent.click(screen.getByRole("button", { name: /^advantage/i }));
+    const adv = screen.getByRole("button", { name: /^advantage/i });
+    expect(adv).toHaveAttribute("aria-pressed", "true");
+    const field = screen.getByRole("textbox", { name: /dice notation/i });
+    await userEvent.clear(field);
+    await userEvent.type(field, "4d6kh3!");
+    // Normal stays enabled in manual mode; clicking it must reset the mode (so the
+    // adv/dis pressed+disabled state clears) WITHOUT rewriting the typed notation.
+    await userEvent.click(screen.getByRole("button", { name: /^normal/i }));
+    expect(screen.getByRole("button", { name: /^normal/i })).toHaveAttribute("aria-pressed", "true");
+    expect(adv).toHaveAttribute("aria-pressed", "false");
+    expect(field).toHaveValue("4d6kh3!");
+  });
+
   it("closes from the ✕", async () => {
     const onClose = vi.fn();
     open({ onClose });
