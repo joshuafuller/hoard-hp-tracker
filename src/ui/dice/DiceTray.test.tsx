@@ -227,9 +227,10 @@ describe("DiceTray", () => {
     it("gates re-throwing a Hit Die after it settles (single roll — no free short-rest rerolls)", async () => {
       open({ intent: { kind: "hit-die", sides: 8, conMod: 0 }, onHitDie: vi.fn(), onClose: vi.fn() });
       await userEvent.click(screen.getByRole("button", { name: /^throw/i }));
-      // After settle the dock Throw is replaced by Done; Apply stays in the result.
+      // After settle: no re-throw, and no discard-as-Done (which would let a low roll
+      // be tossed + re-rolled for free). Apply is the only commit (Codex #130).
       await waitFor(() => expect(screen.queryByRole("button", { name: /^throw/i })).not.toBeInTheDocument());
-      expect(screen.getByRole("button", { name: /done/i })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^done$/i })).not.toBeInTheDocument();
       expect(screen.getByRole("button", { name: /apply/i })).toBeInTheDocument();
     });
 

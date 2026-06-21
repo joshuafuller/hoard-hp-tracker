@@ -315,13 +315,6 @@ export function DiceTray({
             <div className="dice-result__plate">
               <div className="dice-result__total">{hitDieRoll ?? record.total}</div>
               <div className="dice-result__notation">Hit Die — d{intent.sides}</div>
-              {hitDieRoll != null && (
-                <button type="button" className="dice-applyheal" onClick={applyHitDie}>
-                  <Glyph name="heal" />
-                  Apply {hitDieRoll}
-                  {conLabel(intent.conMod)} = {Math.max(0, hitDieRoll + intent.conMod)} heal
-                </button>
-              )}
             </div>
           </div>
         )}
@@ -337,13 +330,17 @@ export function DiceTray({
           <span className="dice-tray__intent-label">
             {intent.kind === "death-save" ? "Death save" : `Hit Die — d${intent.sides}`}
           </span>
-          {(intent.kind === "death-save" ? deathSaveRoll != null : hitDieRoll != null) ? (
-            // A contextual intent is a SINGLE throw. Once settled, swap Throw → Done:
-            // death save already ticked its pip, and a Hit Die's action is Apply (in the
-            // result). This stops re-throwing — which would double-tick a save or hand
-            // out free short-rest rerolls (replacing the pending heal). #129 follow-up.
+          {intent.kind === "death-save" && deathSaveRoll != null ? (
+            // Death save already ticked its pip on settle — Done just closes.
             <button type="button" className="dice-throw" onClick={handleClose}>
               Done
+            </button>
+          ) : intent.kind === "hit-die" && hitDieRoll != null ? (
+            // A settled Hit Die's ONLY commit is Apply (spend + heal). No re-throw and
+            // no discard-as-Done — both would hand out a free short-rest reroll by
+            // tossing a low roll and reopening (Codex #130).
+            <button type="button" className="dice-throw" onClick={applyHitDie}>
+              Apply {hitDieRoll}{conLabel(intent.conMod)} = {Math.max(0, hitDieRoll + intent.conMod)} heal
             </button>
           ) : (
             <button type="button" className="dice-throw" onClick={throwIntent} disabled={rolling}>
