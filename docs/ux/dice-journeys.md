@@ -255,7 +255,8 @@ These keep the tray trustworthy at the table; each distils into a red-green test
 
 | Case | Expected behavior | Grounding |
 |------|-------------------|-----------|
-| **Empty pool** (no dice, bare modifier) | Throw disabled / no-op; nothing recorded. | `poolToNotation([], …) → ""`; `notationHasDice` false. |
+| **Empty chip pool** (no dice picked) | Throw disabled / no-op — no notation produced, nothing recorded. | `poolToNotation([], …) → ""`. |
+| **Typed bare modifier** (`+5`, `5`, `-2`) | **Valid, not an error** — rolls to just the modifier (total = the number, zero dice) and is recorded; a supported notation escape-hatch input. | `isPlausibleRoll({…}, "+5") === true`; `notationHasDice("+5")` false (see `dice.test.ts`). |
 | **Invalid typed notation** | Inline error, tray stays open, no crash, nothing recorded. | notation field is the only free-text seam. |
 | **Engine returns a bogus result** (static "21", no dice on a re-roll) | Detected and silently re-rolled headless — the player never sees a stuck number. | `isPlausibleRoll` → headless fallback (shipped). |
 | **Exploding roll** (`3d6!`) | Each exploded die flagged; explosion-round dice append in round order; total stays correct. | `recordFromPhysical` / `assignRounds`; explosion-reconcile spike (#96/#97). |
