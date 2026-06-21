@@ -23,11 +23,30 @@ describe("DiceResult", () => {
 
   it("renders every die, striking out the dropped one", () => {
     render(<DiceResult record={advRecord} />);
-    const dropped = screen.getByTestId("die-4");
+    // testids are index-based (die-0, die-1, …) so duplicate faces stay unique.
+    const kept = screen.getByTestId("die-0");
+    const dropped = screen.getByTestId("die-1");
+    expect(kept).toHaveTextContent("18");
+    expect(kept).toHaveAttribute("data-dropped", "false");
+    expect(dropped).toHaveTextContent("4");
     expect(dropped).toHaveAttribute("data-dropped", "true");
     // dropped die is rendered inside a strikethrough <s> element
     expect(dropped.querySelector("s")).not.toBeNull();
-    expect(screen.getByTestId("die-18")).toHaveAttribute("data-dropped", "false");
+  });
+
+  it("gives each die a unique testid even when two faces match", () => {
+    const rec: RollRecord = {
+      notation: "2d6",
+      total: 8,
+      result: [4, 4],
+      dice: [
+        { sides: 6, value: 4, dropped: false },
+        { sides: 6, value: 4, dropped: false },
+      ],
+    };
+    render(<DiceResult record={rec} />);
+    expect(screen.getByTestId("die-0")).toHaveTextContent("4");
+    expect(screen.getByTestId("die-1")).toHaveTextContent("4");
   });
 
   it("highlights a natural 20 (hit) and natural 1 (miss) on a d20", () => {
@@ -41,7 +60,8 @@ describe("DiceResult", () => {
       ],
     };
     render(<DiceResult record={rec} />);
-    expect(screen.getByTestId("die-20")).toHaveAttribute("data-crit", "hit");
+    // die-0 is the nat 20, die-1 the nat 1 (index-based testids)
+    expect(screen.getByTestId("die-0")).toHaveAttribute("data-crit", "hit");
     expect(screen.getByTestId("die-1")).toHaveAttribute("data-crit", "miss");
   });
 
@@ -56,7 +76,8 @@ describe("DiceResult", () => {
       ],
     };
     render(<DiceResult record={rec} />);
-    expect(screen.getByTestId("die-1")).not.toHaveAttribute("data-crit");
+    // die-0 is the d6 showing 1 — must not be crit-highlighted (not a d20)
+    expect(screen.getByTestId("die-0")).not.toHaveAttribute("data-crit");
   });
 
   it("separates explosion rounds with exactly one + per boundary", () => {

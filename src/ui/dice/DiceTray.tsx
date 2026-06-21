@@ -56,6 +56,15 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
   // Apply a builder change and keep the notation field in sync. Advantage only
   // survives for a lone d20, so it resets to normal for any other pool.
   const applyBuild = (next: { pool?: DiePool; modifier?: number; mode?: RollMode }) => {
+    // If the field was hand-edited (it no longer matches the structured pool) and
+    // this change doesn't touch the pool itself, the stepper/mode controls are
+    // inert — leave the typed notation (and the structured state) alone. Otherwise
+    // tapping +/− would clobber e.g. "4d6kh3!" with a rewrite from the (empty) pool
+    // (and a stray modifier would resurface the moment a die is later added). Pool
+    // edits (add/remove/clear) re-enter build mode and resync the field.
+    const manual = notation.trim() !== "" && notation !== poolToNotation(pool, modifier, mode);
+    if (manual && next.pool === undefined) return;
+
     const np = next.pool ?? pool;
     const nmod = next.modifier ?? modifier;
     const nmode = advantageApplies(np) ? next.mode ?? mode : "normal";
@@ -75,24 +84,26 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
 
   // Lazy-load the heavy 3D engine on first open (never at app start, never under
   // reduced motion). Loaded once and reused while the tray stays mounted.
+  //
+  // Fast open→close→reopen while the load is in flight: the close is a no-op (the
+  // engine isn't created per-open), and the reopen sees `loadingRef` still true and
+  // bails. The single load finishes and assigns `engineRef`, which is reused on the
+  // next open. We deliberately DON'T cancel + discard the in-flight engine: `clear()`
+  // only sweeps dice off the table, not the ResizeObserver / WebGL context, so
+  // tearing down + re-initializing would leave a leaked, double-initialized tray.
   useEffect(() => {
     if (!open || reduced || engineRef.current || loadingRef.current || !canvasRef.current) return;
     loadingRef.current = true;
-    let cancelled = false;
     // dice-box resolves its container with document.querySelector — pass the id
     // selector, not the element.
     createDiceTray(`#${CANVAS_ID}`)
       .then((engine) => {
-        if (cancelled) return;
         engineRef.current = engine;
       })
       .catch((err) => console.error("[hoard] dice engine failed to load", err))
       .finally(() => {
         loadingRef.current = false;
       });
-    return () => {
-      cancelled = true;
-    };
   }, [open, reduced]);
 
   const doRoll = useCallback(
@@ -113,10 +124,17 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
           // Safety: if the physics never settles (dice jam / engine hiccup), don't
           // hang on "Throwing" forever — fall back to a headless result after a
           // few seconds so the player always gets a number and the button resets.
-          const timeout = new Promise<RollRecord>((res) =>
-            setTimeout(() => res(rollHeadless(expr)), 6000),
-          );
-          rec = await Promise.race([engineRef.current.roll(expr), timeout]);
+          // Clear the timer once the engine wins the race so no stray headless roll
+          // fires after a normal throw.
+          let timer: ReturnType<typeof setTimeout> | undefined;
+          const timeout = new Promise<RollRecord>((res) => {
+            timer = setTimeout(() => res(rollHeadless(expr)), 6000);
+          });
+          try {
+            rec = await Promise.race([engineRef.current.roll(expr), timeout]);
+          } finally {
+            if (timer !== undefined) clearTimeout(timer);
+          }
         }
         setRecord(rec);
         await history.record(rec, { context: "ad-hoc" });
@@ -135,14 +153,25 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
   };
 
   // Tap the tray (the dimmed area) to clear the dice; ✕ / Escape closes it.
-  const clearDice = () => {
+  const clearDice = useCallback(() => {
     setRecord(null);
     engineRef.current?.clear();
-  };
+  }, []);
   const handleClose = useCallback(() => {
     clearDice();
     onClose();
-  }, [onClose]);
+  }, [onClose, clearDice]);
+
+  // Apply-as-heal closes the tray through the parent callback (which bypasses
+  // handleClose), so clear the local result here too — otherwise the stale roll +
+  // rendered dice reappear on the next open.
+  const handleApplyHeal = useCallback(
+    (total: number) => {
+      clearDice();
+      onApplyHeal(total);
+    },
+    [clearDice, onApplyHeal],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -169,7 +198,7 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
           never roll behind the controls. */}
       <div className="dice-tray__stage">
         <div className="dice-tray__canvas" id={CANVAS_ID} ref={canvasRef} aria-hidden="true" />
-        {record && <DiceResult record={record} onApplyHeal={onApplyHeal} />}
+        {record && <DiceResult record={record} onApplyHeal={handleApplyHeal} />}
       </div>
 
       {showLog ? (
