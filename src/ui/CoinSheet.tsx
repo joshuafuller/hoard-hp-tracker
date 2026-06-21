@@ -61,6 +61,20 @@ export function CoinSheet({
   const [editing, setEditing] = useState<CoinKind | null>(null);
   const [confirming, setConfirming] = useState(false);
 
+  // Escape closes the overview. While a sub-view is up (the keypad or the
+  // distill confirmation) that sub-view owns Escape — returning to the overview
+  // rather than closing the whole sheet — so we stand down in those states.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  useEffect(() => {
+    if (editing || confirming) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCloseRef.current();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editing, confirming]);
+
   // Auto-dismiss the undo affordance after a beat, mirroring the HP undo pill.
   const onDismissRef = useRef(onDismissDistill);
   onDismissRef.current = onDismissDistill;

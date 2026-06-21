@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { CoinSheet } from "./CoinSheet";
@@ -109,5 +109,40 @@ describe("CoinSheet", () => {
     const p = setup();
     await userEvent.click(screen.getByTestId("coin-backdrop"));
     expect(p.onClose).toHaveBeenCalled();
+  });
+
+  it("closes the overview on Escape", () => {
+    const p = setup();
+    expect(screen.getByRole("dialog", { name: /coins/i })).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(p.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("Escape from the keypad returns to the overview without closing the sheet", async () => {
+    const p = setup();
+    // Open the per-denomination keypad (a sub-view that owns its own Escape).
+    await userEvent.click(screen.getByRole("button", { name: /gold — 41 gp, edit/i }));
+    fireEvent.keyDown(window, { key: "Escape" });
+    // The sheet itself must not close; we're back on the overview.
+    expect(p.onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: /coins/i })).toBeInTheDocument();
+  });
+
+  it("Escape from the distill confirmation does not close the whole sheet", async () => {
+    const p = setup();
+    await userEvent.click(screen.getByRole("button", { name: /gold — 41 gp, edit/i }));
+    await userEvent.click(screen.getByRole("button", { name: /distill to fewest coins/i }));
+    expect(screen.getByRole("dialog", { name: /distill coins/i })).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(p.onClose).not.toHaveBeenCalled();
+  });
+
+  it("marks the active denomination with aria-pressed in the switcher", async () => {
+    setup();
+    await userEvent.click(screen.getByRole("button", { name: /gold — 41 gp, edit/i }));
+    const gold = screen.getByRole("button", { name: /gold — 41 gp$/i });
+    const silver = screen.getByRole("button", { name: /silver — 12 sp$/i });
+    expect(gold).toHaveAttribute("aria-pressed", "true");
+    expect(silver).toHaveAttribute("aria-pressed", "false");
   });
 });

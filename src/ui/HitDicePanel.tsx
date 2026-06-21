@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { HitDieSize } from "../domain/hitDice";
 import { NumberEditor } from "./NumberEditor";
 
@@ -38,13 +38,44 @@ export function HitDicePanel({
 }: HitDicePanelProps) {
   const [open, setOpen] = useState(false);
   const bodyId = useId();
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   // The editor opens as a bottom-sheet overlay (not inline) so it gets full
-  // room instead of overflowing the fixed panel slot. Escape closes it.
+  // room instead of overflowing the fixed panel slot. On open, move focus into
+  // the dialog (matching HpValueEditor/AmountKeypad) so keyboard users land
+  // inside it; Escape closes it; Tab is trapped so focus can't wander out.
   useEffect(() => {
     if (!open) return;
+    sheetRef.current
+      ?.querySelector<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )
+      ?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const sheet = sheetRef.current;
+      if (!sheet) return;
+      const focusable = sheet.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+      const active = document.activeElement;
+      if (!sheet.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      } else if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -83,7 +114,14 @@ export function HitDicePanel({
             aria-label="Close Hit Dice"
             onClick={() => setOpen(false)}
           />
-          <div className="hit-dice__body" id={bodyId} role="dialog" aria-label="Hit Dice">
+          <div
+            ref={sheetRef}
+            className="hit-dice__body"
+            id={bodyId}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Hit Dice"
+          >
           <p className="hit-dice__explainer">
             Spend on a short rest to heal — each die restores its roll + your CON
             modifier. Total = your level; die = your class.
