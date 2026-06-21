@@ -172,6 +172,23 @@ describe("DiceTray", () => {
     expect(createDiceTray).toHaveBeenCalledTimes(1);
   });
 
+  it("ignores a tap on the dimmed area mid-roll — no sweep, no stuck Throwing", async () => {
+    let resolveRoll!: (r: unknown) => void;
+    const tray = { roll: vi.fn(() => new Promise((res) => { resolveRoll = res; })), clear: vi.fn() };
+    createDiceTray.mockResolvedValueOnce(tray);
+    render(<DiceTray open onClose={vi.fn()} onApplyHeal={vi.fn()} db={db} reducedMotion={false} />);
+    await waitFor(() => expect(createDiceTray).toHaveBeenCalled());
+    await userEvent.click(screen.getByRole("button", { name: "Add d20" }));
+    await userEvent.click(screen.getByRole("button", { name: /^throw/i }));
+    // Tap the scrim WHILE the dice are still in flight — must not sweep them.
+    await userEvent.click(document.querySelector(".dice-tray__scrim")!);
+    expect(tray.clear).not.toHaveBeenCalled();
+    // The roll settles normally and the Throw button recovers (never stuck).
+    resolveRoll({ notation: "1d20", total: 9, result: [9], dice: [{ sides: 20, value: 9, dropped: false }] });
+    await waitFor(() => expect(document.querySelector(".dice-result__total")?.textContent).toBe("9"));
+    expect(screen.getByRole("button", { name: /^throw/i })).toBeEnabled();
+  });
+
   describe("contextual rolls (shared tray — death save / Hit Die)", () => {
     it("death-save intent throws 1d20, applies via onDeathSave, records death-save context, and hides the builder", async () => {
       const onDeathSave = vi.fn();

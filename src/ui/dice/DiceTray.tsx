@@ -209,7 +209,9 @@ export function DiceTray({
         console.error("[hoard] dice roll failed", err);
         return null;
       } finally {
-        setRolling(false);
+        // Only the CURRENT roll resets its own flag — an abandoned roll (tray cleared/
+        // closed mid-throw, seq bumped) must not clobber a newer roll's "rolling".
+        if (rollSeq.current === seq) setRolling(false);
       }
     },
     [reduced, history],
@@ -226,6 +228,9 @@ export function DiceTray({
     setRecord(null);
     setDeathSaveRoll(null);
     setHitDieRoll(null);
+    // Recover immediately if cleared mid-roll — sweeping the dice means engine.roll()
+    // may never settle, so don't leave the button stuck on "Throwing" until the timeout.
+    setRolling(false);
     engineRef.current?.clear();
   }, []);
   const handleClose = useCallback(() => {
@@ -288,7 +293,7 @@ export function DiceTray({
       {/* Tap-to-clear the dice in ad-hoc mode. Inert under an intent: clearing would
           reset the contextual outcome and let a second throw double-apply (a death
           save / Hit Die) — use Done / ✕ to leave instead. */}
-      <div className="dice-tray__scrim" onClick={() => { if (!intent) clearDice(); }} aria-hidden="true" />
+      <div className="dice-tray__scrim" onClick={() => { if (!intent && !rolling) clearDice(); }} aria-hidden="true" />
       <button type="button" className="dice-tray__close" aria-label="Close dice" onClick={handleClose}>
         <Glyph name="close" />
       </button>
