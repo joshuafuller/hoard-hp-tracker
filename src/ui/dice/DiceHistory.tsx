@@ -1,8 +1,12 @@
+import { useEffect, useState } from "react";
 import type { DiceRollRecord, RollContext } from "../../store/db";
+import { relativeTime } from "./relativeTime";
 
 export interface DiceHistoryProps {
   rolls: DiceRollRecord[];
   onClear: () => void;
+  /** Injectable clock for tests; live (ticking) otherwise. */
+  now?: number;
 }
 
 const CONTEXT_LABEL: Record<RollContext, string> = {
@@ -16,12 +20,26 @@ function diceSummary(r: DiceRollRecord): string {
   return r.dice.map((d) => (d.dropped ? `(${d.value})` : `${d.value}`)).join(" · ");
 }
 
+/** Wall-clock time of a roll, e.g. "7:34 PM" (locale-aware). */
+function clock(atMs: number): string {
+  return new Date(atMs).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
 /**
  * The roll log: recent rolls newest-first (notation + per-die + total), each
- * tagged with its context, plus a clear action. Presentational — ordering and
- * persistence live in `useDiceHistory`.
+ * timestamped with the wall-clock time and a relative "how long ago" so past
+ * rolls are easy to find. The relative label ticks every 30s while open.
+ * Presentational — ordering/persistence live in `useDiceHistory`.
  */
-export function DiceHistory({ rolls, onClear }: DiceHistoryProps) {
+export function DiceHistory({ rolls, onClear, now }: DiceHistoryProps) {
+  const [tick, setTick] = useState(() => now ?? Date.now());
+  useEffect(() => {
+    if (now !== undefined) return; // fixed clock (tests)
+    const id = setInterval(() => setTick(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, [now]);
+  const nowMs = now ?? tick;
+
   if (rolls.length === 0) {
     return (
       <div className="dice-history dice-history--empty">
@@ -42,12 +60,19 @@ export function DiceHistory({ rolls, onClear }: DiceHistoryProps) {
           const ctx = CONTEXT_LABEL[r.context];
           return (
             <li key={r.id} className="dice-history__item">
-              <span className="dice-history__notation">{r.notation}</span>
-              <span className="dice-history__dice">
-                {diceSummary(r)}
-                {ctx ? ` · ${ctx}` : ""}
-              </span>
-              <b className="dice-history__total">{r.total}</b>
+              <div className="dice-history__line">
+                <span className="dice-history__notation">{r.notation}</span>
+                <b className="dice-history__total">{r.total}</b>
+              </div>
+              <div className="dice-history__meta">
+                <span className="dice-history__dice">
+                  {diceSummary(r)}
+                  {ctx ? ` · ${ctx}` : ""}
+                </span>
+                <span className="dice-history__time">
+                  {clock(r.at)} · {relativeTime(r.at, nowMs)}
+                </span>
+              </div>
             </li>
           );
         })}

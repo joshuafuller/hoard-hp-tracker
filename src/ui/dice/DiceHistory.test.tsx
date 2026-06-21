@@ -26,6 +26,17 @@ describe("DiceHistory", () => {
     expect(screen.getByText(/hit die/i)).toBeInTheDocument();
   });
 
+  it("timestamps each roll with a relative 'how long ago' (and a clock time)", () => {
+    const now = 1_000_000_000_000;
+    const stamped: DiceRollRecord[] = [
+      { ...rolls[0]!, at: now - 120_000 }, // 2 minutes ago
+      { ...rolls[1]!, at: now - 2 * 3_600_000 }, // 2 hours ago
+    ];
+    render(<DiceHistory rolls={stamped} onClear={vi.fn()} now={now} />);
+    expect(screen.getByText(/2m ago/)).toBeInTheDocument();
+    expect(screen.getByText(/2h ago/)).toBeInTheDocument();
+  });
+
   it("clears the history", async () => {
     const onClear = vi.fn();
     render(<DiceHistory rolls={rolls} onClear={onClear} />);
