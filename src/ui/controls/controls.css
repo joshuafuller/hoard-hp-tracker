@@ -1,0 +1,345 @@
+/* Shared button-system primitives — Molten Hoard.
+   Spec: docs/design/button-system.md · tokens: DESIGN.md (via styles.css :root).
+
+   PHASE 1 (issue #89): primitives only, not yet wired into the app.
+
+   Token policy (deliberate, so phase-2 migration is conflict-free):
+   - We REUSE existing global tokens via var(): --radius-pill, --obsidian-*,
+     --ink-*, --coin-gold, --ease-spring, --dur-fast. These resolve from
+     styles.css :root at runtime.
+   - --gold-body lives in dice.css :root; we reference it with a literal fallback
+     (copied from dice.css) so a primitive renders correctly even where dice.css
+     isn't loaded.
+   - The NEW tokens the spec invents (--btn-h-*, --ring-gold, --hairline) are
+     scoped here on .ctl-scope rather than added to :root, so this PR does not
+     touch the global token surface that phase 2 owns. */
+
+.ctl-btn,
+.ctl-icon-btn,
+.ctl-stepper,
+.ctl-chip-wrap,
+.ctl-segment,
+.ctl-key {
+  /* spec §3 tokens, scoped (not promoted to :root in phase 1) */
+  --btn-h-lg: 56px;
+  --btn-h-md: 44px;
+  --btn-h-sm: 34px;
+  --icon-btn: 44px;
+  --icon-btn-sm: 36px;
+  --btn-radius: var(--radius-pill, 999px);
+  --ring-gold: inset 0 0 0 1.5px rgba(255, 244, 206, 0.6);
+  --hairline: 1px solid var(--obsidian-600, #1f1a11);
+  /* canonical brushed-gold gradient — promoted from dice.css; literal fallback */
+  --ctl-gold-body: var(
+    --gold-body,
+    radial-gradient(62% 56% at 38% 30%, #fff1c6 0%, #f4c66a 28%, #d49a3f 62%, #9c6a23 100%)
+  );
+
+  font-family: "DM Sans", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------------------------------------------------------------- Button ---- */
+.ctl-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: var(--btn-radius);
+  padding: 0 1.1rem;
+  font-weight: 800;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform var(--dur-fast, 140ms) var(--ease-spring, ease);
+}
+.ctl-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.ctl-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.ctl-btn__icon {
+  display: inline-flex;
+}
+
+/* sizes */
+.ctl-btn[data-size="lg"] {
+  min-height: var(--btn-h-lg);
+  font-size: 1.06rem;
+}
+.ctl-btn[data-size="md"] {
+  min-height: var(--btn-h-md);
+}
+.ctl-btn[data-size="sm"] {
+  min-height: var(--btn-h-sm);
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 0 0.8rem;
+}
+
+/* variants */
+.ctl-btn[data-variant="primary"] {
+  color: #2a1c06;
+  background: var(--ctl-gold-body);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 244, 206, 0.55),
+    0 8px 18px rgba(0, 0, 0, 0.45);
+}
+.ctl-btn[data-variant="ghost"] {
+  color: var(--ink-100, #f4ecdd);
+  background: transparent;
+  border: var(--hairline);
+}
+/* heal = DESIGN.md emerald #4FB477 (no global token exists; literal is canonical) */
+.ctl-btn[data-variant="heal"] {
+  color: #06281f;
+  background: linear-gradient(180deg, #5ec98a 0%, #4fb477 100%);
+  box-shadow: inset 0 0 0 1.5px rgba(220, 255, 235, 0.45);
+}
+/* danger = DESIGN.md damage ruby, which already exists as --hp-critical (#d8453b) */
+.ctl-btn[data-variant="danger"] {
+  color: #2a0907;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--hp-critical, #d8453b) 88%, white) 0%,
+    var(--hp-critical, #d8453b) 100%
+  );
+  box-shadow: inset 0 0 0 1.5px rgba(255, 220, 216, 0.4);
+}
+
+/* ----------------------------------------------------------- IconButton ---- */
+.ctl-icon-btn {
+  appearance: none;
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform var(--dur-fast, 140ms) var(--ease-spring, ease);
+}
+.ctl-icon-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.ctl-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.ctl-icon-btn[data-variant="token"] {
+  width: var(--icon-btn);
+  height: var(--icon-btn);
+  color: #3a2606;
+  background: var(--ctl-gold-body);
+  box-shadow:
+    var(--ring-gold),
+    inset 0 -6px 12px rgba(40, 24, 4, 0.5),
+    0 4px 10px rgba(0, 0, 0, 0.5);
+}
+.ctl-icon-btn[data-variant="ghost"] {
+  width: var(--icon-btn-sm);
+  height: var(--icon-btn-sm);
+  color: var(--ink-300, #c9bca0);
+  background: rgba(20, 17, 11, 0.8);
+  border: var(--hairline);
+}
+/* pressed (toggle) — emphasise the active state */
+.ctl-icon-btn[aria-pressed="true"] {
+  color: var(--coin-gold, #e8b45a);
+  border-color: var(--coin-gold, #e8b45a);
+}
+.ctl-icon-btn[aria-pressed="false"] {
+  color: var(--ink-500, #9a8f7a);
+}
+
+/* -------------------------------------------------------------- Stepper ---- */
+.ctl-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.ctl-stepper__btn {
+  appearance: none;
+  width: var(--icon-btn-sm);
+  height: var(--icon-btn-sm);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--obsidian-700, #16130d);
+  border: var(--hairline);
+  color: var(--coin-gold, #e8b45a);
+  cursor: pointer;
+}
+.ctl-stepper__btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.ctl-stepper__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.ctl-stepper__value {
+  min-width: 40px;
+  text-align: center;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-100, #f4ecdd);
+}
+
+/* ----------------------------------------------------------------- Chip ---- */
+.ctl-chip-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.ctl-chip {
+  position: relative;
+  appearance: none;
+  display: inline-grid;
+  place-items: center;
+  min-height: var(--btn-h-md);
+  padding: 0 0.85rem;
+  border-radius: var(--btn-radius);
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 0.78rem;
+  color: var(--ink-300, #c9bca0);
+  background: var(--obsidian-700, #16130d);
+  border: var(--hairline);
+  cursor: pointer;
+}
+.ctl-chip:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.ctl-chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.ctl-chip[data-selected="true"] {
+  color: #3a2606;
+  background: var(--ctl-gold-body);
+  border-color: transparent;
+  box-shadow:
+    var(--ring-gold),
+    inset 0 -4px 9px rgba(40, 24, 4, 0.5);
+}
+.ctl-chip__badge {
+  position: absolute;
+  top: -5px;
+  right: -3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--btn-radius);
+  background: #2a2010;
+  border: 1px solid var(--coin-gold, #e8b45a);
+  color: var(--coin-gold, #e8b45a);
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.64rem;
+  font-weight: 800;
+}
+.ctl-chip__remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--obsidian-800, #100e0a);
+  border: var(--hairline);
+  color: var(--ink-300, #c9bca0);
+  cursor: pointer;
+}
+
+/* -------------------------------------------------------------- Segment ---- */
+.ctl-segment {
+  display: grid;
+  grid-template-columns: repeat(var(--ctl-segment-count, 3), 1fr);
+  border-radius: var(--btn-radius);
+  background: var(--obsidian-800, #100e0a);
+  border: var(--hairline);
+  overflow: hidden;
+}
+.ctl-segment__option {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 10px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-300, #c9bca0);
+  font-weight: 700;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.ctl-segment__option:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.ctl-segment__option[data-active="true"] {
+  background: var(--obsidian-600, #1f1a11);
+  color: var(--ink-100, #f4ecdd);
+}
+.ctl-segment__hint {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--ink-500, #9a8f7a);
+}
+
+/* ------------------------------------------------------------------ Key ---- */
+.ctl-key {
+  appearance: none;
+  width: 100%;
+  min-height: var(--btn-h-md);
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md, 14px);
+  background: var(--obsidian-700, #16130d);
+  border: var(--hairline);
+  color: var(--ink-100, #f4ecdd);
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.3rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: transform var(--dur-fast, 140ms) var(--ease-spring, ease);
+}
+.ctl-key:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.ctl-key:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.ctl-key[data-tone="muted"] {
+  color: var(--ink-300, #c9bca0);
+  font-size: 1.1rem;
+}
+.ctl-key[data-tone="secondary"] {
+  color: var(--ink-200, #e4dac6);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+/* ----------------------------------------------------------------- Glyph ---- */
+.ctl-glyph {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ctl-btn,
+  .ctl-icon-btn,
+  .ctl-stepper__btn,
+  .ctl-chip,
+  .ctl-key {
+    transition: none;
+  }
+}
