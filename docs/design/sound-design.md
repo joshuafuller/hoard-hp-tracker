@@ -103,9 +103,8 @@ Frequencies given as note names where they sit in the key center.
 
 | Event | Family | Status | Cue | Haptic | Notes |
 |---|---|---|---|---|---|
-| **Short rest** | Positive (calm) | EXISTS | sine `G4` warm · 0.22s · 0.14 | `vibrate(10)` | Single settled tone — a breath. |
+| **Short rest = spend a Hit Die** | Positive (calm) | RECONFIG | sine `G4` warm · 0.22s · 0.14 | `vibrate(10)` | One event: the Short Rest button *is* "Spend a Hit Die" (`useHp.shortRest()` → `spendHitDie()`). Reconfigure the existing `shortRest` cue to a roll-and-recover feel — one die `tick` into the warm tone — since a die is actually rolled. **Not** a separate cue. |
 | **Long rest** | Positive (calm) | EXISTS | sine `G4→D5` rising pair · 0.2+0.3s · 0.14 | `vibrate([12,30,12])` | Fuller, slower — a full restore. |
-| **Spend Hit Die** | Transactional | **GAP** | one die `tick` + soft heal-ish ping · 0.12s · 0.10 | `vibrate(8)` | A roll *and* a small heal — borrow clatter-tick + a tiny positive ping. |
 
 ### Coins (transactional family)
 
@@ -122,7 +121,7 @@ Frequencies given as note names where they sit in the key center.
 
 | Event | Family | Status | Cue | Haptic | Notes |
 |---|---|---|---|---|---|
-| **Throw / tumble** | Transactional | EXISTS (#83) | noise `clatter`, 7 ticks tapering · ~0.55s · 0.14→0.06 | `vibrate(10)` at release | The existing `playClatter`. #83 = tune on real device. |
+| **Throw / tumble** | Transactional | EXISTS (#83) | noise `clatter`, 7 ticks tapering · ~0.55s · 0.14→0.06 | `vibrate(12)` at release | The existing `playClatter`, fired from [`DiceTray`](../../src/ui/dice/DiceTray.tsx) (`vibrate(12)`). #83 = tune on real device. |
 | **Settle (result lands)** | Neutral | **GAP** | one soft `tick`/`thock` as motion stops · 0.06s · 0.10 | `vibrate(8)` | Punctuates the end of the tumble; the "it stopped" beat. |
 | **Crit — nat 20** | Positive (max) | **GAP** | settle + bright rung `C6` overtone · +0.25s · 0.14 | `vibrate([10,20,10])` | Layer *on top of* settle. The brightest, highest cue. Gold/win. |
 | **Crit — nat 1** | Negative (max) | **GAP** | settle + dull low `A2` clunk · +0.2s · 0.12 | `vibrate([14,36,14])` | Layer on settle. Darkest dice cue. Ruby/dropped. |
@@ -134,7 +133,7 @@ Frequencies given as note names where they sit in the key center.
 
 | Event | Family | Status | Cue | Haptic | Notes |
 |---|---|---|---|---|---|
-| **Keypad / stepper tap** | Neutral | EXISTS (`step`) | triangle `A4` · 0.05s · 0.08 | `vibrate(10)` | Quietest cue. Already used as `step`. |
+| **Keypad / stepper tap** | Neutral | **GAP** (recipe exists, unwired) | triangle `A4` · 0.05s · 0.08 | `vibrate(10)` | Quietest cue. The `step` *recipe* exists in `sfx.ts` but has **no call site** — keypad/steppers only `haptic()` today. #90 must **wire** `playSfx("step")` into the tap handlers, or the documented neutral tap stays silent. |
 | **Undo** | Neutral (reverse) | **GAP** | `step` tone played *descending* `A4→E4` · 0.12s · 0.09 | `vibrate(8)` | "Rewind" feel — a neutral tick that goes *back*. |
 | **Toggle on** (sound, concentration) | Neutral | **GAP** | soft tick up `E5` · 0.06s · 0.08 | `vibrate(8)` | Light, affirmative. |
 | **Toggle off** | Neutral | **GAP** | soft tick down `C5` · 0.06s · 0.07 | `vibrate(8)` | Mirror of on. (Sound-mute toggle OFF is silent by definition — haptic only.) |
@@ -154,8 +153,8 @@ earned cues.
 - Neutral taps: **0.07–0.09**
 - Confirmations / prompts / transactional: **0.10–0.14**
 - Major life events (heal, damage, rests, crit): **0.14–0.18**
-- Death / hard floor: **0.20** (the ceiling; nothing is louder)
-- **Hard ceiling: 0.22.** A cue that needs more than this is the wrong cue.
+- Death / hard floor: **0.20** (the loudest *intended* cue; nothing should normally exceed it)
+- **Absolute guardrail: 0.22.** A hard cap no cue may cross; a cue that needs more than this is the wrong cue. (0.20 is the design max for normal cues; 0.22 is the enforced ceiling — see the §7 guard test.)
 
 **Duration ladder** (ties to `DESIGN.md` motion durations):
 - Micro (taps, ticks, settle): **50–100ms**
@@ -245,8 +244,12 @@ Acceptance Criteria (markdown checkboxes, per repo convention).
 ### Engine & architecture
 - [ ] `SFX_NAMES` / `RECIPES` extended to cover **every `GAP`/`RECONFIG` cue** in §3
       (temp gain, temp absorb, down-to-0, save success/failure pips, revive, bloodied-tier,
-      hit-die, coin add/spend/distill, dice settle, crit nat-20, crit nat-1, undo, toggle on/off,
+      coin add/spend/distill, dice settle, crit nat-20, crit nat-1, undo, toggle on/off,
       concentration prompt, concentration broken, save-error).
+- [ ] **Wire the existing-but-silent `step` cue:** `playSfx("step")` has **no call site** today —
+      add it to the keypad/stepper tap handlers (the neutral tap is currently haptic-only).
+- [ ] **Short rest = spend a Hit Die is one event:** reconfigure the existing `shortRest` cue to a
+      roll-and-recover feel; do **not** add a second cue for hit-die spend.
 - [ ] **Down (drop to 0)** is a distinct cue from **final death** (currently only `death` exists).
 - [ ] **Dice crits** are implemented as a layer on **settle**, not standalone cues
       (clatter → settle → optional nat-20/nat-1 color).
@@ -282,8 +285,11 @@ Acceptance Criteria (markdown checkboxes, per repo convention).
 
 ## Appendix — current state snapshot (for #90 baseline)
 
-Existing cues in [`src/sound/sfx.ts`](../../src/sound/sfx.ts): `damage`, `heal`, `step`, `roll`
-(noise clatter), `stabilize`, `death`, `shortRest`, `longRest`. Mute via
+Recipes in [`src/sound/sfx.ts`](../../src/sound/sfx.ts): `damage`, `heal`, `step`, `roll`
+(noise clatter), `stabilize`, `death`, `shortRest`, `longRest` — **8 recipes**. But `step` has
+**no call site** (keypad/steppers only `haptic()`), so only **7 are actually wired**: `damage`,
+`heal`, `roll` (from [`DiceTray`](../../src/ui/dice/DiceTray.tsx)), and `stabilize`/`death`/
+`shortRest`/`longRest` (from [`App.tsx`](../../src/App.tsx)). Mute via
 [`soundSettings.ts`](../../src/sound/soundSettings.ts) (`hoard-hp-muted`, default ON, checked per
-play). Haptics are inline `navigator.vibrate` calls scattered across UI components. Wiring lives
-mostly in [`App.tsx`](../../src/App.tsx). **8 cues exist; ~20 events in §3 are gaps.**
+play). Haptics are inline `navigator.vibrate` calls scattered across UI components. **For #90:
+1 cue to wire (`step`), 1 to reconfigure (`shortRest` → hit-die), and ~18 new events in §3.**
