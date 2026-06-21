@@ -6,7 +6,19 @@ on:
   pull_request:
     branches: [main, beta]
 
+# A PR opened from a same-repo branch that targets main/beta triggers both the
+# `push` (on the source branch) and `pull_request` events, and rapid pushes
+# queue redundant runs. Cancel any superseded run for the same ref so only the
+# latest commit's checks occupy the runners. Production branches (main/beta)
+# are keyed by run id so their pushes never cancel each other.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  # lint + typecheck + test + build share one install, so co-locating them in a
+  # single job is cheaper than four jobs each paying the install cost. This job
+  # runs in parallel with `mutation` (below) and the separate E2E workflow.
   test:
     name: lint · typecheck · test · build
     runs-on: ubuntu-latest
@@ -17,6 +29,14 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      # Cache the installed node_modules tree keyed on the lockfile, so a
+      # cache hit skips the install's link/build step entirely (the pnpm
+      # `cache: pnpm` above only restores the global store, not node_modules).
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node_modules-${{ runner.os }}-node22-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
@@ -36,6 +56,11 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node_modules-${{ runner.os }}-node22-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm install --frozen-lockfile
       # Fails the build if the domain mutation score drops below the configured
       # break threshold (see stryker.config.json).

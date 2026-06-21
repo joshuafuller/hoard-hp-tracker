@@ -42,8 +42,15 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     css: false,
     // Keep Vitest's defaults (node_modules, dist, etc.), exclude Playwright e2e
-    // specs (they import @playwright/test which is incompatible with jsdom), and
-    // never discover tests inside Stryker's sandbox copies.
-    exclude: [...configDefaults.exclude, "e2e/**", "**/.stryker-tmp/**"],
+    // specs (they import @playwright/test which is incompatible with jsdom),
+    // never discover tests inside Stryker's sandbox copies, and skip agent git
+    // worktrees nested under .claude/ so local + CI runs glob a single suite,
+    // not N copies of the whole repo.
+    exclude: [
+      ...configDefaults.exclude,
+      "e2e/**",
+      "**/.stryker-tmp/**",
+      "**/.claude/**",
+    ],
   },
 });

@@ -6,7 +6,14 @@ on:
   pull_request:
     branches: [main, beta]
 
+# Mirror the CI workflow: cancel superseded PR runs for the same ref so only the
+# latest commit's Playwright run holds a runner.
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  # Runs in parallel with the CI workflow's `test` and `mutation` jobs.
   e2e:
     name: playwright layout guard
     runs-on: ubuntu-latest
@@ -17,7 +24,31 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      # Cache the installed node_modules tree keyed on the lockfile, so a cache
+      # hit skips the install's link/build step (pnpm `cache: pnpm` only
+      # restores the global store, not node_modules).
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node_modules-${{ runner.os }}-node22-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm install --frozen-lockfile
+      # Cache the downloaded Chromium binary keyed on the pinned Playwright
+      # version (from the lockfile) so a cache hit skips the multi-hundred-MB
+      # browser download.
+      - name: Resolve Playwright version
+        id: pw
+        run: |
+          version="$(node -p "require('@playwright/test/package.json').version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
       # Install only the Chromium browser + OS-level deps (no Firefox/WebKit).
+      # On a cache hit the browser is already present, so this is a fast no-op
+      # for the download while still ensuring the OS-level libs are in place.
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm e2e
