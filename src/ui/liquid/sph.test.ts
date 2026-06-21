@@ -161,6 +161,17 @@ describe("Sph.step — neighbour grid is rebuilt between constraint iterations",
     sim.step(0.004, 0, 1);
     expect(spy).toHaveBeenCalledTimes(iterations);
   });
+
+  it("still builds the grid once when the constraint solve is disabled (iterations = 0)", () => {
+    // With iterations === 0 the solve loop never runs, but step() still falls
+    // through to the XSPH neighbour pass, which reads the grid — so the grid must
+    // be built at least once or XSPH viscosity reads an empty/stale bucket list.
+    const sim = makeSim(60, { iterations: 0 });
+    const spy = vi.spyOn(sim as unknown as { buildGrid: () => void }, "buildGrid");
+    sim.step(0.004, 0, 1);
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(allFinite(sim)).toBe(true);
+  });
 });
 
 describe("Sph.step — gravity pools the liquid", () => {
