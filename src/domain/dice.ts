@@ -78,6 +78,50 @@ export function buildNotation(sel: DiceSelection): string {
   return `${count}d${sides}${suffix}`;
 }
 
+/** One group in a built dice pool: N dice of a given size. */
+export interface DiePoolGroup {
+  sides: number;
+  count: number;
+}
+
+/** A built dice pool — groups in tap order (so the notation reads as built). */
+export type DiePool = DiePoolGroup[];
+
+/** Add one die of `sides` to the pool (incrementing its group, preserving order). */
+export function addToPool(pool: DiePool, sides: number): DiePool {
+  if (pool.some((g) => g.sides === sides)) {
+    return pool.map((g) => (g.sides === sides ? { ...g, count: g.count + 1 } : g));
+  }
+  return [...pool, { sides, count: 1 }];
+}
+
+/** Remove one die of `sides` (decrement; drop the group at zero; absent is a no-op). */
+export function removeFromPool(pool: DiePool, sides: number): DiePool {
+  return pool
+    .map((g) => (g.sides === sides ? { ...g, count: g.count - 1 } : g))
+    .filter((g) => g.count > 0);
+}
+
+/** Advantage/disadvantage is the 5e d20 keep-high/low — valid only for a lone d20. */
+export function advantageApplies(pool: DiePool): boolean {
+  return pool.length === 1 && pool[0]!.sides === 20 && pool[0]!.count === 1;
+}
+
+/**
+ * Build Roll20 notation from a pool + modifier. A lone d20 with advantage/
+ * disadvantage becomes `2d20kh1`/`2d20kl1`; otherwise the mode is ignored (you
+ * can't have "advantage on 3d6"). An empty pool yields "".
+ */
+export function poolToNotation(pool: DiePool, modifier: number, mode: RollMode): string {
+  const suffix = modifierSuffix(modifier);
+  if (mode !== "normal" && advantageApplies(pool)) {
+    const keep = mode === "advantage" ? "kh1" : "kl1";
+    return `2d20${keep}${suffix}`;
+  }
+  if (pool.length === 0) return "";
+  return pool.map((g) => `${g.count}d${g.sides}`).join("+") + suffix;
+}
+
 /** A die is dropped if the parser flags it `drop` or marks it `valid === false`. */
 function isDropped(entry: ParserRollEntry): boolean {
   return !!(entry.drop || entry.valid === false);

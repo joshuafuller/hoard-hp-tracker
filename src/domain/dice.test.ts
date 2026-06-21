@@ -3,9 +3,14 @@ import fc from "fast-check";
 // @ts-expect-error — the parser ships no types
 import DiceParser from "@3d-dice/dice-parser-interface";
 import {
+  addToPool,
+  advantageApplies,
   buildNotation,
+  poolToNotation,
+  removeFromPool,
   toRollRecord,
   type DiceSelection,
+  type DiePool,
 } from "./dice";
 
 const sel = (over: Partial<DiceSelection> = {}): DiceSelection => ({
@@ -79,6 +84,55 @@ describe("buildNotation", () => {
 // toRollRecord is tested against the REAL parser (it runs under vitest, no WebGL).
 // We make it deterministic by injecting `rollsAsFloats` (float = (value-1)/sides),
 // exactly how dice-box values feed the parser — so these test the real contract.
+describe("dice pool builder", () => {
+  it("adds dice, accumulating count and preserving tap order", () => {
+    let pool: DiePool = [];
+    pool = addToPool(pool, 20);
+    pool = addToPool(pool, 20);
+    pool = addToPool(pool, 6);
+    expect(pool).toEqual([
+      { sides: 20, count: 2 },
+      { sides: 6, count: 1 },
+    ]);
+  });
+
+  it("removes (decrements) a die and drops the group at zero", () => {
+    let pool: DiePool = [
+      { sides: 6, count: 2 },
+      { sides: 4, count: 1 },
+    ];
+    pool = removeFromPool(pool, 4); // drops the d4 group
+    expect(pool).toEqual([{ sides: 6, count: 2 }]);
+    pool = removeFromPool(pool, 6); // 2 → 1
+    expect(pool).toEqual([{ sides: 6, count: 1 }]);
+    pool = removeFromPool(pool, 99); // absent → no-op
+    expect(pool).toEqual([{ sides: 6, count: 1 }]);
+  });
+
+  it("knows advantage applies only to a lone d20", () => {
+    expect(advantageApplies([{ sides: 20, count: 1 }])).toBe(true);
+    expect(advantageApplies([{ sides: 20, count: 2 }])).toBe(false);
+    expect(advantageApplies([{ sides: 6, count: 1 }])).toBe(false);
+    expect(advantageApplies([])).toBe(false);
+    expect(advantageApplies([{ sides: 20, count: 1 }, { sides: 6, count: 1 }])).toBe(false);
+  });
+
+  it("builds notation from the pool + modifier", () => {
+    expect(poolToNotation([], 0, "normal")).toBe("");
+    expect(poolToNotation([{ sides: 20, count: 1 }], 5, "normal")).toBe("1d20+5");
+    expect(poolToNotation([{ sides: 6, count: 2 }, { sides: 4, count: 1 }], 3, "normal")).toBe("2d6+1d4+3");
+    expect(poolToNotation([{ sides: 6, count: 2 }], -1, "normal")).toBe("2d6-1");
+  });
+
+  it("applies advantage/disadvantage only for a lone d20", () => {
+    expect(poolToNotation([{ sides: 20, count: 1 }], 5, "advantage")).toBe("2d20kh1+5");
+    expect(poolToNotation([{ sides: 20, count: 1 }], 0, "disadvantage")).toBe("2d20kl1");
+    // not a lone d20 → mode ignored
+    expect(poolToNotation([{ sides: 20, count: 2 }], 0, "advantage")).toBe("2d20");
+    expect(poolToNotation([{ sides: 6, count: 3 }], 0, "advantage")).toBe("3d6");
+  });
+});
+
 describe("toRollRecord (real parser)", () => {
   const roll = (notation: string, values: Array<{ v: number; sides: number }>) => {
     const p = new DiceParser();

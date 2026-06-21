@@ -31,9 +31,12 @@ const open = (over: Partial<React.ComponentProps<typeof DiceTray>> = {}) =>
   render(<DiceTray open onClose={vi.fn()} onApplyHeal={vi.fn()} db={db} reducedMotion {...over} />);
 
 describe("DiceTray", () => {
+  const addD20 = () => userEvent.click(screen.getByRole("button", { name: "Add d20" }));
+
   it("rolls via the headless engine under reduced motion and shows the result", async () => {
     open();
-    await userEvent.click(screen.getByRole("button", { name: /throw/i }));
+    await addD20();
+    await userEvent.click(screen.getByRole("button", { name: /^throw/i }));
     await waitFor(() => expect(rollHeadless).toHaveBeenCalled());
     expect(createDiceTray).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.getByText("23")).toBeInTheDocument());
@@ -41,7 +44,8 @@ describe("DiceTray", () => {
 
   it("records the roll into history", async () => {
     open();
-    await userEvent.click(screen.getByRole("button", { name: /throw/i }));
+    await addD20();
+    await userEvent.click(screen.getByRole("button", { name: /^throw/i }));
     await waitFor(() => expect(screen.getByText("23")).toBeInTheDocument());
     // open the log and see the entry (scope to the list, the result also shows the notation)
     await userEvent.click(screen.getByRole("button", { name: /log/i }));
@@ -49,17 +53,28 @@ describe("DiceTray", () => {
     expect(items[0]).toHaveTextContent("1d20+5");
   });
 
-  it("builds advantage notation from the controls", async () => {
+  it("builds advantage notation from a lone d20", async () => {
     open();
+    await addD20();
     await userEvent.click(screen.getByRole("button", { name: /^advantage/i }));
-    await userEvent.click(screen.getByRole("button", { name: /throw/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^throw/i }));
     await waitFor(() => expect(rollHeadless).toHaveBeenCalledWith("2d20kh1"));
+  });
+
+  it("builds a mixed pool notation from multiple chips", async () => {
+    open();
+    await userEvent.click(screen.getByRole("button", { name: "Add d6" }));
+    await userEvent.click(screen.getByRole("button", { name: "Add d6" }));
+    await userEvent.click(screen.getByRole("button", { name: "Add d4" }));
+    await userEvent.click(screen.getByRole("button", { name: /^throw/i }));
+    await waitFor(() => expect(rollHeadless).toHaveBeenCalledWith("2d6+1d4"));
   });
 
   it("applies an ad-hoc roll as heal on demand", async () => {
     const onApplyHeal = vi.fn();
     open({ onApplyHeal });
-    await userEvent.click(screen.getByRole("button", { name: /throw/i }));
+    await addD20();
+    await userEvent.click(screen.getByRole("button", { name: /^throw/i }));
     await waitFor(() => expect(screen.getByText("23")).toBeInTheDocument());
     await userEvent.click(screen.getByRole("button", { name: /apply.*heal/i }));
     expect(onApplyHeal).toHaveBeenCalledWith(23);

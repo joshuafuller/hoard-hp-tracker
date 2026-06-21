@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { buildNotation, type RollMode, type RollRecord } from "../../domain/dice";
+import {
+  addToPool,
+  advantageApplies,
+  poolToNotation,
+  removeFromPool,
+  type DiePool,
+  type RollMode,
+  type RollRecord,
+} from "../../domain/dice";
 import { type HpDb } from "../../store/db";
 import { useDiceHistory } from "../../store/useDiceHistory";
 import { createDiceTray, rollHeadless, type DiceTray as DiceTrayEngine } from "./diceEngine";
@@ -36,9 +44,16 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
   const history = useDiceHistory(db);
   const reduced = reducedMotion ?? prefersReducedMotion();
 
-  const [sides, setSides] = useState(20);
+  const [pool, setPool] = useState<DiePool>([]);
   const [modifier, setModifier] = useState(0); // remembered across opens (tray stays mounted)
   const [mode, setMode] = useState<RollMode>("normal");
+
+  // Adding/removing dice can invalidate advantage (only a lone d20 qualifies) —
+  // reset the mode to normal whenever the pool stops being a lone d20.
+  const updatePool = (next: DiePool) => {
+    setPool(next);
+    if (!advantageApplies(next)) setMode("normal");
+  };
   const [record, setRecord] = useState<RollRecord | null>(null);
   const [rolling, setRolling] = useState(false);
   const [showLog, setShowLog] = useState(false);
@@ -89,7 +104,10 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
     [reduced, history],
   );
 
-  const rollFromChips = () => doRoll(buildNotation({ count: 1, sides, modifier, mode }));
+  const rollFromChips = () => {
+    const notation = poolToNotation(pool, modifier, mode);
+    if (notation) doRoll(notation);
+  };
   const submitNotation = (e: React.FormEvent) => {
     e.preventDefault();
     const n = notationText.trim();
@@ -155,11 +173,13 @@ export function DiceTray({ open, onClose, onApplyHeal, db, reducedMotion }: Dice
             </form>
           ) : (
             <DiceControls
-              sides={sides}
+              pool={pool}
               modifier={modifier}
               mode={mode}
               rolling={rolling}
-              onSelectDie={setSides}
+              onAddDie={(s) => updatePool(addToPool(pool, s))}
+              onRemoveDie={(s) => updatePool(removeFromPool(pool, s))}
+              onClear={() => updatePool([])}
               onSetMode={setMode}
               onStepModifier={(d) => setModifier((m) => m + d)}
               onRoll={rollFromChips}
