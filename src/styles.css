@@ -531,27 +531,9 @@ body {
 }
 .death-saves__pip:disabled { cursor: default; }
 
-.death-saves__roll {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-top: 0.2rem;
-  padding: 0.7rem 1.4rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--obsidian-600);
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--ink-100);
-  background: radial-gradient(circle at 50% 25%, var(--obsidian-600), var(--obsidian-800));
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast) ease;
-}
-.death-saves__roll:active { transform: scale(0.95); }
+/* Roll = Button primary — look/press/focus from the primitive; keep spacing + die spin. */
+.death-saves__roll { margin-top: 0.2rem; }
 .death-saves__roll:active .death-saves__die { transform: rotate(-32deg); }
-.death-saves__roll:disabled { opacity: 0.45; cursor: default; }
-.death-saves__roll:focus-visible { outline: 2px solid var(--ink-300); outline-offset: 3px; }
 
 .death-saves__die {
   display: inline-grid;
@@ -1528,44 +1510,8 @@ body {
 
 /* Footer hosts the distill action (or, after distilling, the undo affordance). */
 /* Distill + undo live in the keypad console's footer slot (full-width). */
-.coins__distill {
-  appearance: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-  min-height: 48px;
-  border-radius: var(--radius-md);
-  border: 1px solid color-mix(in oklab, var(--coin-gold) 30%, var(--obsidian-600));
-  background: color-mix(in oklab, var(--coin-gold) 12%, var(--obsidian-700));
-  color: var(--coin-gold);
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--dur-fast) var(--ease-spring), background var(--dur-fast) ease;
-}
-@media (hover: hover) {
-  .coins__distill:hover:not(:disabled) {
-    background: color-mix(in oklab, var(--coin-gold) 20%, var(--obsidian-700));
-  }
-}
-.coins__distill:active:not(:disabled) {
-  transform: scale(0.98);
-}
-.coins__distill:focus-visible {
-  outline: 2px solid var(--coin-gold);
-  outline-offset: 2px;
-}
-.coins__distill:disabled {
-  opacity: 0.45;
-  cursor: default;
-  color: var(--ink-500);
-  border-color: var(--obsidian-600);
-  background: var(--obsidian-700);
-}
-
+/* Distill = Button primary — look/press/focus from the primitive; fill the footer. */
+.coins__distill { width: 100%; min-height: 48px; }
 .coins__distill-glyph {
   font-size: 1.1rem;
 }
@@ -1584,19 +1530,7 @@ body {
   font-weight: 700;
   color: var(--ink-200);
 }
-.coins__undo-btn {
-  appearance: none;
-  background: none;
-  border: none;
-  color: var(--coin-gold);
-  font-weight: 800;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-.coins__undo-btn:focus-visible {
-  outline: 2px solid var(--coin-gold);
-  outline-offset: 2px;
-}
+/* Undo = Button ghost sm — look from the primitive. */
 
 /* ── Distill confirmation ───────────────────────────────────────────────── */
 /* Reuses the .hp-editor backdrop + sheet; .distill stretches content to host

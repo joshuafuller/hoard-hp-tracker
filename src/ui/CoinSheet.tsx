@@ -4,7 +4,7 @@ import { AmountKeypad } from "./AmountKeypad";
 import { CoinRow } from "./CoinRow";
 import { DistillConfirm } from "./DistillConfirm";
 import { Glyph } from "./icons/Glyph";
-import { IconButton } from "./controls";
+import { Button, IconButton } from "./controls";
 
 export interface CoinSheetProps {
   pp: number;
@@ -124,17 +124,20 @@ export function CoinSheet({
     const distillFooter = lastDistill ? (
       <div className="coins__undo" role="status">
         <span className="coins__undo-label">Distilled</span>
-        <button type="button" className="coins__undo-btn" onClick={onUndoDistill}>
+        <Button variant="ghost" size="sm" className="coins__undo-btn" onClick={onUndoDistill}>
           ↶ Undo
-        </button>
+        </Button>
       </div>
     ) : (
-      <button type="button" className="coins__distill" disabled={!canDistill} onClick={() => setConfirming(true)}>
-        <span className="coins__distill-glyph" aria-hidden="true">
-          ⚗
-        </span>
+      <Button
+        variant="primary"
+        className="coins__distill"
+        disabled={!canDistill}
+        leading={<span className="coins__distill-glyph" aria-hidden="true">⚗</span>}
+        onClick={() => setConfirming(true)}
+      >
         {canDistill ? "Distill to fewest coins" : "Already distilled"}
-      </button>
+      </Button>
     );
     return (
       <AmountKeypad

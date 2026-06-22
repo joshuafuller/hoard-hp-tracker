@@ -1,4 +1,5 @@
 import type { DyingStatus } from "../domain/deathSaves";
+import { Button } from "./controls";
 
 export interface DeathSavesProps {
   successes: number;
@@ -99,20 +100,19 @@ export function DeathSaves({
       <PipRow kind="success" filled={successes} locked={terminal} onSet={onSetSuccesses} />
       <PipRow kind="failure" filled={failures} locked={terminal} onSet={onSetFailures} />
 
-      <button
-        type="button"
+      <Button
+        variant="primary"
+        size="lg"
         className="death-saves__roll"
         disabled={terminal}
+        leading={<span className="death-saves__die" aria-hidden="true">d20</span>}
         onClick={() => {
           rollHaptic();
           onRoll();
         }}
       >
-        <span className="death-saves__die" aria-hidden="true">
-          d20
-        </span>
-        <span>Roll Death Save</span>
-      </button>
+        Roll Death Save
+      </Button>
     </section>
   );
 }
