@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import "./controls.css";
 
 export type ButtonVariant = "primary" | "ghost" | "heal" | "danger";
@@ -18,17 +18,15 @@ export interface ButtonProps
 /**
  * Text action button. The one main action on a surface is `primary`; secondary
  * actions are `ghost`. Always `type="button"` so it never submits a form.
+ * Forwards its ref to the underlying <button> (for focus management).
  */
-export function Button({
-  variant = "primary",
-  size = "md",
-  leading,
-  className,
-  children,
-  ...rest
-}: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { variant = "primary", size = "md", leading, className, children, ...rest },
+  ref,
+) {
   return (
     <button
+      ref={ref}
       type="button"
       className={["ctl-btn", className].filter(Boolean).join(" ")}
       data-variant={variant}
@@ -39,4 +37,4 @@ export function Button({
       <span className="ctl-btn__label">{children}</span>
     </button>
   );
-}
+});

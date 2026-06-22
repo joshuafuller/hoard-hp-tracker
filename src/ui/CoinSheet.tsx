@@ -4,6 +4,7 @@ import { AmountKeypad } from "./AmountKeypad";
 import { CoinRow } from "./CoinRow";
 import { DistillConfirm } from "./DistillConfirm";
 import { Glyph } from "./icons/Glyph";
+import { IconButton } from "./controls";
 
 export interface CoinSheetProps {
   pp: number;
@@ -163,9 +164,9 @@ export function CoinSheet({
       >
         <div className="coins__head">
           <span className="coins__label">HOARD</span>
-          <button type="button" className="coins__close" aria-label="Close" onClick={onClose}>
+          <IconButton variant="ghost" aria-label="Close" onClick={onClose}>
             <Glyph name="close" />
-          </button>
+          </IconButton>
         </div>
         <div className="coins__hero">
           <span className="coins__total" data-testid="coins-total">

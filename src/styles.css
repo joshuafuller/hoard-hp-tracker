@@ -790,52 +790,23 @@ body {
   width: min(100%, 30rem);
 }
 
-.rest-controls__btn {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.15rem;
+/* Layout only — the gold/ghost look + press/focus come from the Button primitive.
+   Long Rest = primary (gold), Short Rest = ghost (spec §5). */
+/* Specificity (0,3,0) so the short-screen height clamp wins over the primitive's
+   .ctl-btn[data-size="lg"] { min-height: 56px } — the rest buttons must still
+   compress on short viewports to hold the one-screen budget (#32). */
+.rest-controls .ctl-btn.rest-controls__btn {
   min-width: 9.5rem;
   min-height: 56px; /* fallback for browsers without svh */
   min-height: clamp(42px, 6.5svh, 56px);
-  padding: 0.6rem 1.4rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(120, 80, 24, 0.5);
-  font-weight: 700;
-  /* polished-gold body, engraved dark text */
-  color: #3a2606;
-  background: linear-gradient(180deg, #fbe6ac 0%, #f4c66a 40%, #cf9a3f 100%);
-  box-shadow:
-    inset 0 0 0 1.5px rgba(255, 244, 206, 0.55),
-    inset 0 2px 5px rgba(255, 248, 222, 0.55),
-    inset 0 -7px 14px rgba(40, 24, 4, 0.4),
-    0 8px 22px rgba(0, 0, 0, 0.45);
-  text-shadow: 0 1px 0 rgba(255, 244, 206, 0.4);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast) ease;
 }
-
-.rest-controls__btn:active {
-  transform: scale(0.95);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 2px 6px rgba(0, 0, 0, 0.5);
-}
-
-.rest-controls__btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-
-.rest-controls__btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-  box-shadow: none;
-}
-
-.rest-controls__btn[data-kind="long"] {
-  border-color: color-mix(in oklab, var(--hp-temp) 28%, var(--obsidian-600));
+/* Stack the two-line label/sub inside the shared Button label wrapper. */
+.rest-controls__btn .ctl-btn__label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.08rem;
+  line-height: 1.12;
 }
 
 .rest-controls__label {
@@ -848,7 +819,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(58, 38, 6, 0.72); /* engraved bronze on the gold body */
+  opacity: 0.72; /* inherits the button's text colour (dark on gold, ivory on ghost) */
 }
 
 /* The confirm step takes the Long Rest button's place: a prompt flanked by a
@@ -884,40 +855,9 @@ body {
   color: var(--ink-300);
 }
 
+/* Confirm = primary, Cancel = ghost — look from the Button primitive; layout only. */
 .rest-controls__confirm-btn {
   min-width: 44px;
-  min-height: 44px;
-  padding: 0 1.1rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--obsidian-600);
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: var(--ink-100);
-  background: var(--obsidian-600);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast) ease;
-}
-
-.rest-controls__confirm-btn:active {
-  transform: scale(0.93);
-}
-
-.rest-controls__confirm-btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-
-.rest-controls__confirm-btn[data-kind="confirm"] {
-  color: var(--obsidian-900);
-  background: var(--hp-temp);
-  border-color: var(--hp-temp);
-  box-shadow: 0 0 18px color-mix(in oklab, var(--hp-temp) 40%, transparent);
-}
-
-.rest-controls__confirm-btn[data-kind="cancel"] {
-  color: var(--ink-300);
-  background: var(--obsidian-700);
 }
 
 /* ── HP value editor (pill modal) ──────────────────────────────────────── */
@@ -1468,39 +1408,8 @@ body {
    in tap-target and border radius so the two controls read as a matched pair.
    Tinted gold (--coin-gold) so it's immediately legible as "wealth" without a
    label — the same hue used for gp dots and the total readout. */
-.coin-button {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-pill);
-  border: 1px solid color-mix(in oklab, var(--coin-gold) 28%, var(--obsidian-600));
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--coin-gold);
-  background: var(--obsidian-700);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  transition:
-    transform var(--dur-fast) var(--ease-spring),
-    background var(--dur-fast) ease,
-    box-shadow var(--dur-fast) ease;
-}
-@media (hover: hover) {
-  .coin-button:hover {
-    background: var(--obsidian-600);
-  }
-}
-.coin-button:active {
-  transform: scale(0.92);
-}
-.coin-button:focus-visible {
-  outline: 2px solid var(--coin-gold);
-  outline-offset: 3px;
-}
+/* The coins button is now an IconButton (variant=token) — primitive owns the
+   gold medallion look + press + focus. Only the inner sigil needs styling. */
 .coin-button__icon {
   width: 22px;
   height: 22px;
@@ -1567,31 +1476,7 @@ body {
   color: var(--ink-500);
 }
 
-.coins__close {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--ink-500);
-  font-size: 0.95rem;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-@media (hover: hover) {
-  .coins__close:hover {
-    background: color-mix(in oklab, var(--ink-100) 6%, transparent);
-    color: var(--ink-200);
-  }
-}
-.coins__close:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
+/* close button look comes from IconButton (.ctl-icon-btn ghost); no bespoke class. */
 
 /* Hero total — the headline number, in coin gold. */
 .coins__hero {
@@ -2013,49 +1898,14 @@ body {
    it clearly from the green/amber/red HP accent family so "concentrating" reads
    as a distinct state at a glance. The violet-400 (#a78bfa) is used inline as
    a literal rather than a token — concentration is a one-off state, not a tier. */
-.concentration-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-pill);
-  border: 1px solid color-mix(in oklab, var(--coin-gold) 30%, var(--obsidian-600));
-  color: var(--coin-gold);
-  background: var(--obsidian-700);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  transition:
-    transform var(--dur-fast) var(--ease-spring),
-    color var(--dur-fast) ease,
-    background var(--dur-fast) ease,
-    box-shadow var(--dur-fast) ease;
-}
-
-.concentration-toggle[data-concentrating="true"] {
+/* Concentration is an IconButton (variant=ghost, pressed) — the primitive owns the
+   round look, press + focus. DESIGN.md keeps its "on" state a muted PURPLE (distinct
+   from the HP gold accent), so override the primitive's gold-on pressed colour for
+   this one toggle (higher specificity so it wins over .ctl-icon-btn[aria-pressed]). */
+.ctl-icon-btn.concentration-toggle[aria-pressed="true"] {
   color: #a78bfa;
   border-color: color-mix(in oklab, #a78bfa 40%, var(--obsidian-600));
   box-shadow: 0 0 14px color-mix(in oklab, #a78bfa 30%, transparent);
-}
-
-.concentration-toggle[data-concentrating="false"] {
-  color: var(--ink-500);
-}
-
-@media (hover: hover) {
-  .concentration-toggle:hover {
-    background: var(--obsidian-600);
-  }
-}
-
-.concentration-toggle:active {
-  transform: scale(0.92);
-}
-
-.concentration-toggle:focus-visible {
-  outline: 2px solid #a78bfa;
-  outline-offset: 3px;
 }
 
 .concentration-toggle__icon {

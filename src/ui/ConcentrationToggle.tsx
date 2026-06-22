@@ -1,3 +1,5 @@
+import { IconButton } from "./controls";
+
 export interface ConcentrationToggleProps {
   /** Whether the character is currently concentrating on a spell. */
   concentrating: boolean;
@@ -13,12 +15,12 @@ export interface ConcentrationToggleProps {
  */
 export function ConcentrationToggle({ concentrating, onToggle }: ConcentrationToggleProps) {
   return (
-    <button
-      type="button"
+    <IconButton
+      variant="ghost"
       className="concentration-toggle"
       data-concentrating={concentrating}
       aria-label="Concentration"
-      aria-pressed={concentrating}
+      pressed={concentrating}
       onClick={onToggle}
       title={concentrating ? "Concentrating — tap to drop" : "Not concentrating — tap to enable"}
     >
@@ -49,6 +51,6 @@ export function ConcentrationToggle({ concentrating, onToggle }: ConcentrationTo
           strokeWidth="1.5"
         />
       </svg>
-    </button>
+    </IconButton>
   );
 }

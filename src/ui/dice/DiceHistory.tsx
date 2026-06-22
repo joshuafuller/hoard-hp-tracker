@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { DiceRollRecord, RollContext } from "../../store/db";
 import { relativeTime } from "./relativeTime";
 import { Glyph } from "../icons/Glyph";
+import { IconButton } from "../controls";
 
 export interface DiceHistoryProps {
   rolls: DiceRollRecord[];
@@ -47,9 +48,9 @@ export function DiceHistory({ rolls, onClear, onClose, now }: DiceHistoryProps) 
     <div className="dice-history">
       <div className="dice-history__head">
         <span className="dice-history__title">Recent rolls</span>
-        <button type="button" className="dice-history__close" aria-label="Close log" onClick={onClose}>
+        <IconButton variant="ghost" aria-label="Close log" onClick={onClose}>
           <Glyph name="close" />
-        </button>
+        </IconButton>
       </div>
 
       {rolls.length === 0 ? (

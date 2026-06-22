@@ -5,6 +5,8 @@ export interface SegmentOption<T extends string> {
   label: string;
   /** Optional sub-label rendered small under the main label. */
   hint?: string;
+  /** Disable just this option (the rest stay selectable). */
+  disabled?: boolean;
 }
 
 export interface SegmentProps<T extends string> {
@@ -46,7 +48,7 @@ export function Segment<T extends string>({
             className="ctl-segment__option"
             data-active={active}
             aria-pressed={active}
-            disabled={disabled}
+            disabled={disabled || opt.disabled}
             onClick={() => onChange(opt.value)}
           >
             <span className="ctl-segment__label">{opt.label}</span>

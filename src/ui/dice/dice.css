@@ -6,24 +6,8 @@
 }
 
 /* ---- chrome entry token (matches the .coin-token family) ---- */
-.dice-token {
-  width: 44px;
-  height: 44px;
-  flex: none;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  cursor: pointer;
-  color: #3a2606;
-  background: var(--gold-body);
-  box-shadow:
-    inset 0 0 0 1.5px rgba(255, 244, 206, 0.6),
-    inset 0 -6px 12px rgba(40, 24, 4, 0.5),
-    0 4px 10px rgba(0, 0, 0, 0.5);
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--dur-fast) var(--ease-spring);
-}
-.dice-token:active { transform: scale(0.94); }
+/* The dice token is now an IconButton (variant=token) — the primitive owns the
+   gold medallion look + press + focus. Only the inner "d20" face needs styling. */
 .dice-token__face {
   font-family: "Fraunces", Georgia, serif;
   font-weight: 700;
@@ -47,7 +31,6 @@
   background: rgba(8, 7, 5, 0.64);
   border: 0;
 }
-.dice-tray__close,
 .dice-tray__log {
   position: absolute;
   top: calc(env(safe-area-inset-top, 0px) + 0.9rem);
@@ -61,12 +44,12 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
+/* Positioning only — the round ghost look now comes from IconButton (.ctl-icon-btn). */
 .dice-tray__close {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 0.9rem);
   left: calc(env(safe-area-inset-left, 0px) + 0.9rem);
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  justify-content: center; /* centre the single icon horizontally */
+  z-index: 3;
 }
 /* SVG icons are centred by geometry (square viewBox) — never use text glyphs. */
 .dice-glyph { display: block; }
@@ -265,134 +248,25 @@
 }
 .dice-pool__expr::placeholder { color: var(--ink-700); }
 .dice-pool:focus-within { border-color: color-mix(in oklab, var(--coin-gold) 45%, var(--obsidian-600)); }
-.dice-pool__clear {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: 0;
-  color: var(--ink-500);
-  cursor: pointer;
-  padding: 2px 4px;
-}
+/* clear-X = IconButton ghost (look from .ctl-icon-btn); just hold its slot. */
+.dice-pool__clear { flex: none; }
 
-/* removable pool tags (a misclick isn't fatal) */
+/* removable pool tags = Chip primitives (look from .ctl-chip). */
 .dice-pool__tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.dice-pool__tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 5px 10px;
-  border-radius: var(--radius-pill);
-  background: color-mix(in oklab, var(--coin-gold) 16%, var(--obsidian-700));
-  border: 1px solid color-mix(in oklab, var(--coin-gold) 35%, transparent);
-  color: var(--coin-gold);
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 0.78rem;
-  cursor: pointer;
-}
-.dice-pool__tag span { opacity: 0.7; font-weight: 700; }
 
 /* add palette — flexible pills so all 7 dice ALWAYS fit the row (never clip) */
-.dice-chips { display: flex; gap: 5px; }
-.dice-chip {
-  position: relative;
-  flex: 1 1 0;
-  min-width: 0;
-  height: 44px;
-  border-radius: var(--radius-pill);
-  display: grid;
-  place-items: center;
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 0.72rem;
-  color: var(--ink-300);
-  background: var(--obsidian-700);
-  border: 1px solid var(--obsidian-600);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.dice-chip[data-on="true"] {
-  color: #3a2606;
-  background: var(--gold-body);
-  border-color: transparent;
-  box-shadow: inset 0 0 0 1.5px rgba(255, 244, 206, 0.6), inset 0 -4px 9px rgba(40, 24, 4, 0.5);
-}
-.dice-chip__badge {
-  position: absolute;
-  top: -5px;
-  right: -3px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  border-radius: var(--radius-pill);
-  display: grid;
-  place-items: center;
-  background: #2a2010;
-  border: 1px solid var(--coin-gold);
-  color: var(--coin-gold);
-  font-family: "DM Sans", sans-serif;
-  font-size: 0.64rem;
-  font-weight: 800;
-}
+/* Dice palette — Chip primitives (look from .ctl-chip). The chips are wrapped in
+   .ctl-chip-wrap, so distribute the WRAPPERS to fit all seven dice (never clip)
+   and let each chip fill its share with tighter padding. */
+.dice-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.dice-chips .ctl-chip-wrap { flex: 1 1 0; min-width: 0; }
+.dice-chips .ctl-chip { width: 100%; min-width: 0; padding: 0 0.3rem; font-size: 0.72rem; }
 
-.dice-controls__adv {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  border-radius: var(--radius-pill);
-  background: var(--obsidian-800);
-  border: 1px solid var(--obsidian-600);
-  overflow: hidden;
-}
-.dice-adv {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: var(--ink-300);
-  font-weight: 700;
-  font-size: 0.78rem;
-  padding: 10px 4px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  cursor: pointer;
-}
-.dice-adv small { font-size: 0.6rem; font-weight: 600; color: var(--ink-500); }
-.dice-adv:disabled { opacity: 0.4; cursor: default; }
-.dice-adv--dis[data-on="true"] { background: linear-gradient(180deg, #3a1714, #2a1210); color: #f0a59c; }
-.dice-adv--nrm[data-on="true"] { background: var(--obsidian-600); color: var(--ink-100); }
-.dice-adv--adv[data-on="true"] { background: linear-gradient(180deg, #3a2c12, #2a2010); color: var(--coin-gold); }
+/* Advantage control = Segment primitive (.ctl-segment owns the grid + look). */
 
 .dice-controls__row { display: flex; gap: 0.55rem; align-items: center; }
-.dice-mod { display: flex; align-items: center; gap: 7px; }
-.dice-mod__pm {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 1.2rem;
-  background: var(--obsidian-700);
-  border: 1px solid var(--obsidian-600);
-  color: var(--coin-gold);
-  cursor: pointer;
-}
-.dice-mod__val { font-weight: 800; font-variant-numeric: tabular-nums; min-width: 40px; text-align: center; color: var(--ink-100); }
-.dice-throw {
-  flex: 1;
-  appearance: none;
-  border: 0;
-  padding: 13px;
-  border-radius: var(--radius-pill);
-  font-weight: 800;
-  font-size: 1rem;
-  color: #2a1c06;
-  background: var(--gold-body);
-  box-shadow: inset 0 0 0 1.5px rgba(255, 244, 206, 0.55), 0 8px 18px rgba(0, 0, 0, 0.45);
-  cursor: pointer;
-}
-.dice-throw:disabled { opacity: 0.7; cursor: default; }
+/* The Throw Button (primary) grows to fill the row beside the modifier Stepper. */
+.dice-controls__row .dice-throw { flex: 1; }
 .dice-kbtn {
   width: 42px;
   height: 42px;
@@ -415,18 +289,7 @@
 }
 .dice-history__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
 .dice-history__title { font-family: "Fraunces", Georgia, serif; font-weight: 600; color: var(--ink-200); }
-.dice-history__close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: transparent;
-  border: 1px solid var(--obsidian-600);
-  color: var(--ink-300);
-  cursor: pointer;
-}
+/* close button look comes from IconButton (.ctl-icon-btn ghost); no bespoke class. */
 .dice-history__foot { display: flex; justify-content: center; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--obsidian-600); }
 .dice-history__clear {
   background: none;

@@ -59,6 +59,12 @@
   align-items: center;
   gap: 0.5rem;
 }
+/* Unify the chrome icon row to one size + shape (spec §5): coins · dice (token)
+   and sound · concentration (ghost toggles) all sit at the 44px tap target. */
+.hp-tracker__chrome .ctl-icon-btn[data-variant] {
+  width: 44px;
+  height: 44px;
+}
 
 /* The stat card: a charcoal rounded panel framing the name + orb + panel
    (the controls live below it). Flexes to fill the middle; the orb stage inside
