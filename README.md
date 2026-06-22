@@ -1,16 +1,26 @@
-# Hoard
+<div align="center">
 
-### ▶ **[Open the live app →](https://joshuafuller.github.io/hoard-hp-tracker/)**
+# 🪙 Hoard
 
-*Installable PWA — open it on your phone, tap **Add to Home Screen**, and it works **offline at the table**.*
+**A gorgeous, offline, single-player HP tracker for tabletop games.**
+*A luminous liquid orb for hit points — plus coins, a 3D dice tray, death saves, and rests.*
 
-<p align="center">
-  <img src="docs/gallery/walkthrough.gif" alt="A walkthrough of Hoard — opening the gold radial hub, draining the liquid HP orb on damage, healing back, and the coin hoard" width="300" />
-</p>
+[![Open the live app](https://img.shields.io/badge/▶_Open_the_live_app-d9b85c?style=for-the-badge&labelColor=14110a)](https://joshuafuller.github.io/hoard-hp-tracker/)
 
-**A gorgeous, offline, single-player HP tracker for tabletop games.** A luminous liquid orb for hit
-points, plus coins, a 3D dice tray, death saves, and rests — fast one-screen tools for the
-bookkeeping you do on your turn. No account, no connection; your data stays on your device.
+[![PWA](https://img.shields.io/badge/PWA-installable-d9b85c?labelColor=14110a)](https://joshuafuller.github.io/hoard-hp-tracker/)
+[![Offline](https://img.shields.io/badge/works-offline-4fb477?labelColor=14110a)](#use-it)
+[![React 19](https://img.shields.io/badge/React-19-5fb3d4?labelColor=14110a&logo=react)](#tech--quality)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?labelColor=14110a&logo=typescript&logoColor=white)](#tech--quality)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-a78bfa?labelColor=14110a)](LICENSE)
+
+<br>
+
+<img src="docs/gallery/walkthrough.gif" alt="A walkthrough of Hoard — opening the gold radial hub, draining the liquid HP orb on damage, healing back, and the coin hoard" width="300" />
+
+</div>
+
+Fast one-screen tools for the bookkeeping you do on your turn — **no account, no connection; your
+data stays on your device.** Open the app, **Add to Home Screen**, and it works offline at the table.
 
 ## What you get
 
