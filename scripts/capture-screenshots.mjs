@@ -43,7 +43,9 @@ async function boot() {
 // click straight on the chip (hit-testing is unreliable there).
 async function viaHub(p, chipName) {
   await p.getByLabel("Actions").click();
-  await p.waitForTimeout(120);
+  // Wait for the fan to actually open (chips are aria-hidden/inert while closed) —
+  // more reliable than a fixed sleep (Copilot #165).
+  await p.locator(".radial-hub[data-open]").waitFor({ state: "visible" });
   await p.getByRole("button", { name: chipName, exact: true }).dispatchEvent("click");
 }
 
