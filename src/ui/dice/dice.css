@@ -55,9 +55,10 @@
 .dice-glyph { display: block; }
 /* Grouped with the close on the LEFT — the top-right corner is the app's radial-hub
    sigil's spot, so a Log button there read as the sigil "becoming" the Log on open
-   (#153). The close is a ~44px round button; sit the Log just to its right. */
+   (#153). Sit the Log just past the close's right edge: the close is an IconButton
+   (var(--icon-btn-sm) = 36px) at the same 0.9rem inset, plus a 0.5rem gap. */
 .dice-tray__log {
-  left: calc(env(safe-area-inset-left, 0px) + 0.9rem + 3.1rem);
+  left: calc(env(safe-area-inset-left, 0px) + 0.9rem + var(--icon-btn-sm, 36px) + 0.5rem);
   padding: 7px 13px;
   border-radius: var(--radius-pill);
   font-size: 0.78rem;
