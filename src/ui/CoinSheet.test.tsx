@@ -2,6 +2,9 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { CoinSheet } from "./CoinSheet";
+import { playSfx } from "../sound/sfx";
+
+vi.mock("../sound/sfx", () => ({ playSfx: vi.fn() }));
 
 function setup(over = {}) {
   const props = {
@@ -25,6 +28,23 @@ function setup(over = {}) {
 }
 
 describe("CoinSheet", () => {
+  it("cues coinAdd on a value rise, coinSpend on a fall, silence when unchanged or on mount (#90/#148)", () => {
+    vi.mocked(playSfx).mockClear();
+    const rest = {
+      total: 0, onAdd: vi.fn(), onSpend: vi.fn(), onSet: vi.fn(), onDistill: vi.fn(),
+      lastDistill: null, onUndoDistill: vi.fn(), onDismissDistill: vi.fn(), onClose: vi.fn(),
+    };
+    const { rerender } = render(<CoinSheet pp={0} gp={1} sp={0} cp={0} {...rest} />);
+    expect(playSfx).not.toHaveBeenCalled(); // baseline — no cue on mount
+    rerender(<CoinSheet pp={0} gp={2} sp={0} cp={0} {...rest} />); // +1 gp → value up
+    expect(playSfx).toHaveBeenLastCalledWith("coinAdd");
+    vi.mocked(playSfx).mockClear();
+    rerender(<CoinSheet pp={0} gp={2} sp={0} cp={0} {...rest} />); // unchanged (rejected-spend race)
+    expect(playSfx).not.toHaveBeenCalled();
+    rerender(<CoinSheet pp={0} gp={1} sp={0} cp={0} {...rest} />); // value fell
+    expect(playSfx).toHaveBeenLastCalledWith("coinSpend");
+  });
+
   it("shows the four denominations and the gold total", () => {
     setup();
     expect(screen.getByRole("dialog", { name: /coins/i })).toBeInTheDocument();

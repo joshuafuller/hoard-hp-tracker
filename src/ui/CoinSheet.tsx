@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { type CoinKind, type Coins, canSpend, coinsEqual, distill } from "../domain/coins";
+import { type CoinKind, type Coins, canSpend, coinsEqual, distill, totalCp } from "../domain/coins";
+import { playSfx } from "../sound/sfx";
 import { AmountKeypad } from "./AmountKeypad";
 import { CoinRow } from "./CoinRow";
 import { DistillConfirm } from "./DistillConfirm";
@@ -61,6 +62,21 @@ export function CoinSheet({
   const coins: Coins = { pp, gp, sp, cp };
   const [editing, setEditing] = useState<CoinKind | null>(null);
   const [confirming, setConfirming] = useState(false);
+
+  // Transactional cue driven by the ACTUAL purse value, not optimistically per tap:
+  // a rise plays coinAdd, a fall plays coinSpend, and an unchanged total is silent —
+  // so a rejected spend (rapid double-tap past the funds boundary, before the live
+  // query re-renders) makes no sound, and value-preserving distill stays silent too
+  // (Codex #148). Covers the keypad path as well as the steppers. First value is the
+  // baseline (no cue on mount/hydration). — sound-design.md §3 (transactional).
+  const totalCpValue = totalCp(coins);
+  const prevTotalCp = useRef<number | null>(null);
+  useEffect(() => {
+    if (prevTotalCp.current !== null && totalCpValue !== prevTotalCp.current) {
+      playSfx(totalCpValue > prevTotalCp.current ? "coinAdd" : "coinSpend");
+    }
+    prevTotalCp.current = totalCpValue;
+  }, [totalCpValue]);
 
   // Escape closes the overview. While a sub-view is up (the keypad or the
   // distill confirmation) that sub-view owns Escape — returning to the overview

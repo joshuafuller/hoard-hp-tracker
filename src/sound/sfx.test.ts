@@ -86,12 +86,27 @@ describe("playSfx", () => {
     expect(first!.stop).toHaveBeenCalled();
   });
 
-  it("plays a tone for every supported sound name", () => {
+  // Bandpass-noise cues (dice clatter + coin clinks) synthesize via BufferSource,
+  // not oscillators — they're exercised separately, not in the per-tone count.
+  const NOISE_CUES = new Set(["roll", "coinAdd", "coinSpend"]);
+
+  it("plays a tone for every oscillator-based sound name", () => {
     const { oscillators } = installFakeAudioContext();
-    for (const name of SFX_NAMES) {
+    const toneCues = SFX_NAMES.filter((n) => !NOISE_CUES.has(n));
+    for (const name of toneCues) {
       playSfx(name);
     }
-    expect(oscillators.length).toBeGreaterThanOrEqual(SFX_NAMES.length);
+    // Each tone cue must contribute at least one oscillator voice.
+    expect(oscillators.length).toBeGreaterThanOrEqual(toneCues.length);
+  });
+
+  it("routes coin cues to the noise-tick path (no oscillators)", () => {
+    const { oscillators } = installFakeAudioContext();
+    expect(() => {
+      playSfx("coinAdd");
+      playSfx("coinSpend");
+    }).not.toThrow();
+    expect(oscillators.length).toBe(0);
   });
 
   it("does not synthesize any tone when sound is muted", () => {
@@ -147,5 +162,10 @@ describe("cue loudness guard (sound-design.md §4)", () => {
         expect(v.gain, `cue "${name}" voice gain ${v.gain} > ceiling`).toBeLessThanOrEqual(MAX_CUE_GAIN);
       }
     }
+  });
+
+  it("the noise-tick (coin) cue gain also stays under the ceiling", async () => {
+    const { COIN_TICK_GAIN, MAX_CUE_GAIN } = await import("./sfx");
+    expect(COIN_TICK_GAIN).toBeLessThanOrEqual(MAX_CUE_GAIN);
   });
 });

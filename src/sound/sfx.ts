@@ -28,6 +28,8 @@ export const SFX_NAMES = [
   "toggleOn",
   "toggleOff",
   "undo",
+  "coinAdd",
+  "coinSpend",
 ] as const;
 
 export type SfxName = (typeof SFX_NAMES)[number];
@@ -85,6 +87,11 @@ export const RECIPES: Record<SfxName, Voice[]> = {
   toggleOff: [{ type: "triangle", freq: 587.33, endFreq: 523.25, gain: 0.07, duration: 0.06 }],
   // Undo = the neutral tap tone played DESCENDING (A4→E4) — a "rewind" feel.
   undo: [{ type: "triangle", freq: 440, endFreq: 329.63, gain: 0.09, duration: 0.12 }],
+  // Coin cues are bandpass-noise tick clusters (a metallic clink), not oscillator
+  // voices — playSfx routes these names to playCoinTicks. Empty recipes keep the
+  // Record total + let the name resolve.
+  coinAdd: [],
+  coinSpend: [],
 };
 
 /** The lazily-created, shared AudioContext (null until the first real play). */
@@ -190,6 +197,21 @@ function playClatter(context: AudioContext): void {
 }
 
 /**
+ * Coin cue: a short cluster of bright metallic noise ticks (reusing the dice tick
+ * generator, retuned higher/cleaner). Pitch rises for a gain ("into the hoard") and
+ * falls for a spend ("out") so the two read as mirror transactions. Gains stay well
+ * under the 0.22 cue ceiling. — sound-design.md §3 (transactional family).
+ */
+/** Peak gain of a coin tick — kept under MAX_CUE_GAIN (asserted by the loudness guard). */
+export const COIN_TICK_GAIN = 0.11;
+function playCoinTicks(context: AudioContext, direction: "add" | "spend"): void {
+  const now = context.currentTime;
+  const freqs = [2600, 3200, 3900]; // bright metallic band
+  if (direction === "spend") freqs.reverse(); // falling lilt for coins out
+  freqs.forEach((freq, i) => playTick(context, now + i * 0.06, freq, COIN_TICK_GAIN, 0.05));
+}
+
+/**
  * Play a sound cue by name. No-ops silently when muted, when the name is
  * unknown, or when Web Audio is unavailable.
  */
@@ -202,6 +224,10 @@ export function playSfx(name: SfxName): void {
   try {
     if (name === "roll") {
       playClatter(context); // noise clatter, not an oscillator recipe
+      return;
+    }
+    if (name === "coinAdd" || name === "coinSpend") {
+      playCoinTicks(context, name === "coinAdd" ? "add" : "spend");
       return;
     }
     for (const voice of recipe) playVoice(context, voice);
