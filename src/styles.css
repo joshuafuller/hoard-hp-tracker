@@ -1401,7 +1401,7 @@ body {
 }
 @keyframes undo-pill-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .undo-pill__label { font-size: 0.85rem; color: var(--ink-200); }
-.undo-pill__btn { appearance: none; background: none; border: none; color: var(--hp-temp); font-weight: 800; font-size: 0.85rem; cursor: pointer; }
+/* Undo is a Button variant=ghost size=sm — look from the primitive. */
 
 /* ── Coin button (chrome) ───────────────────────────────────────────────── */
 /* The ¢ trigger in the top-right chrome. Matches the SoundToggle's 44px pill
@@ -1798,35 +1798,11 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 0.6rem;
 }
-.distill__cancel,
-.distill__confirm {
-  appearance: none;
+/* Cancel = Button ghost, Distill = Button primary — look/press/focus from the
+   primitive; just fill the grid cells at the action tap-target height. */
+.distill__actions .ctl-btn {
+  width: 100%;
   min-height: 48px;
-  border-radius: var(--radius-md);
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--dur-fast) var(--ease-spring);
-}
-.distill__cancel {
-  border: 1px solid var(--obsidian-600);
-  background: var(--obsidian-700);
-  color: var(--ink-200);
-}
-.distill__confirm {
-  border: none;
-  background: color-mix(in oklab, var(--coin-gold) 80%, black);
-  color: var(--obsidian-900);
-}
-.distill__cancel:active,
-.distill__confirm:active {
-  transform: scale(0.98);
-}
-.distill__cancel:focus-visible,
-.distill__confirm:focus-visible {
-  outline: 2px solid var(--coin-gold);
-  outline-offset: 2px;
 }
 
 /* ── Coin switcher strip (in the shared keypad header) ──────────────────── */

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { type Coins, distill, totalGp } from "../domain/coins";
+import { Button } from "./controls";
 
 export interface DistillConfirmProps {
   /** The current purse — the preview computes the distilled result from this. */
@@ -109,12 +110,12 @@ export function DistillConfirm({ coins, onConfirm, onClose }: DistillConfirmProp
           </span>
         </div>
         <div className="distill__actions">
-          <button type="button" className="distill__cancel" onClick={onClose}>
+          <Button variant="ghost" className="distill__cancel" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             ref={confirmRef}
-            type="button"
+            variant="primary"
             className="distill__confirm"
             onClick={() => {
               onConfirm();
@@ -122,7 +123,7 @@ export function DistillConfirm({ coins, onConfirm, onClose }: DistillConfirmProp
             }}
           >
             Distill
-          </button>
+          </Button>
         </div>
       </div>
     </div>

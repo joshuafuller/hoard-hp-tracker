@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { Button } from "./controls";
 
 export interface UndoPillProps {
   /** Short description of the last change, e.g. "Healed +9". */
@@ -23,7 +24,7 @@ export function UndoPill({ label, onUndo, onDismiss, timeout = 4000 }: UndoPillP
   return (
     <div className="undo-pill" role="status">
       <span className="undo-pill__label">{label}</span>
-      <button type="button" className="undo-pill__btn" onClick={onUndo}>↶ Undo</button>
+      <Button variant="ghost" size="sm" className="undo-pill__btn" onClick={onUndo}>↶ Undo</Button>
     </div>
   );
 }
