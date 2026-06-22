@@ -29,7 +29,24 @@ const settle = (ms = 900) => page.waitForTimeout(ms);
 async function boot() {
   await page.goto(BASE);
   await page.waitForSelector(".hp-tracker", { state: "visible" });
+  // Reduced-motion settles the radial hub instantly so its chips are reliably
+  // clickable (the spring over the WebGL orb confuses pointer hit-testing).
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  // Set an identity so every shot shows a real character at the top, not a blank app.
+  await page.locator(".character-name button").first().click();
+  await page.getByLabel("Character name").fill("Thorin Ironfist");
+  await page.keyboard.press("Enter");
   await settle();
+}
+
+// Open a radial-hub action. The fan sits over the WebGL canvas, so dispatch the
+// click straight on the chip (hit-testing is unreliable there).
+async function viaHub(p, chipName) {
+  await p.getByLabel("Actions").click();
+  // Wait for the fan to actually open (chips are aria-hidden/inert while closed) —
+  // more reliable than a fixed sleep (Copilot #165).
+  await p.locator(".radial-hub[data-open]").waitFor({ state: "visible" });
+  await p.getByRole("button", { name: chipName, exact: true }).dispatchEvent("click");
 }
 
 // Open the keypad and drive a relative Damage of `n` (10 → 10-n).
@@ -44,6 +61,13 @@ async function damage(n) {
 
 await boot();
 await shot("01-hero-full"); // 10/10 — healthy (gold/emerald tier)
+
+// The radial action hub, open over full HP — the gold sigil fans out the actions.
+await page.getByLabel("Actions").click();
+await settle(450);
+await shot("06-hub");
+await page.keyboard.press("Escape");
+await settle(250);
 
 await damage(5); // → 5/10 — bloodied
 await shot("02-hero-bloodied");
@@ -60,9 +84,9 @@ await shot("04-keypad");
 await page.keyboard.press("Escape");
 await settle(300);
 
-// Coin sheet (hoard + denomination rows + steppers).
-await page.getByLabel("Coins").click();
-await settle(400);
+// Coin sheet (hoard + denomination rows + steppers) — opened via the hub.
+await viaHub(page, "Coins");
+await settle(450);
 await shot("05-coins");
 await page.keyboard.press("Escape");
 await settle(300);
@@ -74,6 +98,7 @@ const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 }, d
 const p2 = await ctx2.newPage();
 await p2.goto(BASE);
 await p2.waitForSelector(".hp-tracker", { state: "visible" });
+await p2.emulateMedia({ reducedMotion: "reduce" });
 await p2.waitForTimeout(800);
 // Character name — set an identity to show the named-character state.
 await p2.locator(".character-name button").first().click();
@@ -81,8 +106,9 @@ await p2.getByLabel("Character name").fill("Thorin Ironfist");
 await p2.keyboard.press("Enter");
 await p2.waitForTimeout(400);
 await p2.screenshot({ path: `${OUT}/07-character-name.png` });
-// Concentration — enable it, then take damage (10 → 6, still alive) to fire the CON-save prompt.
-await p2.getByLabel("Concentration").click();
+// Concentration — enable it via the hub, then take damage (10 → 6, still alive) to
+// fire the CON-save prompt.
+await viaHub(p2, "Concentration");
 await p2.waitForTimeout(300);
 await p2.getByLabel("Edit current HP").click();
 const cdlg = p2.getByRole("dialog");
