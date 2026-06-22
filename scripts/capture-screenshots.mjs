@@ -2,13 +2,16 @@
 // mobile viewport via Playwright and captures the core surfaces. Each run starts
 // from a fresh browser profile, so the first-run seed (10/10 HP) is deterministic.
 //
-//   pnpm build && pnpm preview --port 4173 &
-//   node scripts/capture-screenshots.mjs        # → docs/screenshots/*.png
+//   pnpm build                       # build dist/ in the foreground first
+//   pnpm preview --port 4173 &       # background ONLY the preview server
+//   node scripts/capture-screenshots.mjs   # → docs/screenshots/*.png + .gif
 //
 // WebGL (the liquid orb) runs via SwiftShader in headless Chromium; if it can't,
 // the app's static fallback fill renders instead — either way the orb shows HP.
 import { chromium } from "@playwright/test";
-import { mkdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const BASE = process.env.SHOT_URL ?? "http://localhost:4173";
 const OUT = "docs/screenshots";
@@ -92,8 +95,9 @@ await ctx2.close();
 
 // Animated capture: a fresh context that records video while we drive a quick
 // damage→heal so the liquid slosh + keypad show in motion, then ffmpeg → GIF.
-const vdir = `${OUT}/.video`;
-mkdirSync(vdir, { recursive: true });
+// Record into a real OS temp dir, never under docs/ — a crash can't leave an
+// untracked .webm in the repo tree.
+const vdir = mkdtempSync(join(tmpdir(), "hoard-shots-"));
 const vctx = await browser.newContext({
   viewport: { width: 390, height: 844 },
   deviceScaleFactor: 1,
@@ -124,20 +128,27 @@ const videoPath = await video.path();
 
 // webm → optimized GIF (palette for quality, fps=9, ~264px wide → ~1.1MB). execFile
 // (no shell) — args are passed directly, so paths can't be interpreted as shell tokens.
+const gifPath = `${OUT}/06-keypad-slosh.gif`;
+// Remove any prior GIF first, so a failed/missing-ffmpeg run leaves NO gif (an
+// obvious gap) rather than a silently-stale animation alongside fresh PNGs.
+rmSync(gifPath, { force: true });
 const { execFileSync } = await import("node:child_process");
+let gifOk = false;
 try {
   execFileSync(
     "ffmpeg",
     [
       "-y", "-ss", "1.3", "-i", videoPath, // skip the black pre-paint lead-in
       "-vf", "fps=9,scale=264:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer:bayer_scale=3",
-      `${OUT}/06-keypad-slosh.gif`,
+      gifPath,
     ],
     { stdio: "ignore" },
   );
+  gifOk = existsSync(gifPath);
   console.log("gif → 06-keypad-slosh.gif");
 } catch (e) {
-  console.warn("ffmpeg GIF step failed (static PNGs still captured):", e.message);
+  console.warn("ffmpeg GIF step failed — no GIF written (PNGs still captured):", e.message);
 }
 rmSync(vdir, { recursive: true, force: true }); // drop the temp .webm working dir
 console.log(`captured → ${OUT}/`);
+if (!gifOk) process.exitCode = 1; // non-zero so a regenerate can't silently skip the GIF
