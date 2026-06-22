@@ -120,8 +120,13 @@ treasure instead of a yellow rectangle.
 - **Accessibility:** honor `prefers-reduced-motion` (drop slosh/choreography, keep instant state).
 
 ## Controls — the button system
-One small set of primitives in `src/ui/controls/` owns every interactive control; no
-bespoke per-surface buttons. Full spec + migration map: [`docs/design/button-system.md`](docs/design/button-system.md).
+One small set of primitives in `src/ui/controls/` is the **standard** for the app's
+controls — buttons, icon buttons, steppers, chips, segments, keypad keys. **New UI must
+use them**, not a bespoke per-surface button. Full spec + migration map: [`docs/design/button-system.md`](docs/design/button-system.md).
+Migration is substantially complete (chrome, rest, dice tray, keypad, coin sheet,
+overlays, prompts, undo). A few **specialised controls remain** on bespoke styling and
+should be migrated/aligned next: death-save pips + roll (`DeathSaves`), the coin
+denomination switcher tabs, and the distill trigger (`CoinSheet`) — tracked under #89.
 - **Primitives:** `Button` (variants `primary` gold · `ghost` hairline · `heal` emerald · `danger` ruby; sizes `lg`/`md`/`sm`), `IconButton` (`token` gold medallion · `ghost`, with `pressed` for toggles), `Stepper` (`− value +`, with an optional interactive middle), `Chip` (selectable/badge/removable), `Segment` (co-equal grouped choice), `Key` (numeric-pad key).
 - **Colour language:** gold = info/primary action · emerald = heals you · ruby = danger/destructive · sapphire = temp/ward (reserved, e.g. the Temp keypad action).
 - **Press states ("up → down"):** a press reads as the control pushed *into* the metal — a recessed inner shadow + slight darken + a small scale, distinct from rest (raised) and from the `aria-pressed` toggle (a persistent gold-on, or muted purple for concentration). `prefers-reduced-motion` keeps the tonal/depth change but drops the scale. Preview: [`docs/design/button-states.html`](docs/design/button-states.html).
