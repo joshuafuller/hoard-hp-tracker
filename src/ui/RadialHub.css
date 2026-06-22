@@ -1,0 +1,110 @@
+/* Radial action hub (#74) — one gold sigil that fans its secondary actions out on
+   an arc. The hub lives top-right (replacing the chrome row), so the fan opens DOWN
+   and to the LEFT, into the screen. Geometry is per-action; motion is a springy,
+   staggered reveal. Honours prefers-reduced-motion (no sweep, no scale). */
+
+.radial-hub {
+  position: relative;
+  display: inline-flex;
+}
+
+/* The sigil itself reuses the gold token IconButton; a faint resting pulse hints it
+   expands (first-use telegraph layered in JS later). Rotates a touch when open. */
+.radial-hub__sigil {
+  position: relative;
+  z-index: 2;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.radial-hub[data-open] .radial-hub__sigil {
+  transform: rotate(135deg);
+}
+.radial-hub__glyph {
+  transition: transform 0.25s ease;
+}
+
+/* The fan is anchored at the sigil's centre; each action is absolutely placed and
+   then transformed out to its arc position. */
+.radial-hub__fan {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  z-index: 1;
+}
+
+.radial-hub__action {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  font: 600 0.82rem/1 "DM Sans", system-ui, sans-serif;
+  letter-spacing: 0.01em;
+  color: var(--ink-100, #f4ecd8);
+  background: color-mix(in oklab, var(--obsidian-900, #14110a) 86%, transparent);
+  border: 1.5px solid color-mix(in oklab, var(--coin-gold, #d9b85c) 45%, transparent);
+  -webkit-backdrop-filter: blur(7px);
+  backdrop-filter: blur(7px);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  /* Collapsed at the hub centre until open. */
+  transform: translate(-50%, -50%) scale(0.5);
+  opacity: 0;
+  transition:
+    transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.2s ease;
+}
+.radial-hub__action:hover,
+.radial-hub__action:focus-visible {
+  border-color: var(--coin-gold, #d9b85c);
+  background: color-mix(in oklab, var(--obsidian-900, #14110a) 78%, transparent);
+}
+
+/* Open: fan the four actions out along a quarter-arc (left → down), centred so each
+   chip's centre sits on the arc. Staggered so they spring out in sequence. */
+.radial-hub[data-open] .radial-hub__action {
+  opacity: 1;
+}
+/* The hub sits at the far top-right, so every chip opens fully to the LEFT of the
+   sigil (right edge anchored near the sigil centre via translateX(-100%)) and steps
+   down, arcing gently leftward — never clipping the screen edge. */
+.radial-hub[data-open] .radial-hub__action[data-action="coins"] {
+  transform: translate(calc(-100% - 34px), -8px) scale(1);
+  transition-delay: 0.02s;
+}
+.radial-hub[data-open] .radial-hub__action[data-action="dice"] {
+  transform: translate(calc(-100% - 22px), 40px) scale(1);
+  transition-delay: 0.06s;
+}
+.radial-hub[data-open] .radial-hub__action[data-action="rests"] {
+  transform: translate(calc(-100% - 8px), 88px) scale(1);
+  transition-delay: 0.1s;
+}
+.radial-hub[data-open] .radial-hub__action[data-action="concentration"] {
+  transform: translate(calc(-100% - 2px), 136px) scale(1);
+  transition-delay: 0.14s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radial-hub__sigil,
+  .radial-hub__glyph,
+  .radial-hub__action {
+    transition: opacity 0.12s ease;
+  }
+  .radial-hub[data-open] .radial-hub__sigil {
+    transform: none;
+  }
+  /* No sweep: the actions simply appear stacked straight down from the sigil. */
+  .radial-hub[data-open] .radial-hub__action {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  .radial-hub[data-open] .radial-hub__action[data-action="coins"] { top: 52px; }
+  .radial-hub[data-open] .radial-hub__action[data-action="dice"] { top: 100px; }
+  .radial-hub[data-open] .radial-hub__action[data-action="rests"] { top: 148px; }
+  .radial-hub[data-open] .radial-hub__action[data-action="concentration"] { top: 196px; }
+}
