@@ -65,6 +65,19 @@
   width: 44px;
   height: 44px;
 }
+/* Source-repo link (#52): an unobtrusive ghost icon at the end of the chrome row.
+   It's a utility link, not a control, so it rests dimmer and lifts on hover/focus. */
+.repo-link {
+  text-decoration: none;
+  opacity: 0.5;
+}
+.repo-link:hover,
+.repo-link:focus-visible {
+  opacity: 1;
+}
+.repo-link__icon {
+  display: block;
+}
 
 /* The stat card: a charcoal rounded panel framing the name + orb + panel
    (the controls live below it). Flexes to fill the middle; the orb stage inside

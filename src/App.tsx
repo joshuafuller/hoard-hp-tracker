@@ -19,6 +19,7 @@ import { HpKeypad } from "./ui/HpKeypad";
 import { HpValueEditor } from "./ui/HpValueEditor";
 import { LiquidVessel } from "./ui/LiquidVessel";
 import { RestControls } from "./ui/RestControls";
+import { RepoLink } from "./ui/RepoLink";
 import { SoundToggle } from "./ui/SoundToggle";
 import { UndoPill } from "./ui/UndoPill";
 import { CoinButton } from "./ui/CoinButton";
@@ -111,6 +112,7 @@ export function App() {
           concentrating={hp.concentrating}
           onToggle={() => hp.setConcentrating(!hp.concentrating)}
         />
+        <RepoLink />
       </div>
       <div className="hp-tracker__card">
       <CharacterName name={hp.name} onSetName={hp.setName} />
