@@ -16,6 +16,7 @@ vi.mock("./sound/sfx", () => ({
 describe("App (integration)", () => {
   beforeEach(async () => {
     await Dexie.delete(HP_DB_NAME);
+    vi.mocked(playSfx).mockClear(); // isolate per-test playSfx assertions (Copilot #158)
   });
 
   // The ± steppers were removed in favour of orb-drag; damage/heal now go

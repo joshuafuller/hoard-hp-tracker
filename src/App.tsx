@@ -89,24 +89,6 @@ export function App() {
     }
   }, [hp.hydrated, hp.status]);
 
-  // Concentration cue, driven by the ACTUAL state — same baseline pattern as the
-  // status sounds. A persisted `concentrating: true` hydrating in fires no cue
-  // (baseline), and a tap that's rejected (useHp no-ops setConcentrating(true) while
-  // downed) leaves the value unchanged, so it stays silent (#90).
-  const prevConcentrating = useRef(hp.concentrating);
-  const concentrationBaselined = useRef(false);
-  useEffect(() => {
-    if (!hp.hydrated) return;
-    if (!concentrationBaselined.current) {
-      prevConcentrating.current = hp.concentrating;
-      concentrationBaselined.current = true;
-      return;
-    }
-    if (hp.concentrating !== prevConcentrating.current) {
-      playSfx(hp.concentrating ? "toggleOn" : "toggleOff");
-      prevConcentrating.current = hp.concentrating;
-    }
-  }, [hp.hydrated, hp.concentrating]);
 
   const undoLabel = (lc: NonNullable<HpLastChange>) =>
     lc.kind === "damage" ? `Took ${lc.amount}`
@@ -136,7 +118,14 @@ export function App() {
           onDice={() => openDice(null)}
           onAbout={() => setAboutOpen(true)}
           concentrating={hp.concentrating}
-          onToggleConcentration={() => hp.setConcentrating(!hp.concentrating)}
+          onToggleConcentration={() => {
+            const willConcentrate = !hp.concentrating;
+            // Cue from THIS gesture (not a later effect) so the first sound satisfies
+            // browser autoplay (Codex #158). A downed enable is a no-op in useHp
+            // (current ≤ 0) — skip the cue so a rejected toggle stays silent.
+            if (!(willConcentrate && dying)) playSfx(willConcentrate ? "toggleOn" : "toggleOff");
+            hp.setConcentrating(!hp.concentrating);
+          }}
           soundEnabled={soundEnabled}
           onToggleSound={onToggleSound}
         />
