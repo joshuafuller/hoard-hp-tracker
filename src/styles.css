@@ -1266,34 +1266,24 @@ body {
    STRETCH to the full sheet width, or their 1fr columns collapse to content
    and the keys render tiny (≈39px) and fiddly to tap. */
 .keypad { width: min(100%, 23rem); gap: 0.5rem; display: flex; flex-direction: column; align-items: stretch; }
-.keypad__key, .keypad__apply, .keypad__minor { width: 100%; }
 .keypad__amount {
   text-align: center; font-size: clamp(2.4rem, 12vw, 3.2rem); font-weight: 800;
   font-variant-numeric: tabular-nums; color: var(--ink-100); line-height: 1;
 }
 .keypad__context { text-align: center; font-size: 0.8rem; color: var(--hp-temp); }
 .keypad__pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-top: 0.25rem; }
-.keypad__key {
-  appearance: none; border: 1px solid var(--obsidian-600); background: var(--obsidian-700);
-  color: var(--ink-100); font-size: 1.5rem; font-weight: 600; border-radius: 14px;
-  min-height: clamp(52px, 8svh, 66px); cursor: pointer; -webkit-tap-highlight-color: transparent;
-}
-.keypad__key:active { transform: scale(0.94); }
-.keypad__key--muted { color: var(--ink-300); font-size: 1.1rem; }
+/* Keys are Key primitives — size up for a comfortable numpad tap target (look from .ctl-key). */
+.keypad__pad .ctl-key { min-height: clamp(52px, 8svh, 66px); font-size: 1.5rem; border-radius: 14px; }
 .keypad__actions, .keypad__secondary { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-.keypad__apply {
-  appearance: none; border: none; border-radius: 14px; font-weight: 800; font-size: 1.05rem;
-  min-height: clamp(46px, 7svh, 58px); cursor: pointer; color: #fff;
+/* Actions are Button primitives (variant by tone) — fill the cell at the action height. */
+.keypad__actions .ctl-btn, .keypad__secondary .ctl-btn {
+  width: 100%; min-height: clamp(46px, 7svh, 58px); border-radius: 14px;
 }
-.keypad__apply[data-kind="damage"] { background: color-mix(in oklab, var(--hp-critical) 75%, black); }
-.keypad__apply[data-kind="heal"] { background: var(--hp-healthy); color: #06281f; }
-.keypad__apply:disabled { opacity: 0.4; }
-.keypad__minor {
-  appearance: none; background: none; border: 1px solid var(--obsidian-600); border-radius: 12px;
-  color: var(--ink-200); font-weight: 700; min-height: 46px; font-size: 0.95rem; cursor: pointer;
+/* Keep Temp's sapphire identity on the ghost minor action. */
+.ctl-btn.keypad__minor[data-kind="temp"] {
+  color: var(--hp-temp);
+  border-color: color-mix(in oklab, var(--hp-temp) 30%, var(--obsidian-600));
 }
-.keypad__minor[data-kind="temp"] { color: var(--hp-temp); border-color: color-mix(in oklab, var(--hp-temp) 30%, var(--obsidian-600)); }
-.keypad__minor:disabled { opacity: 0.4; }
 
 /* ── Character name ─────────────────────────────────────────────────────── */
 /* A single short line above the orb stage. Blank shows a faint interactive
