@@ -218,6 +218,47 @@ describe("DiceTray", () => {
     }
   });
 
+  it("does NOT fall back while a long explosion chain keeps settling (timer re-arms per onProgress) — #149", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      let onProgress: (() => void) | undefined;
+      let resolveRoll: ((rec: unknown) => void) | undefined;
+      const tray = {
+        // Capture the onProgress hook; never settle on our own — we drive it by hand.
+        roll: vi.fn((_notation: string, op?: () => void) => {
+          onProgress = op;
+          return new Promise((res) => { resolveRoll = res; });
+        }),
+        clear: vi.fn(),
+      };
+      createDiceTray.mockResolvedValueOnce(tray);
+      render(<DiceTray open onClose={vi.fn()} onApplyHeal={vi.fn()} db={db} reducedMotion={false} />);
+      await act(async () => { await Promise.resolve(); });
+      fireEvent.click(screen.getByRole("button", { name: "Add d20" }));
+      fireEvent.click(screen.getByRole("button", { name: /^throw/i }));
+      expect(tray.roll).toHaveBeenCalled();
+
+      // A long chain: a settle every 4s (under the 6s window) for 16s total. Each
+      // onProgress re-arms the window, so the idle gap never reaches 6s.
+      for (let i = 0; i < 4; i++) {
+        await act(async () => { await vi.advanceTimersByTimeAsync(4000); });
+        act(() => { onProgress?.(); });
+      }
+      expect(rollHeadless).not.toHaveBeenCalled(); // 16s elapsed, but never 6s idle
+      expect(tray.clear).not.toHaveBeenCalled();
+
+      // The chain finally settles with the real engine record — no fallback used.
+      await act(async () => {
+        resolveRoll?.({ notation: "1d20", total: 18, result: [18], dice: [{ sides: 20, value: 18, dropped: false }] });
+        await Promise.resolve();
+      });
+      expect(rollHeadless).not.toHaveBeenCalled();
+      expect(document.querySelector(".dice-result__total")?.textContent).toBe("18");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   describe("contextual rolls (shared tray — death save / Hit Die)", () => {
     it("death-save intent throws 1d20, applies via onDeathSave, records death-save context, and hides the builder", async () => {
       const onDeathSave = vi.fn();

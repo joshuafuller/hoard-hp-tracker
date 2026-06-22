@@ -163,8 +163,14 @@ export function bindTray(box: DiceBoxLike): DiceTray {
     if (!cur) return; // idle / abandoned throw — drop the late settle
     // A settle landed for the active throw — real progress, even if it's only the
     // first wave of an exploding chain. Signal it BEFORE deciding reroll-vs-final so
-    // the caller's safety timer resets per settle, not per throw (#149).
-    cur.onProgress?.();
+    // the caller's safety timer resets per settle, not per throw (#149). Isolated in
+    // its own try so a faulty progress handler can't escape and wedge the loop with
+    // `active` uncleared (Copilot #151).
+    try {
+      cur.onProgress?.();
+    } catch (err) {
+      console.warn("[hoard] dice onProgress handler threw; ignoring", err);
+    }
     try {
       // Resolve rerolls (explode/reroll/penetrate) first, then record the final.
       const rerolls = cur.parser.handleRerolls(results);
