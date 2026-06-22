@@ -100,11 +100,17 @@ test.describe("dice tray — roll → result → apply (reduced-motion / headles
     // Closing must NOT apply the roll to HP (only Apply-as-heal does).
     await page.getByLabel("Close dice").click();
     await expect(page.locator(".dice-tray")).toHaveAttribute("data-open", "false");
-    expect(await readHp(page)).toBe(3);
 
-    // Reopening starts clean — no stale result plate carried over, HP untouched.
+    // Deterministic settle that also catches a LATE phantom heal: `hp.heal()` is an async
+    // Dexie write, so reading HP the instant `data-open` flips could miss an accidental
+    // close-as-apply landing just after (Codex #187). A follow-up damage of 1 reads +
+    // rewrites HP through the store, serialising any pending write — from 3, −1 must be
+    // EXACTLY 2; a phantom heal would have left 3+heal, making this 2+heal ≠ 2.
+    await damage(page, 1);
+    await expect.poll(() => readHp(page)).toBe(2);
+
+    // Reopening starts clean — no stale result plate carried over.
     await openTray(page);
     await expect(page.locator(".dice-result")).toHaveCount(0);
-    expect(await readHp(page)).toBe(3);
   });
 });
