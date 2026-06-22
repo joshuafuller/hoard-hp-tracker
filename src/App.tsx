@@ -85,8 +85,11 @@ export function App() {
     if (hp.status !== prevStatus.current) {
       if (hp.status === "stable") playSfx("stabilize");
       else if (hp.status === "dead") playSfx("death");
-      else if (hp.status === "dying" && prevStatus.current === "alive") playSfx("down"); // dropped to 0
-      else if (hp.status === "alive") playSfx("revive"); // back from 0
+      // Boundary crossings (alive↔0) also fire the damage/heal cue from the same
+      // gesture, so STAGGER the status cue ~140ms to layer after it rather than mask
+      // it (sound-design.md "never double-fire" — Codex #162).
+      else if (hp.status === "dying" && prevStatus.current === "alive") setTimeout(() => playSfx("down"), 140);
+      else if (hp.status === "alive") setTimeout(() => playSfx("revive"), 140);
       prevStatus.current = hp.status;
     }
   }, [hp.hydrated, hp.status]);
