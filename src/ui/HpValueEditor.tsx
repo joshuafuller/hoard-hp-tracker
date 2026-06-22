@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { Button, Stepper } from "./controls";
 
 export interface HpValueEditorProps {
   /** Human label, e.g. "Max HP" — titles the modal and names the controls. */
@@ -113,19 +114,18 @@ export function HpValueEditor({
       >
         <h2 className="hp-editor__title">Set {label}</h2>
 
-        <div className="hp-editor__pill">
-          <button
-            type="button"
-            className="hp-editor__step"
-            data-side="minus"
-            aria-label={`Decrease ${label}`}
-            onClick={() => {
-              haptic();
-              onDecrement();
-            }}
-          >
-            −
-          </button>
+        <Stepper
+          className="hp-editor__pill"
+          label={label}
+          onDec={() => {
+            haptic();
+            onDecrement();
+          }}
+          onInc={() => {
+            haptic();
+            onIncrement();
+          }}
+        >
           <input
             id={id}
             ref={inputRef}
@@ -143,23 +143,11 @@ export function HpValueEditor({
               }
             }}
           />
-          <button
-            type="button"
-            className="hp-editor__step"
-            data-side="plus"
-            aria-label={`Increase ${label}`}
-            onClick={() => {
-              haptic();
-              onIncrement();
-            }}
-          >
-            +
-          </button>
-        </div>
+        </Stepper>
 
-        <button type="button" className="hp-editor__done" onClick={onClose}>
+        <Button variant="primary" className="hp-editor__done" onClick={onClose}>
           Done
-        </button>
+        </Button>
       </div>
     </div>
   );

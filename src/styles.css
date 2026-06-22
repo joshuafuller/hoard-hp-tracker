@@ -908,40 +908,14 @@ body {
 }
 
 /* The pill: rounded track with a typable number flanked by big ± halves. */
-.hp-editor__pill {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  width: 100%;
-  border-radius: var(--radius-pill);
-  background: var(--obsidian-900);
-  border: 1px solid var(--obsidian-600);
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-}
-
-.hp-editor__step {
-  width: 4.25rem;
-  height: 4.25rem;
-  border: none;
-  background: transparent;
-  color: var(--ink-100);
-  font-size: 2.25rem;
-  font-weight: 700;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: background var(--dur-fast) ease, transform var(--dur-fast) var(--ease-spring);
-}
-.hp-editor__step[data-side="minus"] { border-right: 1px solid var(--obsidian-700); }
-.hp-editor__step[data-side="plus"] { border-left: 1px solid var(--obsidian-700); }
-.hp-editor__step:active {
-  transform: scale(0.9);
-  background: color-mix(in oklab, var(--accent) 22%, transparent);
-}
-.hp-editor__step:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
+/* The −/+ pill is the shared Stepper; make it full-width, size the round buttons
+   up for this big editor, and let the typed value fill the middle. */
+.hp-editor__pill { width: 100%; }
+.hp-editor__pill .ctl-stepper__btn { width: 4.25rem; height: 4.25rem; }
 
 .hp-editor__value {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   border: none;
   background: transparent;
   text-align: center;
@@ -964,19 +938,8 @@ body {
   margin: 0;
 }
 
-.hp-editor__done {
-  padding: 0.6rem 2.5rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--obsidian-600);
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--obsidian-900);
-  background: var(--ink-100);
-  cursor: pointer;
-  transition: transform var(--dur-fast) var(--ease-spring);
-}
-.hp-editor__done:active { transform: scale(0.95); }
-.hp-editor__done:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* Done = Button primary — look/press/focus from the primitive. */
+.hp-editor__done { align-self: center; }
 
 /* ════════════════════════════════════════════════════════════════════════
    LIQUID OBSIDIAN — the glass vessel of living HP (beta redesign)
@@ -1533,47 +1496,8 @@ body {
   color: var(--ink-500);
 }
 
-.coin-row__controls {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-/* The ± steppers — round, tactile, ≥40px tap targets. */
-.coin-row__step {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--obsidian-600);
-  background: var(--obsidian-700);
-  color: var(--ink-200);
-  font-size: 1.3rem;
-  font-weight: 700;
-  line-height: 1;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--dur-fast) var(--ease-spring), background var(--dur-fast) ease;
-}
-@media (hover: hover) {
-  .coin-row__step:hover {
-    background: var(--obsidian-600);
-  }
-}
-.coin-row__step:active {
-  transform: scale(0.9);
-}
-.coin-row__step:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-.coin-row__step:disabled {
-  opacity: 0.3;
-  cursor: default;
-}
+/* The −/+ steppers are now the shared Stepper primitive (.ctl-stepper owns the
+   layout + round buttons). Only the interactive middle count is bespoke. */
 
 /* The count doubles as the "edit" affordance — tap to open the keypad. */
 .coin-row__count {
