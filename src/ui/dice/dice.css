@@ -31,38 +31,33 @@
   background: rgba(8, 7, 5, 0.64);
   border: 0;
 }
-.dice-tray__log {
-  position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 0.9rem);
-  z-index: 3;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid var(--obsidian-600);
-  background: rgba(20, 17, 11, 0.8);
-  color: var(--ink-300);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-/* Positioning only — the round ghost look now comes from IconButton (.ctl-icon-btn). */
-.dice-tray__close {
+/* Close + Roll-log grouped top-LEFT (the top-right corner is the radial-hub sigil's
+   spot — #153). A flex row auto-spaces them; no hard-coded offset. */
+.dice-tray__topbar {
   position: absolute;
   top: calc(env(safe-area-inset-top, 0px) + 0.9rem);
   left: calc(env(safe-area-inset-left, 0px) + 0.9rem);
   z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
-/* SVG icons are centred by geometry (square viewBox) — never use text glyphs. */
-.dice-glyph { display: block; }
-/* Grouped with the close on the LEFT — the top-right corner is the app's radial-hub
-   sigil's spot, so a Log button there read as the sigil "becoming" the Log on open
-   (#153). Sit the Log just past the close's right edge: the close is an IconButton
-   (var(--icon-btn-sm) = 36px) at the same 0.9rem inset, plus a 0.5rem gap. */
 .dice-tray__log {
-  left: calc(env(safe-area-inset-left, 0px) + 0.9rem + var(--icon-btn-sm, 36px) + 0.5rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 7px 13px;
   border-radius: var(--radius-pill);
+  border: 1px solid var(--obsidian-600);
+  background: rgba(20, 17, 11, 0.8);
+  color: var(--ink-300);
   font-size: 0.78rem;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
+/* The round ghost look comes from IconButton (.ctl-icon-btn). */
+/* SVG icons are centred by geometry (square viewBox) — never use text glyphs. */
+.dice-glyph { display: block; }
 
 .dice-tray__stage {
   position: relative;

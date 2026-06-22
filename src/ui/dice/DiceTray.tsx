@@ -321,13 +321,18 @@ export function DiceTray({
           reset the contextual outcome and let a second throw double-apply (a death
           save / Hit Die) — use Done / ✕ to leave instead. */}
       <div className="dice-tray__scrim" onClick={() => { if (!intent && !rolling) clearDice(); }} aria-hidden="true" />
-      <IconButton variant="ghost" className="dice-tray__close" aria-label="Close dice" onClick={handleClose}>
-        <Glyph name="close" />
-      </IconButton>
-      <button type="button" className="dice-tray__log" aria-label="Roll log" onClick={() => setShowLog((v) => !v)}>
-        <Glyph name="log" />
-        <span>log</span>
-      </button>
+      {/* Close + Roll-log grouped top-LEFT (the top-right corner is the radial hub
+          sigil's spot — #153). A flex row auto-spaces them, so the gap tracks the
+          button size with no hard-coded offset. */}
+      <div className="dice-tray__topbar">
+        <IconButton variant="ghost" className="dice-tray__close" aria-label="Close dice" onClick={handleClose}>
+          <Glyph name="close" />
+        </IconButton>
+        <button type="button" className="dice-tray__log" aria-label="Roll log" onClick={() => setShowLog((v) => !v)}>
+          <Glyph name="log" />
+          <span>log</span>
+        </button>
+      </div>
 
       {/* The dice "field" is the full-WIDTH area ABOVE the dock — walls at the
           screen sides, floor at the dock's top edge — so dice land in view and
