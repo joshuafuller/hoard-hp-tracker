@@ -180,17 +180,30 @@ export function DiceTray({
         if (reduced || !engineRef.current) {
           rec = rollHeadless(expr);
         } else {
+          const engine = engineRef.current;
           // Safety: if the physics never settles (dice jam / engine hiccup), don't
           // hang on "Throwing" forever — fall back to a headless result after a
           // few seconds so the player always gets a number and the button resets.
           // Clear the timer once the engine wins the race so no stray headless roll
           // fires after a normal throw.
+          const rollPromise = engine.roll(expr);
+          // The adapter rejects this throw if a later one (or the timeout below)
+          // supersedes it; swallow that so it never surfaces as an unhandled
+          // rejection — the result we use comes from the race, and a late settle is
+          // already guarded inside the engine.
+          rollPromise.catch(() => {});
           let timer: ReturnType<typeof setTimeout> | undefined;
           const timeout = new Promise<RollRecord>((res) => {
-            timer = setTimeout(() => res(rollHeadless(expr)), 6000);
+            timer = setTimeout(() => {
+              // Sweep the stuck throw so its eventual late settle can't resolve a
+              // NEW throw with stale dice (dice-box has one result slot), then fall
+              // back to a headless number so the player isn't left empty-handed.
+              engine.clear();
+              res(rollHeadless(expr));
+            }, 6000);
           });
           try {
-            rec = await Promise.race([engineRef.current.roll(expr), timeout]);
+            rec = await Promise.race([rollPromise, timeout]);
           } finally {
             if (timer !== undefined) clearTimeout(timer);
           }
