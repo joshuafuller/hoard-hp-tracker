@@ -101,17 +101,18 @@
   font: 800 0.84rem/1 "DM Sans", system-ui, sans-serif;
   letter-spacing: 0.01em;
   color: var(--ink-100, #f4ecd8);
+  /* OPAQUE — the scrim already supplies the floating-depth blur, so a per-chip
+     backdrop-filter only frosts + washes the chip when it sits over bright content
+     (the gold orb). A solid fill reads crisp over anything behind it. */
   background:
-    linear-gradient(180deg, rgba(255, 250, 235, 0.05), rgba(0, 0, 0, 0.08)),
-    color-mix(in oklab, var(--obsidian-900, #14110a) 82%, transparent);
-  border: 1px solid color-mix(in oklab, var(--coin-gold, #d9b85c) 28%, var(--obsidian-600, #1f1a11));
-  -webkit-backdrop-filter: blur(8px) saturate(1.1);
-  backdrop-filter: blur(8px) saturate(1.1);
+    linear-gradient(180deg, rgba(255, 250, 235, 0.05), rgba(0, 0, 0, 0.12)),
+    linear-gradient(180deg, #211b12, #15110b);
+  border: 1px solid color-mix(in oklab, var(--coin-gold, #d9b85c) 30%, var(--obsidian-600, #1f1a11));
   /* Layered shadow: tight ambient + soft key + an inner top sheen = real depth. */
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.45),
-    0 10px 28px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 247, 224, 0.1);
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 10px 28px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 247, 224, 0.08);
   cursor: pointer;
   /* Collapsed at the sigil until open. */
   transform: translate(-50%, -50%) scale(0.4);
@@ -163,11 +164,15 @@
    ink — so "on" is the gold the rest of the app already uses, not a bespoke colour. */
 .radial-hub__action[aria-pressed="true"] {
   color: #2a1c06;
-  background: var(--ctl-gold-body);
-  border-color: rgba(255, 244, 206, 0.55);
+  /* The Button primitive's gold body, written out — its --ctl-gold-body custom prop
+     is scoped to .ctl-btn and isn't visible here, so a bare var() resolved to
+     transparent and the orb showed through (the "washed" look). */
+  background: radial-gradient(62% 56% at 38% 30%, #fff1c6 0%, #f4c66a 28%, #d49a3f 62%, #9c6a23 100%);
+  border-color: rgba(120, 84, 24, 0.7);
   box-shadow:
-    inset 0 0 0 1.5px rgba(255, 244, 206, 0.5),
-    0 10px 28px rgba(0, 0, 0, 0.5);
+    inset 0 0 0 1.5px rgba(255, 247, 224, 0.5),
+    0 0 0 1px rgba(0, 0, 0, 0.25),
+    0 10px 28px rgba(0, 0, 0, 0.55);
 }
 .radial-hub__action[aria-pressed="true"] .radial-hub__action-icon {
   color: #1c1606;
