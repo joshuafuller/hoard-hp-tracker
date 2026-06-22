@@ -88,12 +88,13 @@ export const RECIPES: Record<SfxName, Voice[]> = {
   toggleOff: [{ type: "triangle", freq: 587.33, endFreq: 523.25, gain: 0.07, duration: 0.06 }],
   // Undo = the neutral tap tone played DESCENDING (A4→E4) — a "rewind" feel.
   undo: [{ type: "triangle", freq: 440, endFreq: 329.63, gain: 0.09, duration: 0.12 }],
-  // Coin cues are bandpass-noise tick clusters (a metallic clink), not oscillator
-  // voices — playSfx routes these names to playCoinTicks. Empty recipes keep the
-  // Record total + let the name resolve.
+  // Coin add/spend are bandpass-noise tick clusters (a metallic clink) — empty
+  // recipes; playSfx routes them to playCoinTicks. coinDistill's tumbling ticks come
+  // from playCoinCascade, but its settled E6 RING lives here as an oscillator voice
+  // so the loudness guard covers it too (Copilot #159).
   coinAdd: [],
   coinSpend: [],
-  coinDistill: [],
+  coinDistill: [{ type: "sine", freq: 1318.51, gain: 0.12, duration: 0.24, delay: 0.33 }],
 };
 
 /** The lazily-created, shared AudioContext (null until the first real play). */
@@ -227,8 +228,8 @@ function playCoinCascade(context: AudioContext): void {
     const freq = 3700 - p * 1500 + (Math.random() * 200 - 100); // descending, jittered
     playTick(context, now + p * 0.3, freq, COIN_TICK_GAIN * (1 - p * 0.35), 0.05);
   }
-  // Settled — one warm gold ring (E6), a touch under the ceiling.
-  playVoice(context, { type: "sine", freq: 1318.51, gain: 0.12, duration: 0.24, delay: 0.33 });
+  // The settled E6 ring is a RECIPES.coinDistill voice, played by the playSfx routing
+  // (so the loudness guard covers it) — not here.
 }
 
 /**
@@ -251,7 +252,8 @@ export function playSfx(name: SfxName): void {
       return;
     }
     if (name === "coinDistill") {
-      playCoinCascade(context);
+      playCoinCascade(context); // the tumbling ticks
+      for (const voice of recipe) playVoice(context, voice); // the settled ring (guarded)
       return;
     }
     for (const voice of recipe) playVoice(context, voice);
