@@ -107,7 +107,15 @@ export function CoinSheet({
   // The confirmation is reached from the console's distill action; cancelling or
   // committing returns to the console (the keypad stays open underneath).
   if (confirming) {
-    return <DistillConfirm coins={coins} onConfirm={onDistill} onClose={() => setConfirming(false)} />;
+    return (
+      <DistillConfirm
+        coins={coins}
+        // Distill is value-preserving (totalCp unchanged), so the purse-value watcher
+        // above won't fire — cue the cascade from this confirm gesture instead (#90).
+        onConfirm={() => { playSfx("coinDistill"); onDistill(); }}
+        onClose={() => setConfirming(false)}
+      />
+    );
   }
 
   if (editing) {

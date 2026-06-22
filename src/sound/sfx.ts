@@ -30,6 +30,7 @@ export const SFX_NAMES = [
   "undo",
   "coinAdd",
   "coinSpend",
+  "coinDistill",
 ] as const;
 
 export type SfxName = (typeof SFX_NAMES)[number];
@@ -92,6 +93,7 @@ export const RECIPES: Record<SfxName, Voice[]> = {
   // Record total + let the name resolve.
   coinAdd: [],
   coinSpend: [],
+  coinDistill: [],
 };
 
 /** The lazily-created, shared AudioContext (null until the first real play). */
@@ -212,6 +214,24 @@ function playCoinTicks(context: AudioContext, direction: "add" | "spend"): void 
 }
 
 /**
+ * Coin distill: many coins → fewest coins as a "pour that settles" — a short cascade
+ * of metallic ticks tumbling DOWN in pitch, resolving on one soft gold ring. Reuses
+ * the tick generator + an oscillator ring; all under the gain ceiling.
+ * — sound-design.md §3 (transactional).
+ */
+function playCoinCascade(context: AudioContext): void {
+  const now = context.currentTime;
+  const ticks = 6;
+  for (let i = 0; i < ticks; i++) {
+    const p = i / (ticks - 1); // 0 → 1
+    const freq = 3700 - p * 1500 + (Math.random() * 200 - 100); // descending, jittered
+    playTick(context, now + p * 0.3, freq, COIN_TICK_GAIN * (1 - p * 0.35), 0.05);
+  }
+  // Settled — one warm gold ring (E6), a touch under the ceiling.
+  playVoice(context, { type: "sine", freq: 1318.51, gain: 0.12, duration: 0.24, delay: 0.33 });
+}
+
+/**
  * Play a sound cue by name. No-ops silently when muted, when the name is
  * unknown, or when Web Audio is unavailable.
  */
@@ -228,6 +248,10 @@ export function playSfx(name: SfxName): void {
     }
     if (name === "coinAdd" || name === "coinSpend") {
       playCoinTicks(context, name === "coinAdd" ? "add" : "spend");
+      return;
+    }
+    if (name === "coinDistill") {
+      playCoinCascade(context);
       return;
     }
     for (const voice of recipe) playVoice(context, voice);
