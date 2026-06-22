@@ -20,10 +20,11 @@ export function SoundToggle() {
       aria-label="Sound effects"
       pressed={enabled}
       onClick={() => {
+        const willEnable = !enabled; // `enabled` is the pre-toggle state
         toggle();
-        // Confirm with the toggle-on cue — only audible when sound is now ON
-        // (playSfx self-gates on mute), so muting stays silent by design.
-        playSfx("toggleOn");
+        // Confirm only when ENABLING — muting stays silent by design. (toggle()
+        // updates the mute override synchronously, so the cue now actually sounds.)
+        if (willEnable) playSfx("toggleOn");
       }}
     >
       {/* game-icons speaker glyphs (synced via the design pass). */}

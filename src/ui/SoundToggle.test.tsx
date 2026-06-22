@@ -24,9 +24,13 @@ describe("SoundToggle", () => {
   // Stable accessible name; on/off conveyed via aria-pressed.
   const button = () => screen.getByRole("button", { name: /sound effects/i });
 
-  it("fires the toggle-on cue on tap (silent when muting — playSfx self-gates) (#90)", async () => {
+  it("plays toggle-on only when ENABLING; muting stays silent (#90)", async () => {
     vi.mocked(playSfx).mockClear();
     render(<SoundToggle />);
+    // Default is ON, so the first tap MUTES — no cue should fire.
+    await userEvent.click(button());
+    expect(playSfx).not.toHaveBeenCalled();
+    // Now OFF, so the next tap ENABLES — the toggle-on cue fires.
     await userEvent.click(button());
     expect(playSfx).toHaveBeenCalledWith("toggleOn");
   });
