@@ -28,7 +28,6 @@
 }
 .radial-hub[data-open] .radial-hub__scrim {
   opacity: 1;
-  pointer-events: auto;
 }
 
 /* ── Depth layer 2: gold bloom behind the fan ─────────────────────────────── */

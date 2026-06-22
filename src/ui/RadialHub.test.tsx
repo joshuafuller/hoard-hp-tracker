@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { RadialHub } from "./RadialHub";
@@ -80,6 +80,16 @@ describe("RadialHub", () => {
     render(<RadialHub {...p} />);
     await userEvent.click(screen.getByRole("button", { name: /actions/i }));
     await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("button", { name: /^coins$/i })).not.toBeInTheDocument();
+    expect(p.onCoins).not.toHaveBeenCalled();
+  });
+
+  it("closes on a tap outside the hub (tap-out cancel) without firing an action", async () => {
+    const p = props();
+    render(<RadialHub {...p} />);
+    await userEvent.click(screen.getByRole("button", { name: /actions/i }));
+    expect(screen.getByRole("button", { name: /^coins$/i })).toBeVisible();
+    fireEvent.pointerDown(document.body); // a tap outside the hub
     expect(screen.queryByRole("button", { name: /^coins$/i })).not.toBeInTheDocument();
     expect(p.onCoins).not.toHaveBeenCalled();
   });

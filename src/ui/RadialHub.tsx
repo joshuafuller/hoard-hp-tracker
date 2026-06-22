@@ -86,13 +86,19 @@ export function RadialHub({
       }
     };
     const onDown = (e: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        // A dismiss tap on the dimmed area shouldn't also act on the app underneath
+        // (e.g. open the keypad). Capture-phase + stopPropagation closes cleanly; the
+        // scrim itself is pointer-events:none so it never intercepts the chips (#152).
+        e.stopPropagation();
+        setOpen(false);
+      }
     };
     window.addEventListener("keydown", onKey);
-    window.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointerdown", onDown, true);
     return () => {
       window.removeEventListener("keydown", onKey);
-      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointerdown", onDown, true);
     };
   }, [open]);
 
@@ -114,8 +120,10 @@ export function RadialHub({
 
   return (
     <div className="radial-hub" ref={rootRef} data-open={open || undefined}>
-      {/* Depth layer: dims + blurs the app so the fan reads as floating above it. */}
-      <div className="radial-hub__scrim" aria-hidden="true" onPointerDown={() => setOpen(false)} />
+      {/* Depth layer: dims + blurs the app so the fan reads as floating above it.
+          Purely visual (pointer-events:none) — dismiss is handled by the window
+          listener so it never intercepts the fan's chips. */}
+      <div className="radial-hub__scrim" aria-hidden="true" />
       {/* Soft gold bloom behind the fan. */}
       <div className="radial-hub__glow" aria-hidden="true" />
       <IconButton
