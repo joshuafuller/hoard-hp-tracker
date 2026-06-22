@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { playSfx } from "../sound/sfx";
 import { IconButton } from "./controls";
 
@@ -15,6 +16,18 @@ export interface ConcentrationToggleProps {
  * tint (a muted purple to distinguish it from the HP accent).
  */
 export function ConcentrationToggle({ concentrating, onToggle }: ConcentrationToggleProps) {
+  // Confirm with a cue only when the state ACTUALLY changes — not optimistically on
+  // tap. `useHp` no-ops setConcentrating(true) while downed (current ≤ 0), so a
+  // rejected enable must not play the toggle-on cue (Codex #145). Fires on real
+  // transitions either way (incl. an auto-drop on hitting 0).
+  const prev = useRef(concentrating);
+  useEffect(() => {
+    if (concentrating !== prev.current) {
+      playSfx(concentrating ? "toggleOn" : "toggleOff");
+      prev.current = concentrating;
+    }
+  }, [concentrating]);
+
   return (
     <IconButton
       variant="ghost"
@@ -22,12 +35,7 @@ export function ConcentrationToggle({ concentrating, onToggle }: ConcentrationTo
       data-concentrating={concentrating}
       aria-label="Concentration"
       pressed={concentrating}
-      onClick={() => {
-        // toggle-off when dropping concentration, toggle-on when picking it up
-        // (concentrating is the pre-toggle state).
-        playSfx(concentrating ? "toggleOff" : "toggleOn");
-        onToggle();
-      }}
+      onClick={onToggle}
       title={concentrating ? "Concentrating — tap to drop" : "Not concentrating — tap to enable"}
     >
       {/* Stylised "C" diamond — a simple glyph that reads as "spell focus". */}
