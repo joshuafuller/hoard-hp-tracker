@@ -46,6 +46,29 @@ describe("LiquidVessel orb-drag input", () => {
     expect(onDamage).not.toHaveBeenCalled();
   });
 
+  it("renders the live drag delta ABOVE the readout — a .vessel child, not trapped in the orb's isolation context", () => {
+    const { orb } = setup();
+    // Mid-drag (down → damage): the delta chip appears.
+    fireEvent.pointerDown(orb, { clientY: 0, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(orb, { clientY: 100, pointerId: 1 });
+
+    const delta = document.querySelector(".vessel__drag");
+    expect(delta, "drag delta must render mid-drag").toBeTruthy();
+    expect(delta!.textContent).toBe("−20");
+    // The orb sets `isolation: isolate`, which would trap the delta BEHIND the
+    // readout numerals if it lived inside the orb (the #94 regression). It must be
+    // a direct child of `.vessel` and a later sibling than `.vessel__readout`.
+    const vessel = orb.closest(".vessel")!;
+    expect(delta!.parentElement).toBe(vessel);
+    expect(delta!.closest(".vessel__orb")).toBeNull();
+    const kids = [...vessel.children];
+    expect(kids.indexOf(delta as Element)).toBeGreaterThan(
+      kids.indexOf(vessel.querySelector(".vessel__readout") as Element),
+    );
+
+    fireEvent.pointerUp(orb, { clientY: 100, pointerId: 1 });
+  });
+
   it("a tap (no real drag) does not change HP", () => {
     const { orb, onDamage, onHeal } = setup();
     fireEvent.pointerDown(orb, { clientY: 100, pointerId: 1, button: 0 });
