@@ -12,6 +12,11 @@ export interface ConcentrationToggleProps {
  * stable accessible name ("Concentration") with `aria-pressed` reflecting the
  * on/off state. When active, the button glows with a distinct concentration
  * tint (a muted purple to distinguish it from the HP accent).
+ *
+ * NB: the concentration toggle/break sound cue is intentionally NOT wired here —
+ * it needs App-level hydration baselining (mirroring the status sounds) so a
+ * persisted `concentrating: true` doesn't fire a false confirmation on reopen, and
+ * so a downed-rejected enable stays silent (Codex #145). Tracked under #90.
  */
 export function ConcentrationToggle({ concentrating, onToggle }: ConcentrationToggleProps) {
   return (

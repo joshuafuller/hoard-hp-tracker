@@ -25,6 +25,9 @@ export const SFX_NAMES = [
   "death",
   "shortRest",
   "longRest",
+  "toggleOn",
+  "toggleOff",
+  "undo",
 ] as const;
 
 export type SfxName = (typeof SFX_NAMES)[number];
@@ -76,6 +79,12 @@ export const RECIPES: Record<SfxName, Voice[]> = {
     { type: "sine", freq: 392, gain: 0.14, duration: 0.2 },
     { type: "sine", freq: 587.33, gain: 0.14, duration: 0.3, delay: 0.16 },
   ],
+  // Neutral toggle cues — a soft tick UP (C5→E5) for on, DOWN (D5→C5) for off
+  // (sound-design.md §3). Light + affirmative; never a jingle.
+  toggleOn: [{ type: "triangle", freq: 523.25, endFreq: 659.25, gain: 0.08, duration: 0.06 }],
+  toggleOff: [{ type: "triangle", freq: 587.33, endFreq: 523.25, gain: 0.07, duration: 0.06 }],
+  // Undo = the neutral tap tone played DESCENDING (A4→E4) — a "rewind" feel.
+  undo: [{ type: "triangle", freq: 440, endFreq: 329.63, gain: 0.09, duration: 0.12 }],
 };
 
 /** The lazily-created, shared AudioContext (null until the first real play). */

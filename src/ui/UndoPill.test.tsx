@@ -2,9 +2,21 @@ import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { UndoPill } from "./UndoPill";
+import { playSfx } from "../sound/sfx";
+
+vi.mock("../sound/sfx", () => ({ playSfx: vi.fn() }));
 
 describe("UndoPill", () => {
   afterEach(() => vi.useRealTimers());
+
+  it("plays the undo cue on tap (#90)", async () => {
+    vi.mocked(playSfx).mockClear();
+    const onUndo = vi.fn();
+    render(<UndoPill label="Healed +9" onUndo={onUndo} onDismiss={vi.fn()} />);
+    await userEvent.setup().click(screen.getByRole("button", { name: /undo/i }));
+    expect(playSfx).toHaveBeenCalledWith("undo");
+    expect(onUndo).toHaveBeenCalled();
+  });
 
   it("renders the label and reverts on tap", async () => {
     const user = userEvent.setup();

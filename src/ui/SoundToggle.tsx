@@ -1,4 +1,5 @@
 import { useSoundEnabled } from "../sound/soundSettings";
+import { playSfx } from "../sound/sfx";
 import { IconButton } from "./controls";
 
 /**
@@ -18,7 +19,13 @@ export function SoundToggle() {
       data-enabled={enabled}
       aria-label="Sound effects"
       pressed={enabled}
-      onClick={toggle}
+      onClick={() => {
+        const willEnable = !enabled; // `enabled` is the pre-toggle state
+        toggle();
+        // Confirm only when ENABLING — muting stays silent by design. (toggle()
+        // updates the mute override synchronously, so the cue now actually sounds.)
+        if (willEnable) playSfx("toggleOn");
+      }}
     >
       {/* game-icons speaker glyphs (synced via the design pass). */}
       <svg

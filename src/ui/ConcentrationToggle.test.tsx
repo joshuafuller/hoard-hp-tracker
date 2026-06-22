@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ConcentrationToggle } from "./ConcentrationToggle";
 
 describe("ConcentrationToggle", () => {
+
   it("renders a button with accessible label", () => {
     render(<ConcentrationToggle concentrating={false} onToggle={vi.fn()} />);
     expect(screen.getByRole("button", { name: "Concentration" })).toBeInTheDocument();
