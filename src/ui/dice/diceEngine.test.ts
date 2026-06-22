@@ -152,6 +152,31 @@ describe("rollHeadless", () => {
     );
   });
 
+  // #108 item 1 — reroll (r/ro) on the headless path: the replaced die must be
+  // DROPPED (not summed alongside its replacement). Verified empirically.
+  it("drops the rerolled-away die for 4d6r1 (keeps the replacement)", () => {
+    const f = (v: number) => (v - 1) / 6;
+    // dice [1,3,3,3]; the 1 rerolls to 5.
+    const rec = rollHeadless("4d6r1", [f(1), f(3), f(3), f(3), f(5)]);
+    expect(rec.total).toBe(14); // 5 + 3 + 3 + 3 — the 1 is dropped, NOT summed
+    expect(rec.dice.find((d) => d.value === 1)?.dropped).toBe(true);
+    expect(rec.result).toEqual([5, 3, 3, 3]);
+  });
+
+  it("reroll-once (ro) likewise drops the replaced die", () => {
+    const f = (v: number) => (v - 1) / 6;
+    const rec = rollHeadless("4d6ro1", [f(1), f(3), f(3), f(3), f(5)]);
+    expect(rec.total).toBe(14);
+    expect(rec.dice.filter((d) => d.dropped).map((d) => d.value)).toEqual([1]);
+  });
+
+  it("keep-highest drops the lowest dice (4d6kh3)", () => {
+    const f = (v: number) => (v - 1) / 6;
+    const rec = rollHeadless("4d6kh3", [f(1), f(3), f(5), f(4)]);
+    expect(rec.total).toBe(12); // 3 + 5 + 4, the 1 dropped
+    expect(rec.dice.filter((d) => d.dropped).map((d) => d.value)).toEqual([1]);
+  });
+
   it("property: every die size stays within [1, sides] (guards the round-overshoot bug)", () => {
     fc.assert(
       fc.property(
