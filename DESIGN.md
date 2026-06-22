@@ -119,6 +119,15 @@ treasure instead of a yellow rectangle.
 - **Duration:** micro 50–100ms · short 150–250ms · medium 250–400ms · long 400–700ms.
 - **Accessibility:** honor `prefers-reduced-motion` (drop slosh/choreography, keep instant state).
 
+## Controls — the button system
+One small set of primitives in `src/ui/controls/` owns every interactive control; no
+bespoke per-surface buttons. Full spec + migration map: [`docs/design/button-system.md`](docs/design/button-system.md).
+- **Primitives:** `Button` (variants `primary` gold · `ghost` hairline · `heal` emerald · `danger` ruby; sizes `lg`/`md`/`sm`), `IconButton` (`token` gold medallion · `ghost`, with `pressed` for toggles), `Stepper` (`− value +`, with an optional interactive middle), `Chip` (selectable/badge/removable), `Segment` (co-equal grouped choice), `Key` (numeric-pad key).
+- **Colour language:** gold = info/primary action · emerald = heals you · ruby = danger/destructive · sapphire = temp/ward (reserved, e.g. the Temp keypad action).
+- **Press states ("up → down"):** a press reads as the control pushed *into* the metal — a recessed inner shadow + slight darken + a small scale, distinct from rest (raised) and from the `aria-pressed` toggle (a persistent gold-on, or muted purple for concentration). `prefers-reduced-motion` keeps the tonal/depth change but drops the scale. Preview: [`docs/design/button-states.html`](docs/design/button-states.html).
+- **Focus:** every primitive shows a gold `:focus-visible` ring (inset on the segmented control so `overflow:hidden` can't clip it).
+- **Placement:** one primary action per surface, anchored low; close-X is a `ghost` `IconButton` (top-right of overlays; the dice tray keeps close top-left to leave room for the log toggle top-right). Rest: Long Rest = `primary`, Short Rest = `ghost` (Long is the bigger commit).
+
 ## Anti-slop guardrails
 No purple/violet gradients, no 3-column icon grids, no centered-everything, no uniform bubbly
 radius on everything, no gradient-button-as-default, no generic SaaS hero. Gold is earned, not sprayed.
@@ -131,3 +140,4 @@ radius on everything, no gradient-button-as-default, no generic SaaS hero. Gold 
 | 2026-06-19 | Gold = **sensor-driven brushed/foil shimmer**, not flat | Per user: gold only "works" if it reads as brushed metal that shimmers like a foil/holo trading card when the phone tilts. Drive the specular sweep from the device-orientation sensor (reuse `useGyro`), with a static brushed-gradient fallback when no sensor / reduced-motion. |
 | 2026-06-20 | Dice tray = **Variant B "immersive dock"** | Chosen from a 3-variant shotgun. Dice + giant Fraunces total own the screen (premium game object, glanceable); slim thumb-low dock holds controls. Co-equal Disadvantage·Normal·Advantage segment. Colour language: gold = informational/attack, emerald = heals you, ruby = dropped/failure. Reference: [`docs/design/dice-tray.md`](docs/design/dice-tray.md) + [`docs/design/dice-tray.html`](docs/design/dice-tray.html). |
 | 2026-06-21 | Dice total uses **DM Sans** (`--font-num`), not Fraunces | #114 — large numeric readouts (orb HP, coin total, dice total) share one heavy sans face for a consistent type system; **supersedes** the "giant Fraunces total" wording in the 2026-06-20 row. Fraunces remains for identity/headings only (incl. the dice-history title). |
+| 2026-06-22 | **One button system** (`src/ui/controls/` primitives) | #89 — every control migrated onto a small primitive set with distinct "pushed-in" press states + a gold focus ring. Rest: Long = `primary`, Short = `ghost`. See the **Controls** section above + [`docs/design/button-system.md`](docs/design/button-system.md). |
