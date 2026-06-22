@@ -75,6 +75,7 @@ export function App() {
   // sound. The engine self-gates on mute, so these calls are otherwise unconditional.
   const prevStatus = useRef(hp.status);
   const baselined = useRef(false);
+  const statusCueTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     if (!hp.hydrated) return;
     if (!baselined.current) {
@@ -87,11 +88,14 @@ export function App() {
       else if (hp.status === "dead") playSfx("death");
       // Boundary crossings (alive↔0) also fire the damage/heal cue from the same
       // gesture, so STAGGER the status cue ~140ms to layer after it rather than mask
-      // it (sound-design.md "never double-fire" — Codex #162).
-      else if (hp.status === "dying" && prevStatus.current === "alive") setTimeout(() => playSfx("down"), 140);
-      else if (hp.status === "alive") setTimeout(() => playSfx("revive"), 140);
+      // it (sound-design.md "never double-fire" — Codex #162). Hold the timer id so a
+      // status change WITHIN the window cancels the now-stale cue (cleanup below) —
+      // e.g. a quick heal/undo, or 3 failures → dead, mustn't trail a late "down".
+      else if (hp.status === "dying" && prevStatus.current === "alive") statusCueTimer.current = setTimeout(() => playSfx("down"), 140);
+      else if (hp.status === "alive") statusCueTimer.current = setTimeout(() => playSfx("revive"), 140);
       prevStatus.current = hp.status;
     }
+    return () => clearTimeout(statusCueTimer.current); // cancel a still-pending staggered cue
   }, [hp.hydrated, hp.status]);
 
 
