@@ -54,21 +54,23 @@
 .radial-hub__sigil {
   position: relative;
   z-index: 3;
-  transition:
-    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.3s ease;
+  transition: box-shadow 0.3s ease;
 }
 /* A slow gold breathing at rest telegraphs "this opens" (drops when open / reduced). */
 .radial-hub:not([data-open]) .radial-hub__sigil {
   animation: radial-hub-breathe 3.6s ease-in-out infinite;
 }
 .radial-hub[data-open] .radial-hub__sigil {
-  transform: rotate(135deg);
   box-shadow: 0 0 0 2px color-mix(in oklab, var(--coin-gold, #d9b85c) 55%, transparent),
     0 6px 22px rgba(0, 0, 0, 0.5);
 }
+/* Only the GLYPH rotates (sunburst → ✕) — the medallion + its fixed shine stay put,
+   so the light source doesn't spin with it (user feedback). */
 .radial-hub__glyph {
-  transition: transform 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.radial-hub[data-open] .radial-hub__glyph {
+  transform: rotate(135deg);
 }
 @keyframes radial-hub-breathe {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--coin-gold, #d9b85c) 0%, transparent); }
@@ -94,14 +96,15 @@
   gap: 0.5rem;
   white-space: nowrap;
   padding: 0.5rem 0.95rem 0.5rem 0.6rem;
-  border-radius: 999px;
-  font: 600 0.84rem/1 "DM Sans", system-ui, sans-serif;
+  border-radius: var(--radius-pill, 999px);
+  /* Match the Button primitive: weight 800, pill radius, the same press scale. */
+  font: 800 0.84rem/1 "DM Sans", system-ui, sans-serif;
   letter-spacing: 0.01em;
   color: var(--ink-100, #f4ecd8);
   background:
-    linear-gradient(180deg, rgba(255, 250, 235, 0.06), rgba(0, 0, 0, 0.06)),
-    color-mix(in oklab, var(--obsidian-900, #14110a) 80%, transparent);
-  border: 1.5px solid color-mix(in oklab, var(--coin-gold, #d9b85c) 42%, transparent);
+    linear-gradient(180deg, rgba(255, 250, 235, 0.05), rgba(0, 0, 0, 0.08)),
+    color-mix(in oklab, var(--obsidian-900, #14110a) 82%, transparent);
+  border: 1px solid color-mix(in oklab, var(--coin-gold, #d9b85c) 28%, var(--obsidian-600, #1f1a11));
   -webkit-backdrop-filter: blur(8px) saturate(1.1);
   backdrop-filter: blur(8px) saturate(1.1);
   /* Layered shadow: tight ambient + soft key + an inner top sheen = real depth. */
@@ -150,22 +153,34 @@
 .radial-hub[data-open] .radial-hub__action[data-action="sound"] { --x: calc(-100% - 8px); --y: 124px; transition-delay: 0.18s; }
 .radial-hub[data-open] .radial-hub__action[data-action="about"] { --x: calc(-100% - 2px); --y: 170px; transition-delay: 0.23s; }
 
-/* Toggle chips that are ON read with a gold fill so state is glanceable. */
+/* Press = the same "push into the metal" as the Button primitive (scale 0.96),
+   composed with the chip's open offset. */
+.radial-hub[data-open] .radial-hub__action:active {
+  transform: translate(var(--x), var(--y)) scale(0.96);
+}
+
+/* Toggle chips that are ON read like a PRIMARY button — the same gold body + dark
+   ink — so "on" is the gold the rest of the app already uses, not a bespoke colour. */
 .radial-hub__action[aria-pressed="true"] {
-  border-color: var(--coin-gold, #d9b85c);
-  color: #1c1606;
-  background: linear-gradient(180deg, color-mix(in oklab, var(--coin-gold, #d9b85c) 95%, white 6%),
-    color-mix(in oklab, var(--coin-gold, #d9b85c) 78%, black 8%));
+  color: #2a1c06;
+  background: var(--ctl-gold-body);
+  border-color: rgba(255, 244, 206, 0.55);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 244, 206, 0.5),
+    0 10px 28px rgba(0, 0, 0, 0.5);
 }
 .radial-hub__action[aria-pressed="true"] .radial-hub__action-icon {
   color: #1c1606;
 }
 /* Concentration keeps its DESIGN.md "on" hue — a muted PURPLE, distinct from gold. */
 .radial-hub__action[data-action="concentration"][aria-pressed="true"] {
-  border-color: #a78bfa;
+  border-color: #c4b5fd;
   color: #161031;
   background: linear-gradient(180deg, color-mix(in oklab, #b9a3ff 96%, white 4%),
     color-mix(in oklab, #a78bfa 80%, black 8%));
+  box-shadow:
+    inset 0 0 0 1.5px rgba(233, 226, 255, 0.5),
+    0 10px 28px rgba(0, 0, 0, 0.5);
 }
 .radial-hub__action[data-action="concentration"][aria-pressed="true"] .radial-hub__action-icon {
   color: #161031;

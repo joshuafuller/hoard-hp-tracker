@@ -55,14 +55,24 @@ describe("RadialHub", () => {
     expect(p.onAbout).toHaveBeenCalledTimes(1);
   });
 
-  it("reflects toggle state via aria-pressed and fires the toggle callbacks", async () => {
+  it("reflects toggle state via aria-pressed + label/icon and fires the toggle callbacks", async () => {
     const p = props({ concentrating: true, soundEnabled: false });
     render(<RadialHub {...p} />);
     await userEvent.click(screen.getByRole("button", { name: /actions/i }));
     expect(screen.getByRole("button", { name: /concentration/i })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: /sound/i })).toHaveAttribute("aria-pressed", "false");
-    await userEvent.click(screen.getByRole("button", { name: /sound/i }));
+    // Sound off → the chip reads "Muted" (not just a colour) and is aria-pressed=false.
+    const sound = screen.getByRole("button", { name: /muted/i });
+    expect(sound).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(sound);
     expect(p.onToggleSound).toHaveBeenCalledTimes(1);
+  });
+
+  it("labels the sound toggle by state — 'Sound' when on, 'Muted' when off", async () => {
+    const { rerender } = render(<RadialHub {...props({ soundEnabled: true })} />);
+    await userEvent.click(screen.getByRole("button", { name: /actions/i }));
+    expect(screen.getByRole("button", { name: "Sound" })).toBeVisible();
+    rerender(<RadialHub {...props({ soundEnabled: false })} />);
+    expect(screen.getByRole("button", { name: "Muted" })).toBeVisible();
   });
 
   it("closes on Escape without firing an action (cancel)", async () => {

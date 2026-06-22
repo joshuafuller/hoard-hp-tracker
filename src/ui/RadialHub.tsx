@@ -39,7 +39,10 @@ const ICONS: Record<string, ReactNode> = {
   coins: <Svg><circle cx="9" cy="9" r="5.2" /><path d="M14.4 6.2A5.2 5.2 0 1 1 11 17.4" /></Svg>,
   dice: <Svg><path d="M12 2.5 20 7v10l-8 4.5L4 17V7z" /><path d="M12 2.5V21M4 7l8 4 8-4" /></Svg>,
   concentration: <Svg><path d="M12 2.5 17 12l-5 9.5L7 12z" /><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" /></Svg>,
-  sound: <Svg><path d="M4 9.5v5h3.5L13 19V5L7.5 9.5z" /><path d="M16.5 8.5a5 5 0 0 1 0 7" /></Svg>,
+  // Speaker with sound waves (on) vs a struck-through speaker (muted) — the universal
+  // mute glyph reads state at a glance, not just by colour.
+  soundOn: <Svg><path d="M4 9.5v5h3.5L13 19V5L7.5 9.5z" /><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a9 9 0 0 1 0 12" /></Svg>,
+  soundOff: <Svg><path d="M4 9.5v5h3.5L13 19V5L7.5 9.5z" /><path d="M17 9.5l4 5M21 9.5l-4 5" /></Svg>,
   about: <Svg><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><circle cx="12" cy="7.6" r="0.2" fill="currentColor" stroke="currentColor" /></Svg>,
 };
 
@@ -68,10 +71,19 @@ export function RadialHub({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  // Return focus to the sigil when the fan closes via keyboard/activation so focus
+  // is never stranded on an inert fan button (Copilot #152).
+  const focusSigil = () => {
+    rootRef.current?.querySelector<HTMLButtonElement>(".radial-hub__sigil")?.focus();
+  };
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+        focusSigil();
+      }
     };
     const onDown = (e: PointerEvent) => {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
@@ -88,12 +100,15 @@ export function RadialHub({
     { key: "coins", label: "Coins", icon: ICONS.coins, onSelect: onCoins },
     { key: "dice", label: "Dice", icon: ICONS.dice, onSelect: onDice },
     { key: "concentration", label: "Concentration", icon: ICONS.concentration, onSelect: onToggleConcentration, pressed: concentrating },
-    { key: "sound", label: "Sound", icon: ICONS.sound, onSelect: onToggleSound, pressed: soundEnabled },
+    { key: "sound", label: soundEnabled ? "Sound" : "Muted", icon: soundEnabled ? ICONS.soundOn : ICONS.soundOff, onSelect: onToggleSound, pressed: soundEnabled },
     { key: "about", label: "About", icon: ICONS.about, onSelect: onAbout },
   ];
 
   const select = (fn: () => void) => () => {
     setOpen(false);
+    // Toggles (concentration/sound) keep the user on the hub → restore focus to the
+    // sigil; sheet-openers (coins/dice/about) then move focus into their own dialog.
+    focusSigil();
     fn();
   };
 

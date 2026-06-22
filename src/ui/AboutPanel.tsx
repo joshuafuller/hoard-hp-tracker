@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { IconButton } from "./controls";
 import "./AboutPanel.css";
 
@@ -10,18 +10,27 @@ export interface AboutPanelProps {
   onClose: () => void;
 }
 
+const FEATURES = ["Offline-first", "Installable PWA", "Open source"];
+
 /**
- * A small "About" sheet reached from the radial hub (#74). Holds the source-repo
- * link (open source is part of the pitch — #52) plus room for app identity; keeps
- * the link out of the always-on chrome. The GitHub mark is an inline SVG so it
- * works fully offline. Dismisses on the close button, a backdrop tap, or Escape.
+ * The "About" sheet reached from the radial hub (#74) — a small premium card, not a
+ * plain modal: a gold emblem + wordmark hero over a soft bloom, feature badges, the
+ * source-repo link (#52), and a footer. Layered for depth (backdrop blur, glow,
+ * rimmed obsidian card) and springs in. The GitHub mark is an inline SVG so it works
+ * fully offline. Dismisses on the close button, a backdrop tap, or Escape; focus
+ * moves into the dialog on open.
  */
 export function AboutPanel({ onClose }: AboutPanelProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
+    // Move focus INTO the dialog on open so keyboard/SR users aren't stranded
+    // outside the modal (Copilot #152). Escape / close return control.
+    panelRef.current?.querySelector<HTMLElement>("a, button")?.focus();
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
@@ -32,18 +41,42 @@ export function AboutPanel({ onClose }: AboutPanelProps) {
         role="dialog"
         aria-modal="true"
         aria-label="About"
+        ref={panelRef}
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="about-panel__head">
+        <IconButton variant="ghost" className="about-panel__close" aria-label="Close" onClick={onClose}>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+            strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6 6 18" />
+          </svg>
+        </IconButton>
+
+        <div className="about-panel__hero">
+          <span className="about-panel__bloom" aria-hidden="true" />
+          <svg className="about-panel__emblem" viewBox="0 0 48 48" width="58" height="58" aria-hidden="true">
+            <defs>
+              <linearGradient id="about-emblem-grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#f6e4a8" />
+                <stop offset="0.5" stopColor="#d9b85c" />
+                <stop offset="1" stopColor="#9c7c2f" />
+              </linearGradient>
+            </defs>
+            {/* A faceted gold coin/gem — the Molten Hoard motif. */}
+            <circle cx="24" cy="24" r="20" fill="url(#about-emblem-grad)" stroke="#7a5e22" strokeWidth="1.5" />
+            <path d="M24 9 38 24 24 39 10 24z" fill="none" stroke="#7a5e22" strokeWidth="1.4" opacity="0.65" />
+            <path d="M24 9v30M10 24h28" stroke="#7a5e22" strokeWidth="1" opacity="0.45" />
+            <path d="M15 16c4-3 14-3 18 0" fill="none" stroke="#fff6da" strokeWidth="2" strokeLinecap="round" opacity="0.8" />
+          </svg>
           <h2 className="about-panel__title">Hoard</h2>
-          <IconButton variant="ghost" aria-label="Close" onClick={onClose}>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-              strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-              <path d="M6 6l12 12M18 6 6 18" />
-            </svg>
-          </IconButton>
-        </header>
-        <p className="about-panel__tagline">An offline, at-the-table HP &amp; coins tracker.</p>
+          <p className="about-panel__tagline">An offline, at-the-table HP, coins &amp; dice companion.</p>
+        </div>
+
+        <ul className="about-panel__features">
+          {FEATURES.map((f) => (
+            <li key={f} className="about-panel__feature">{f}</li>
+          ))}
+        </ul>
+
         <a
           className="about-panel__link"
           href={REPO_URL}
@@ -56,6 +89,8 @@ export function AboutPanel({ onClose }: AboutPanelProps) {
           </svg>
           View source on GitHub
         </a>
+
+        <p className="about-panel__footer">AGPL-3.0 · ships no game content · built for the table</p>
       </div>
     </div>
   );
