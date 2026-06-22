@@ -77,7 +77,7 @@ test.describe("mobile layout", () => {
     // Open the tray (now via the radial hub) and build a mixed pool to stress the
     // chip row + dock.
     await page.getByLabel("Actions").click();
-    await page.getByRole("button", { name: "Dice" }).click();
+    await page.getByRole("button", { name: "Dice", exact: true }).click(); // not "Hit Dice"
     await page.getByLabel("Add d20").click();
     await page.getByLabel("Add d6").click();
     await page.getByLabel("Add d6").click();
