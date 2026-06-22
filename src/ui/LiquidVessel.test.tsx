@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LiquidVessel } from "./LiquidVessel";
+import { ORB_DRAG_HINT_KEY } from "./orbDragHint";
 
 /**
  * Orb-as-input: a vertical drag on the orb applies damage (down) / heal (up),
@@ -98,5 +99,42 @@ describe("LiquidVessel orb-drag input", () => {
     fireEvent.pointerUp(orb, { clientY: 100, pointerId: 1 });
     expect(onDamage).not.toHaveBeenCalled();
     expect(onHeal).not.toHaveBeenCalled();
+  });
+});
+
+describe("LiquidVessel drag-hint affordance (#94)", () => {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => localStorage.clear());
+
+  it("telegraphs the drag affordance until the orb is dragged, then recedes", () => {
+    const { orb } = setup();
+    expect(document.querySelector(".vessel__drag-hint")).toBeTruthy();
+    // A committed drag marks the affordance discovered → the hint disappears…
+    fireEvent.pointerDown(orb, { clientY: 0, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(orb, { clientY: 100, pointerId: 1 });
+    fireEvent.pointerUp(orb, { clientY: 100, pointerId: 1 });
+    expect(document.querySelector(".vessel__drag-hint")).toBeNull();
+    // …and persists, so it won't nag next session.
+    expect(localStorage.getItem(ORB_DRAG_HINT_KEY)).toBe("true");
+  });
+
+  it("does not nag once the seen flag is persisted", () => {
+    localStorage.setItem(ORB_DRAG_HINT_KEY, "true");
+    const { container } = render(<LiquidVessel current={27} max={40} temp={0} />);
+    expect(container.querySelector(".vessel__drag-hint")).toBeNull();
+  });
+
+  it("does not show the hint at 0 HP (nothing to drag down from)", () => {
+    const { container } = render(<LiquidVessel current={0} max={40} temp={0} />);
+    expect(container.querySelector(".vessel__drag-hint")).toBeNull();
+  });
+
+  it("renders the hint as decorative + inert (aria-hidden; pointer-events:none lives in CSS)", () => {
+    setup();
+    const hint = document.querySelector(".vessel__drag-hint") as HTMLElement;
+    expect(hint).toBeTruthy();
+    // It's decorative — hidden from a11y; the pointer-events:none that keeps it from
+    // blocking the drag/tap path is enforced in styles.css (not assertable in jsdom).
+    expect(hint.getAttribute("aria-hidden")).toBe("true");
   });
 });
