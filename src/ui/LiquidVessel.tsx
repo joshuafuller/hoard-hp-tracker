@@ -6,6 +6,7 @@ import { LiquidRenderer } from "./liquid/renderer";
 import { useGyro } from "./liquid/useGyro";
 import { useLiquidEngine } from "./liquid/useLiquidEngine";
 import { type DragApply, dragAmount, isTap } from "./liquid/dragInput";
+import { useOrbDragHint } from "./orbDragHint";
 
 /** Liquid Obsidian centerpiece: HP as a real fluid (PBF sim) in a glass orb. */
 
@@ -70,6 +71,9 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
   const [drag, setDrag] = useState<DragApply | null>(null);
   const dragRef = useRef<{ startY: number; orbPx: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
+  // First-run affordance: telegraph that the orb is draggable until the user drags
+  // once, then it recedes for good (#94).
+  const { seen: dragHintSeen, markSeen: markDragSeen } = useOrbDragHint();
 
   function onOrbPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (e.button > 0) return;
@@ -108,6 +112,7 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
         if (kind === "damage") onDamage?.(amount);
         else onHeal?.(amount);
         suppressClick.current = true;
+        markDragSeen(); // a real drag committed — the affordance is discovered
       }
     }
   }
@@ -166,6 +171,19 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
         <div className="vessel__foil" aria-hidden="true" ref={foilRef} />
         <div className="vessel__rim" aria-hidden="true" />
         <div className="vessel__shine" aria-hidden="true" />
+        {/* First-run drag affordance: faint up (heal) / down (damage) chevrons that
+            recede once the user drags. Decorative + inert so it never blocks the drag
+            or the tap-to-keypad path; honours reduced motion (static, no pulse). */}
+        {!dragHintSeen && !drag && current > 0 && (
+          <div className="vessel__drag-hint" aria-hidden="true">
+            <svg className="vessel__drag-chevron" data-dir="up" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 14 12 8 18 14" />
+            </svg>
+            <svg className="vessel__drag-chevron" data-dir="down" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 10 12 16 18 10" />
+            </svg>
+          </div>
+        )}
         {drag && drag.amount > 0 && (
           <div className="vessel__drag" data-kind={drag.kind} aria-hidden="true">
             {drag.kind === "damage" ? "−" : "+"}

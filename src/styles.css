@@ -1161,6 +1161,36 @@ body {
 .vessel__drag[data-kind="damage"] { color: #ffd9d2; text-shadow: 0 2px 18px rgba(216, 69, 59, 0.9); }
 .vessel__drag[data-kind="heal"] { color: #d6ffe7; text-shadow: 0 2px 18px rgba(79, 180, 119, 0.9); }
 
+/* First-run drag affordance (#94): faint up/down chevrons framing the numeral
+   (top + bottom, never over it) that bob toward their direction, telegraphing
+   "drag me up to heal / down to damage." Inert + decorative; recedes once dragged. */
+.vessel__drag-hint {
+  position: absolute;
+  inset: 9% 0;
+  z-index: 3; /* above the fill/foil, below the readout numerals (separate sibling) */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.vessel__drag-chevron {
+  width: 26px;
+  height: 26px;
+  color: var(--ink-100);
+  opacity: 0.32;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+  animation: vessel-hint-bob 2.4s ease-in-out infinite;
+}
+.vessel__drag-chevron[data-dir="down"] { --hint-bob: 3px; animation-delay: 1.2s; }
+@keyframes vessel-hint-bob {
+  0%, 100% { opacity: 0.26; transform: translateY(0); }
+  50% { opacity: 0.62; transform: translateY(var(--hint-bob, -3px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vessel__drag-chevron { animation: none; opacity: 0.42; }
+}
+
 /* Centered readout, legible over liquid or void. */
 .vessel__readout {
   position: absolute;

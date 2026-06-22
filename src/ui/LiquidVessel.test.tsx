@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LiquidVessel } from "./LiquidVessel";
 
 /**
@@ -98,5 +98,40 @@ describe("LiquidVessel orb-drag input", () => {
     fireEvent.pointerUp(orb, { clientY: 100, pointerId: 1 });
     expect(onDamage).not.toHaveBeenCalled();
     expect(onHeal).not.toHaveBeenCalled();
+  });
+});
+
+describe("LiquidVessel drag-hint affordance (#94)", () => {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => localStorage.clear());
+
+  it("telegraphs the drag affordance until the orb is dragged, then recedes", () => {
+    const { orb } = setup();
+    expect(document.querySelector(".vessel__drag-hint")).toBeTruthy();
+    // A committed drag marks the affordance discovered → the hint disappears…
+    fireEvent.pointerDown(orb, { clientY: 0, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(orb, { clientY: 100, pointerId: 1 });
+    fireEvent.pointerUp(orb, { clientY: 100, pointerId: 1 });
+    expect(document.querySelector(".vessel__drag-hint")).toBeNull();
+    // …and persists, so it won't nag next session.
+    expect(localStorage.getItem("hoard-orb-drag-seen")).toBe("true");
+  });
+
+  it("does not nag once the seen flag is persisted", () => {
+    localStorage.setItem("hoard-orb-drag-seen", "true");
+    const { container } = render(<LiquidVessel current={27} max={40} temp={0} />);
+    expect(container.querySelector(".vessel__drag-hint")).toBeNull();
+  });
+
+  it("does not show the hint at 0 HP (nothing to drag down from)", () => {
+    const { container } = render(<LiquidVessel current={0} max={40} temp={0} />);
+    expect(container.querySelector(".vessel__drag-hint")).toBeNull();
+  });
+
+  it("the hint never blocks the drag/tap path (pointer-events: none)", () => {
+    setup();
+    const hint = document.querySelector(".vessel__drag-hint") as HTMLElement;
+    expect(hint).toBeTruthy();
+    expect(hint.getAttribute("aria-hidden")).toBe("true");
   });
 });
