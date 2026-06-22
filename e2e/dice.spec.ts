@@ -26,7 +26,14 @@ test.describe("dice tray — roll → result → apply (reduced-motion / headles
   // layout guard).
   async function openTray(page: import("@playwright/test").Page) {
     await page.getByLabel("Actions").click();
-    await page.getByRole("button", { name: "Dice", exact: true }).dispatchEvent("click");
+    const dice = page.getByRole("button", { name: "Dice", exact: true });
+    // Assert the fan actually OPENED (the chip is visible, not inert/aria-hidden)
+    // before the dispatch workaround — so a regression where the hub fails to open
+    // still fails this test, instead of being masked by dispatchEvent bypassing
+    // actionability (Copilot #187). We only bypass the WebGL hit-test false-negative,
+    // not the visible/open check.
+    await expect(dice).toBeVisible();
+    await dice.dispatchEvent("click");
     await page.getByLabel("Dice notation").waitFor({ state: "visible" });
   }
 
