@@ -86,8 +86,8 @@ evidence we need broader coverage *and* more visibility while coding.
 hub, persistence, offline/PWA, the concentration prompt — all unit-mocked. → Epic A / #161 children.
 
 **Visibility while coding (the point):**
-- `pnpm test` is `vitest run` (single-run). **Add a `test:watch` script** (`vitest`) and keep it open
-  while building, so unit failures surface immediately.
+- `pnpm test` is `vitest run` (single-run). Use **`pnpm test:watch`** (added — runs `vitest` in watch
+  mode) and keep it open while building, so unit failures surface immediately as files change.
 - Add a documented `pnpm e2e:watch` (headed, `--ui`) loop so e2e runs *as you build* the feature, not
   just in CI. Surface failures in the PR, not prod.
 - **#176**: make the playwright check *required* on beta so a red e2e blocks merge.
