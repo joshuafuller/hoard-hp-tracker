@@ -13,7 +13,7 @@
  */
 // @ts-expect-error — the parser ships no types
 import DiceParser from "@3d-dice/dice-parser-interface";
-import { isPlausibleRoll, recordFromPhysical, toRollRecord, physicalRecordApplies, type RollRecord } from "../../domain/dice";
+import { isPlausibleRoll, recordFromPhysical, toRollRecord, physicalRecordApplies, type ParserResult, type RollRecord } from "../../domain/dice";
 
 /** Gold dice tuned to Molten Hoard; tray physics tuned in the spike. */
 const THEME_COLOR = "#e8b45a";
@@ -99,14 +99,113 @@ interface DiceBoxOptions {
   gravity: number;
   offscreen?: boolean;
 }
-interface DiceBoxInstance {
-  init: () => Promise<unknown>;
+/**
+ * The slice of the vendored dice-box that {@link bindTray} drives. `onRollComplete`
+ * is a single mutable callback slot the engine owns — a physics settle is delivered
+ * to whatever handler is installed when it fires, so an abandoned throw's late event
+ * lands on the *current* handler. {@link bindTray} guards against that.
+ */
+export interface DiceBoxLike {
   roll: (parsed: unknown) => void;
   add: (rerolls: unknown, opts?: { newStartPoint?: boolean }) => void;
   clear: () => void;
   onRollComplete: (results: unknown) => void;
 }
+interface DiceBoxInstance extends DiceBoxLike {
+  init: () => Promise<unknown>;
+}
 type DiceBoxCtor = new (selector: string | HTMLElement, options: DiceBoxOptions) => DiceBoxInstance;
+
+/** The vendored parser's surface that the roll loop uses (it ships no types). */
+interface RollParser {
+  parseNotation: (notation: string) => unknown;
+  handleRerolls: (results: unknown) => unknown;
+  parseFinalResults: (results: unknown) => ParserResult;
+}
+
+/**
+ * Bind a {@link DiceTray} to a dice-box instance, owning the roll/reroll → record
+ * loop AND the abandoned-roll race guard (#130, Codex P2).
+ *
+ * dice-box has ONE `onRollComplete` slot, replaced on each throw, and a settle event
+ * is delivered to whichever handler is current — it carries no roll identity. So a
+ * late settle from a throw the user abandoned (closed the tray, or the 6s safety
+ * timeout fired) would otherwise resolve a *newer* throw with stale dice, and the
+ * React-side `rollSeq` guard cannot tell the difference.
+ *
+ * Defence, in layers:
+ *  - The slot is installed ONCE and routes only to the `active` throw. A throw that
+ *    is superseded (a new throw) or swept (`clear`) sets `active = null`, so a late
+ *    settle arriving while idle is dropped instead of re-resolving.
+ *  - Each `roll()` `clear()`s the table first, so a superseded throw's physics is
+ *    swept before the new throw starts (dice-box stops emitting for swept dice) and
+ *    can't bleed into the new handler.
+ *  - An abandoned throw's promise is rejected, never left pending.
+ */
+export function bindTray(box: DiceBoxLike): DiceTray {
+  let active:
+    | { resolve: (rec: RollRecord) => void; reject: (err: Error) => void; parser: RollParser; notation: string }
+    | null = null;
+
+  box.onRollComplete = (results: unknown) => {
+    const cur = active;
+    if (!cur) return; // idle / abandoned throw — drop the late settle
+    try {
+      // Resolve rerolls (explode/reroll/penetrate) first, then record the final.
+      const rerolls = cur.parser.handleRerolls(results);
+      if (Array.isArray(rerolls) && rerolls.length > 0) {
+        box.add(rerolls, { newStartPoint: false });
+        return; // same throw still active, awaiting the post-reroll settle
+      }
+      active = null; // this throw is done — free the slot before resolving
+      // Exploding rolls desync from the physical dice (#97) — record straight from
+      // the dice the user sees; everything else keeps the parser's keep/drop path.
+      const rec = physicalRecordApplies(cur.notation)
+        ? recordFromPhysical(results, cur.notation)
+        : toRollRecord(cur.parser.parseFinalResults(results), cur.notation);
+      // Last-resort safety net: never show a malformed result.
+      if (!isPlausibleRoll(rec, cur.notation)) {
+        console.warn("[hoard] engine returned a malformed roll; using headless fallback", rec);
+        cur.resolve(rollHeadless(cur.notation));
+        return;
+      }
+      cur.resolve(rec);
+    } catch (err) {
+      active = null;
+      cur.reject(err instanceof Error ? err : new Error(String(err)));
+    }
+  };
+
+  // Abandon the in-flight throw: reject its promise and free the slot so its late
+  // physics settle becomes a no-op.
+  const abandon = () => {
+    const cur = active;
+    active = null;
+    cur?.reject(new Error("dice roll superseded"));
+  };
+
+  return {
+    roll: (notation: string) =>
+      new Promise<RollRecord>((resolve, reject) => {
+        abandon(); // a new throw supersedes any still-pending one
+        box.clear(); // sweep the table so a superseded throw's dice can't bleed in
+        // A FRESH parser per roll — ParserInterface carries mutable state that
+        // corrupts successive rolls if reused.
+        const parser = new DiceParser() as RollParser;
+        active = { resolve, reject, parser, notation };
+        try {
+          box.roll(parser.parseNotation(notation));
+        } catch (err) {
+          active = null;
+          reject(err instanceof Error ? err : new Error(String(err)));
+        }
+      }),
+    clear: () => {
+      abandon();
+      box.clear();
+    },
+  };
+}
 
 /**
  * Lazy-load + init a 3D dice tray in `container`. Heavy (BabylonJS); call only on
@@ -147,47 +246,5 @@ export async function createDiceTray(container: string | HTMLElement): Promise<D
     ro.observe(target);
   }
 
-  return {
-    roll: (notation: string) =>
-      new Promise<RollRecord>((resolve, reject) => {
-        // A FRESH parser per roll — ParserInterface carries mutable state
-        // (parsedNotation/finalResults + a module-global counter) that corrupts
-        // successive rolls if reused (a 2nd 1d20 was returning a bogus static 21
-        // with no dice). Each throw gets a clean parser.
-        const parser = new DiceParser();
-        // Resolve rerolls (explode/reroll/penetrate) first, then record the final.
-        box.onRollComplete = (results: unknown) => {
-          try {
-            const rerolls = parser.handleRerolls(results);
-            if (Array.isArray(rerolls) && rerolls.length > 0) {
-              box.add(rerolls, { newStartPoint: false });
-              return;
-            }
-            // Exploding rolls desync from the physical dice (parseFinalResults
-            // returns garbage once extra dice are added, #97) — build the record
-            // straight from the physical dice the user sees. Keep the parser path
-            // for everything else (it carries keep/drop semantics and matches
-            // physics when no dice are added).
-            const rec = physicalRecordApplies(notation)
-              ? recordFromPhysical(results, notation)
-              : toRollRecord(parser.parseFinalResults(results), notation);
-            // Last-resort safety net: never show a malformed result.
-            if (!isPlausibleRoll(rec, notation)) {
-              console.warn("[hoard] engine returned a malformed roll; using headless fallback", rec);
-              resolve(rollHeadless(notation));
-              return;
-            }
-            resolve(rec);
-          } catch (err) {
-            reject(err instanceof Error ? err : new Error(String(err)));
-          }
-        };
-        try {
-          box.roll(parser.parseNotation(notation));
-        } catch (err) {
-          reject(err instanceof Error ? err : new Error(String(err)));
-        }
-      }),
-    clear: () => box.clear(),
-  };
+  return bindTray(box);
 }

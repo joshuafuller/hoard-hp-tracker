@@ -1,6 +1,80 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import fc from "fast-check";
-import { rollHeadless } from "./diceEngine";
+import { rollHeadless, bindTray, type DiceBoxLike } from "./diceEngine";
+
+/**
+ * A controllable stand-in for the vendored dice-box. `onRollComplete` is the single
+ * callback slot the real engine owns; the test drives it by hand to simulate a
+ * physics completion arriving — including a *late* one from a throw the user has
+ * already abandoned, which is the race bindTray must defend against.
+ */
+function fakeBox() {
+  const calls = { roll: 0, clear: 0, add: 0 };
+  const box: DiceBoxLike = {
+    roll: () => { calls.roll++; },
+    add: () => { calls.add++; },
+    clear: () => { calls.clear++; },
+    onRollComplete: () => {},
+  };
+  return {
+    box,
+    calls,
+    /** Simulate the engine delivering a settle event to its current handler. */
+    settle: (results: unknown) => box.onRollComplete(results),
+  };
+}
+
+// The reconcile path (parser.handleRerolls → recordFromPhysical / parseFinalResults)
+// consumes the vendored parser's result format and is exercised by e2e (WebGL). These
+// unit tests cover the abandoned-roll GUARD, whose branches all resolve BEFORE any
+// reconcile runs — so they never depend on faking the parser's I/O.
+describe("bindTray — abandoned-roll race guard (#130 / Codex P2)", () => {
+  it("rejects the pending promise and ignores late settles after clear()", async () => {
+    const { box, settle, calls } = fakeBox();
+    const tray = bindTray(box);
+    const p = tray.roll("1d6");
+    const onReject = vi.fn();
+    const onResolve = vi.fn();
+    p.then(onResolve, onReject); // the abandoned throw must settle (reject), not leak
+
+    tray.clear();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(onReject).toHaveBeenCalled();
+    expect(onResolve).not.toHaveBeenCalled();
+    expect(calls.clear).toBeGreaterThanOrEqual(1);
+
+    // A late physics event from the swept throw lands while idle — it must be a
+    // no-op (no re-resolve, no throw), never resurfacing the abandoned result.
+    expect(() => settle({ rolls: [{ rollId: 0, sides: 6, value: 6 }] })).not.toThrow();
+    await Promise.resolve();
+    expect(onResolve).not.toHaveBeenCalled();
+  });
+
+  it("a new throw supersedes a still-pending one — the prior promise rejects", async () => {
+    const { box } = fakeBox();
+    const tray = bindTray(box);
+    const first = tray.roll("1d6");
+    const firstReject = vi.fn();
+    const firstResolve = vi.fn();
+    first.then(firstResolve, firstReject);
+
+    tray.roll("1d6"); // supersede before the first settles
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(firstReject).toHaveBeenCalled();
+    expect(firstResolve).not.toHaveBeenCalled();
+  });
+
+  it("sweeps the table before each throw so a superseded throw's dice can't bleed in", () => {
+    const { box, calls } = fakeBox();
+    const tray = bindTray(box);
+    tray.roll("1d6").catch(() => {}); // superseded below — swallow its rejection
+    const afterFirst = calls.clear;
+    tray.roll("1d6").catch(() => {});
+    expect(calls.clear).toBeGreaterThan(afterFirst);
+  });
+});
 
 // rollHeadless is the no-physics path (reduced-motion / engine-unavailable): it
 // rolls entirely in the parser. Deterministic when given floats (= (value-1)/sides),

@@ -180,17 +180,33 @@ export function DiceTray({
         if (reduced || !engineRef.current) {
           rec = rollHeadless(expr);
         } else {
+          const engine = engineRef.current;
           // Safety: if the physics never settles (dice jam / engine hiccup), don't
           // hang on "Throwing" forever — fall back to a headless result after a
           // few seconds so the player always gets a number and the button resets.
           // Clear the timer once the engine wins the race so no stray headless roll
           // fires after a normal throw.
+          const rollPromise = engine.roll(expr);
+          // The adapter rejects this throw if a later one (or the timeout below)
+          // supersedes it; swallow that so it never surfaces as an unhandled
+          // rejection — the result we use comes from the race, and a late settle is
+          // already guarded inside the engine.
+          rollPromise.catch(() => {});
           let timer: ReturnType<typeof setTimeout> | undefined;
           const timeout = new Promise<RollRecord>((res) => {
-            timer = setTimeout(() => res(rollHeadless(expr)), 6000);
+            timer = setTimeout(() => {
+              // Resolve the headless fallback FIRST so the race adopts it: clearing
+              // the stuck throw below rejects `rollPromise` (via the adapter's
+              // abandon), and that rejection must not win the race ahead of the
+              // fallback — otherwise a jammed roll leaves the player empty-handed.
+              res(rollHeadless(expr));
+              // Then sweep the stuck throw so its eventual late settle can't resolve
+              // a NEW throw with stale dice (dice-box has one result slot).
+              engine.clear();
+            }, 6000);
           });
           try {
-            rec = await Promise.race([engineRef.current.roll(expr), timeout]);
+            rec = await Promise.race([rollPromise, timeout]);
           } finally {
             if (timer !== undefined) clearTimeout(timer);
           }
@@ -209,7 +225,9 @@ export function DiceTray({
         console.error("[hoard] dice roll failed", err);
         return null;
       } finally {
-        setRolling(false);
+        // Only the CURRENT roll resets its own flag — an abandoned roll (tray cleared/
+        // closed mid-throw, seq bumped) must not clobber a newer roll's "rolling".
+        if (rollSeq.current === seq) setRolling(false);
       }
     },
     [reduced, history],
@@ -226,6 +244,9 @@ export function DiceTray({
     setRecord(null);
     setDeathSaveRoll(null);
     setHitDieRoll(null);
+    // Recover immediately if cleared mid-roll — sweeping the dice means engine.roll()
+    // may never settle, so don't leave the button stuck on "Throwing" until the timeout.
+    setRolling(false);
     engineRef.current?.clear();
   }, []);
   const handleClose = useCallback(() => {
@@ -288,7 +309,7 @@ export function DiceTray({
       {/* Tap-to-clear the dice in ad-hoc mode. Inert under an intent: clearing would
           reset the contextual outcome and let a second throw double-apply (a death
           save / Hit Die) — use Done / ✕ to leave instead. */}
-      <div className="dice-tray__scrim" onClick={() => { if (!intent) clearDice(); }} aria-hidden="true" />
+      <div className="dice-tray__scrim" onClick={() => { if (!intent && !rolling) clearDice(); }} aria-hidden="true" />
       <button type="button" className="dice-tray__close" aria-label="Close dice" onClick={handleClose}>
         <Glyph name="close" />
       </button>
@@ -315,13 +336,6 @@ export function DiceTray({
             <div className="dice-result__plate">
               <div className="dice-result__total">{hitDieRoll ?? record.total}</div>
               <div className="dice-result__notation">Hit Die — d{intent.sides}</div>
-              {hitDieRoll != null && (
-                <button type="button" className="dice-applyheal" onClick={applyHitDie}>
-                  <Glyph name="heal" />
-                  Apply {hitDieRoll}
-                  {conLabel(intent.conMod)} = {Math.max(0, hitDieRoll + intent.conMod)} heal
-                </button>
-              )}
             </div>
           </div>
         )}
@@ -338,10 +352,16 @@ export function DiceTray({
             {intent.kind === "death-save" ? "Death save" : `Hit Die — d${intent.sides}`}
           </span>
           {intent.kind === "death-save" && deathSaveRoll != null ? (
-            // A death-save throw already ticked a pip; swap to Done so a second tap
-            // can't accidentally apply another save in the same open.
+            // Death save already ticked its pip on settle — Done just closes.
             <button type="button" className="dice-throw" onClick={handleClose}>
               Done
+            </button>
+          ) : intent.kind === "hit-die" && hitDieRoll != null ? (
+            // A settled Hit Die's ONLY commit is Apply (spend + heal). No re-throw and
+            // no discard-as-Done — both would hand out a free short-rest reroll by
+            // tossing a low roll and reopening (Codex #130).
+            <button type="button" className="dice-throw" onClick={applyHitDie}>
+              Apply {hitDieRoll}{conLabel(intent.conMod)} = {Math.max(0, hitDieRoll + intent.conMod)} heal
             </button>
           ) : (
             <button type="button" className="dice-throw" onClick={throwIntent} disabled={rolling}>

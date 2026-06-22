@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 import Dexie from "dexie";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHpDb, type HpDb } from "../../store/db";
@@ -172,6 +172,52 @@ describe("DiceTray", () => {
     expect(createDiceTray).toHaveBeenCalledTimes(1);
   });
 
+  it("ignores a tap on the dimmed area mid-roll — no sweep, no stuck Throwing", async () => {
+    let resolveRoll!: (r: unknown) => void;
+    const tray = { roll: vi.fn(() => new Promise((res) => { resolveRoll = res; })), clear: vi.fn() };
+    createDiceTray.mockResolvedValueOnce(tray);
+    render(<DiceTray open onClose={vi.fn()} onApplyHeal={vi.fn()} db={db} reducedMotion={false} />);
+    await waitFor(() => expect(createDiceTray).toHaveBeenCalled());
+    await userEvent.click(screen.getByRole("button", { name: "Add d20" }));
+    await userEvent.click(screen.getByRole("button", { name: /^throw/i }));
+    // Tap the scrim WHILE the dice are still in flight — must not sweep them.
+    await userEvent.click(document.querySelector(".dice-tray__scrim")!);
+    expect(tray.clear).not.toHaveBeenCalled();
+    // The roll settles normally and the Throw button recovers (never stuck).
+    resolveRoll({ notation: "1d20", total: 9, result: [9], dice: [{ sides: 20, value: 9, dropped: false }] });
+    await waitFor(() => expect(document.querySelector(".dice-result__total")?.textContent).toBe("9"));
+    expect(screen.getByRole("button", { name: /^throw/i })).toBeEnabled();
+  });
+
+  it("a jammed roll falls back to a headless result at the 6s timeout (not an empty result)", async () => {
+    // Regression for Codex #130: the timeout's engine.clear() rejects the racing
+    // roll promise; if that rejection beats the headless fallback, doRoll returns
+    // null and the player gets NO number. The fallback must win the race.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      // Faithful to bindTray: the roll never settles on its own, and clear() REJECTS
+      // it (abandon) — exactly the interaction that made the buggy order return null.
+      let rejectRoll: ((e: Error) => void) | undefined;
+      const tray = {
+        roll: vi.fn(() => new Promise<never>((_, rej) => { rejectRoll = rej; })),
+        clear: vi.fn(() => rejectRoll?.(new Error("dice roll superseded"))),
+      };
+      createDiceTray.mockResolvedValueOnce(tray);
+      render(<DiceTray open onClose={vi.fn()} onApplyHeal={vi.fn()} db={db} reducedMotion={false} />);
+      await act(async () => { await Promise.resolve(); }); // let the engine load resolve
+      expect(createDiceTray).toHaveBeenCalled();
+      fireEvent.click(screen.getByRole("button", { name: "Add d20" }));
+      fireEvent.click(screen.getByRole("button", { name: /^throw/i }));
+      expect(tray.roll).toHaveBeenCalled();
+      await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
+      expect(rollHeadless).toHaveBeenCalledWith("1d20");
+      expect(tray.clear).toHaveBeenCalled(); // stuck throw swept
+      expect(document.querySelector(".dice-result__total")?.textContent).toBe("23"); // fallback shown
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   describe("contextual rolls (shared tray — death save / Hit Die)", () => {
     it("death-save intent throws 1d20, applies via onDeathSave, records death-save context, and hides the builder", async () => {
       const onDeathSave = vi.fn();
@@ -222,6 +268,16 @@ describe("DiceTray", () => {
       // The abandoned roll must NOT tick a death save (the bug: closing mid-roll then
       // a late settle changing/applying the result).
       expect(onDeathSave).not.toHaveBeenCalled();
+    });
+
+    it("gates re-throwing a Hit Die after it settles (single roll — no free short-rest rerolls)", async () => {
+      open({ intent: { kind: "hit-die", sides: 8, conMod: 0 }, onHitDie: vi.fn(), onClose: vi.fn() });
+      await userEvent.click(screen.getByRole("button", { name: /^throw/i }));
+      // After settle: no re-throw, and no discard-as-Done (which would let a low roll
+      // be tossed + re-rolled for free). Apply is the only commit (Codex #130).
+      await waitFor(() => expect(screen.queryByRole("button", { name: /^throw/i })).not.toBeInTheDocument());
+      expect(screen.queryByRole("button", { name: /^done$/i })).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /apply/i })).toBeInTheDocument();
     });
 
     it("ignores a scrim tap under an intent so a death save can't be re-thrown / double-applied", async () => {
