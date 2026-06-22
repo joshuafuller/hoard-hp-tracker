@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LiquidVessel } from "./LiquidVessel";
+import { ORB_DRAG_HINT_KEY } from "./orbDragHint";
 
 /**
  * Orb-as-input: a vertical drag on the orb applies damage (down) / heal (up),
@@ -114,11 +115,11 @@ describe("LiquidVessel drag-hint affordance (#94)", () => {
     fireEvent.pointerUp(orb, { clientY: 100, pointerId: 1 });
     expect(document.querySelector(".vessel__drag-hint")).toBeNull();
     // …and persists, so it won't nag next session.
-    expect(localStorage.getItem("hoard-orb-drag-seen")).toBe("true");
+    expect(localStorage.getItem(ORB_DRAG_HINT_KEY)).toBe("true");
   });
 
   it("does not nag once the seen flag is persisted", () => {
-    localStorage.setItem("hoard-orb-drag-seen", "true");
+    localStorage.setItem(ORB_DRAG_HINT_KEY, "true");
     const { container } = render(<LiquidVessel current={27} max={40} temp={0} />);
     expect(container.querySelector(".vessel__drag-hint")).toBeNull();
   });
@@ -128,10 +129,12 @@ describe("LiquidVessel drag-hint affordance (#94)", () => {
     expect(container.querySelector(".vessel__drag-hint")).toBeNull();
   });
 
-  it("the hint never blocks the drag/tap path (pointer-events: none)", () => {
+  it("renders the hint as decorative + inert (aria-hidden; pointer-events:none lives in CSS)", () => {
     setup();
     const hint = document.querySelector(".vessel__drag-hint") as HTMLElement;
     expect(hint).toBeTruthy();
+    // It's decorative — hidden from a11y; the pointer-events:none that keeps it from
+    // blocking the drag/tap path is enforced in styles.css (not assertable in jsdom).
     expect(hint.getAttribute("aria-hidden")).toBe("true");
   });
 });

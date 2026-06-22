@@ -1041,6 +1041,10 @@ body {
   inset: 0;
   border-radius: 50%;
   overflow: hidden;
+  /* Establish a stacking context so the orb's children (fill, foil, drag overlay,
+     drag hint) keep their z-order INSIDE the orb and can't escape above the readout
+     numerals (a later sibling) — #94 / Copilot #141. */
+  isolation: isolate;
   touch-action: none; /* vertical drag = damage/heal, not page scroll */
   cursor: ns-resize;
   background: radial-gradient(120% 120% at 50% 28%, var(--obsidian-800) 0%, var(--obsidian-900) 72%);
