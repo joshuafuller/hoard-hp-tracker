@@ -131,7 +131,7 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
   }
 
   return (
-    <div className="vessel" data-tier={tier} data-flash={flash ?? undefined} style={accentStyle}>
+    <div className="vessel" data-tier={tier} data-flash={flash ?? undefined} data-dragging={drag ? "" : undefined} style={accentStyle}>
       <div className="vessel__aura" aria-hidden="true" />
       <div
         className="vessel__orb"
@@ -184,12 +184,6 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
             </svg>
           </div>
         )}
-        {drag && drag.amount > 0 && (
-          <div className="vessel__drag" data-kind={drag.kind} aria-hidden="true">
-            {drag.kind === "damage" ? "−" : "+"}
-            {drag.amount}
-          </div>
-        )}
       </div>
 
       <div
@@ -231,6 +225,17 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
           )
         )}
       </div>
+
+      {/* Live drag delta — a floating chip ABOVE the readout (last sibling, outside
+          the orb's isolation context so it can't be trapped behind the numerals;
+          the earlier #94 fix over-corrected and hid it). Its own backdrop surface
+          separates it from the totals, like the dice-result card. */}
+      {drag && drag.amount > 0 && (
+        <div className="vessel__drag" data-kind={drag.kind} aria-hidden="true">
+          {drag.kind === "damage" ? "−" : "+"}
+          {drag.amount}
+        </div>
+      )}
     </div>
   );
 }
