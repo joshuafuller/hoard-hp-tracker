@@ -74,6 +74,29 @@ describe("bindTray — abandoned-roll race guard (#130 / Codex P2)", () => {
     tray.roll("1d6").catch(() => {});
     expect(calls.clear).toBeGreaterThan(afterFirst);
   });
+
+  // #149: onProgress fires per physics settle so a caller's safety timeout can be
+  // re-armed since the LAST settle (each explosion re-roll), not the FIRST throw.
+  it("calls onProgress on a settle for the active throw", () => {
+    const { box, settle } = fakeBox();
+    const tray = bindTray(box);
+    const onProgress = vi.fn();
+    // The fake settle payload may not reconcile to a real record; we only assert the
+    // progress signal, which fires at the TOP of onRollComplete before any reconcile.
+    tray.roll("1d6", onProgress).catch(() => {});
+    settle({ rolls: [{ rollId: 0, sides: 6, value: 6 }] });
+    expect(onProgress).toHaveBeenCalledTimes(1);
+  });
+
+  it("does NOT call onProgress for a late settle after the throw is abandoned", () => {
+    const { box, settle } = fakeBox();
+    const tray = bindTray(box);
+    const onProgress = vi.fn();
+    tray.roll("1d6", onProgress).catch(() => {});
+    tray.clear(); // abandon — frees the slot
+    settle({ rolls: [{ rollId: 0, sides: 6, value: 6 }] }); // late physics event
+    expect(onProgress).not.toHaveBeenCalled(); // dropped with the abandoned throw (#130 guard)
+  });
 });
 
 // rollHeadless is the no-physics path (reduced-motion / engine-unavailable): it

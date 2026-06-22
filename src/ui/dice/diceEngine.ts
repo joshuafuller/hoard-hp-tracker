@@ -85,8 +85,13 @@ export function rollHeadless(notation: string, floats?: number[]): RollRecord {
 
 /** A live 3D dice tray bound to a container element. */
 export interface DiceTray {
-  /** Throw the notation; resolves with the recorded result once the dice settle + reconcile. */
-  roll: (notation: string) => Promise<RollRecord>;
+  /**
+   * Throw the notation; resolves with the recorded result once the dice settle +
+   * reconcile. `onProgress` (if given) fires on every physics settle, INCLUDING each
+   * exploding/penetrating re-roll — so a caller's safety timeout can measure idle
+   * time since the last settle rather than total time since the first throw (#149).
+   */
+  roll: (notation: string, onProgress?: () => void) => Promise<RollRecord>;
   /** Clear the dice from the tray. */
   clear: () => void;
 }
@@ -144,12 +149,28 @@ interface RollParser {
  */
 export function bindTray(box: DiceBoxLike): DiceTray {
   let active:
-    | { resolve: (rec: RollRecord) => void; reject: (err: Error) => void; parser: RollParser; notation: string }
+    | {
+        resolve: (rec: RollRecord) => void;
+        reject: (err: Error) => void;
+        parser: RollParser;
+        notation: string;
+        onProgress?: () => void;
+      }
     | null = null;
 
   box.onRollComplete = (results: unknown) => {
     const cur = active;
     if (!cur) return; // idle / abandoned throw — drop the late settle
+    // A settle landed for the active throw — real progress, even if it's only the
+    // first wave of an exploding chain. Signal it BEFORE deciding reroll-vs-final so
+    // the caller's safety timer resets per settle, not per throw (#149). Isolated in
+    // its own try so a faulty progress handler can't escape and wedge the loop with
+    // `active` uncleared (Copilot #151).
+    try {
+      cur.onProgress?.();
+    } catch (err) {
+      console.warn("[hoard] dice onProgress handler threw; ignoring", err);
+    }
     try {
       // Resolve rerolls (explode/reroll/penetrate) first, then record the final.
       const rerolls = cur.parser.handleRerolls(results);
@@ -185,14 +206,14 @@ export function bindTray(box: DiceBoxLike): DiceTray {
   };
 
   return {
-    roll: (notation: string) =>
+    roll: (notation: string, onProgress?: () => void) =>
       new Promise<RollRecord>((resolve, reject) => {
         abandon(); // a new throw supersedes any still-pending one
         box.clear(); // sweep the table so a superseded throw's dice can't bleed in
         // A FRESH parser per roll — ParserInterface carries mutable state that
         // corrupts successive rolls if reused.
         const parser = new DiceParser() as RollParser;
-        active = { resolve, reject, parser, notation };
+        active = { resolve, reject, parser, notation, onProgress };
         try {
           box.roll(parser.parseNotation(notation));
         } catch (err) {
