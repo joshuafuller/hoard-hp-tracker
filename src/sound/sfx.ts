@@ -31,6 +31,8 @@ export const SFX_NAMES = [
   "coinAdd",
   "coinSpend",
   "coinDistill",
+  "down",
+  "revive",
 ] as const;
 
 export type SfxName = (typeof SFX_NAMES)[number];
@@ -75,6 +77,15 @@ export const RECIPES: Record<SfxName, Voice[]> = {
   ],
   // A low, slow knell.
   death: [{ type: "sine", freq: 110, endFreq: 65, gain: 0.2, duration: 0.6 }],
+  // Down to 0 HP — a short low knell (A2→F2). Gravity, not finality: shorter/higher
+  // than death, since death saves begin (sound-design.md §3).
+  down: [{ type: "sine", freq: 110, endFreq: 87.31, gain: 0.18, duration: 0.35 }],
+  // Revive / back from 0 — a warm rising C5→E5→G5 arpeggio (brighter than heal).
+  revive: [
+    { type: "sine", freq: 523.25, gain: 0.15, duration: 0.14 },
+    { type: "sine", freq: 659.25, gain: 0.15, duration: 0.16, delay: 0.1 },
+    { type: "sine", freq: 783.99, gain: 0.16, duration: 0.22, delay: 0.21 },
+  ],
   // A gentle warm tone for a short rest.
   shortRest: [{ type: "sine", freq: 392, gain: 0.14, duration: 0.22 }],
   // A fuller rising pair for the sweeping long rest.
