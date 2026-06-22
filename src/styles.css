@@ -790,52 +790,20 @@ body {
   width: min(100%, 30rem);
 }
 
+/* Layout only — the gold/ghost look + press/focus come from the Button primitive.
+   Long Rest = primary (gold), Short Rest = ghost (spec §5). */
 .rest-controls__btn {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.15rem;
   min-width: 9.5rem;
   min-height: 56px; /* fallback for browsers without svh */
   min-height: clamp(42px, 6.5svh, 56px);
-  padding: 0.6rem 1.4rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(120, 80, 24, 0.5);
-  font-weight: 700;
-  /* polished-gold body, engraved dark text */
-  color: #3a2606;
-  background: linear-gradient(180deg, #fbe6ac 0%, #f4c66a 40%, #cf9a3f 100%);
-  box-shadow:
-    inset 0 0 0 1.5px rgba(255, 244, 206, 0.55),
-    inset 0 2px 5px rgba(255, 248, 222, 0.55),
-    inset 0 -7px 14px rgba(40, 24, 4, 0.4),
-    0 8px 22px rgba(0, 0, 0, 0.45);
-  text-shadow: 0 1px 0 rgba(255, 244, 206, 0.4);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast) ease;
 }
-
-.rest-controls__btn:active {
-  transform: scale(0.95);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 2px 6px rgba(0, 0, 0, 0.5);
-}
-
-.rest-controls__btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-
-.rest-controls__btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-  box-shadow: none;
-}
-
-.rest-controls__btn[data-kind="long"] {
-  border-color: color-mix(in oklab, var(--hp-temp) 28%, var(--obsidian-600));
+/* Stack the two-line label/sub inside the shared Button label wrapper. */
+.rest-controls__btn .ctl-btn__label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.08rem;
+  line-height: 1.12;
 }
 
 .rest-controls__label {
@@ -848,7 +816,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(58, 38, 6, 0.72); /* engraved bronze on the gold body */
+  opacity: 0.72; /* inherits the button's text colour (dark on gold, ivory on ghost) */
 }
 
 /* The confirm step takes the Long Rest button's place: a prompt flanked by a
@@ -884,40 +852,9 @@ body {
   color: var(--ink-300);
 }
 
+/* Confirm = primary, Cancel = ghost — look from the Button primitive; layout only. */
 .rest-controls__confirm-btn {
   min-width: 44px;
-  min-height: 44px;
-  padding: 0 1.1rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--obsidian-600);
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: var(--ink-100);
-  background: var(--obsidian-600);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast) ease;
-}
-
-.rest-controls__confirm-btn:active {
-  transform: scale(0.93);
-}
-
-.rest-controls__confirm-btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-
-.rest-controls__confirm-btn[data-kind="confirm"] {
-  color: var(--obsidian-900);
-  background: var(--hp-temp);
-  border-color: var(--hp-temp);
-  box-shadow: 0 0 18px color-mix(in oklab, var(--hp-temp) 40%, transparent);
-}
-
-.rest-controls__confirm-btn[data-kind="cancel"] {
-  color: var(--ink-300);
-  background: var(--obsidian-700);
 }
 
 /* ── HP value editor (pill modal) ──────────────────────────────────────── */

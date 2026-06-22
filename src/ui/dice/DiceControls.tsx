@@ -1,5 +1,6 @@
 import { advantageApplies, poolToNotation, type DiePool, type RollMode } from "../../domain/dice";
 import { Glyph } from "../icons/Glyph";
+import { Button, Chip, IconButton, Segment, Stepper, type SegmentOption } from "../controls";
 
 /** The die sizes offered as chips, in glance order. */
 export const DICE_SIDES = [4, 6, 8, 10, 12, 20, 100] as const;
@@ -78,9 +79,9 @@ export function DiceControls({
           onChange={(e) => onNotationChange(e.target.value)}
         />
         {!isEmpty && (
-          <button type="button" className="dice-pool__clear" aria-label="Clear dice" onClick={onClear}>
+          <IconButton variant="ghost" className="dice-pool__clear" aria-label="Clear dice" onClick={onClear}>
             <Glyph name="clear" />
-          </button>
+          </IconButton>
         )}
       </div>
 
@@ -88,15 +89,14 @@ export function DiceControls({
       {showTags && (
         <div className="dice-pool__tags" role="group" aria-label="Dice in pool">
           {pool.map((g) => (
-            <button
+            <Chip
               key={g.sides}
-              type="button"
               className="dice-pool__tag"
               aria-label={`Remove one d${g.sides}`}
               onClick={() => onRemoveDie(g.sides)}
             >
-              {g.count}d{g.sides} <span aria-hidden="true">×</span>
-            </button>
+              {g.count}d{g.sides} ×
+            </Chip>
           ))}
         </div>
       )}
@@ -108,52 +108,48 @@ export function DiceControls({
           // its (stale) badge/highlight on the chips.
           const g = manual ? undefined : pool.find((x) => x.sides === s);
           return (
-            <button
+            <Chip
               key={s}
-              type="button"
               className="dice-chip"
               aria-label={`Add d${s}`}
-              data-on={!!g}
+              selected={!!g}
+              badge={g?.count}
               onClick={() => onAddDie(s)}
             >
               d{s}
-              {g && <span className="dice-chip__badge">{g.count}</span>}
-            </button>
+            </Chip>
           );
         })}
       </div>
 
       {/* co-equal advantage segment — enabled only for a lone d20 */}
-      <div className="dice-controls__adv" role="group" aria-label="Advantage">
-        {MODES.map((m) => (
-          <button
-            key={m.key}
-            type="button"
-            className={`dice-adv dice-adv--${m.cls}`}
-            aria-pressed={m.key === mode}
-            data-on={m.key === mode}
-            disabled={(manual || !advAvailable) && m.key !== "normal"}
-            onClick={() => onSetMode(m.key)}
-          >
-            <span>{m.label}</span>
-            <small>{m.sub}</small>
-          </button>
-        ))}
-      </div>
+      <Segment
+        className="dice-controls__adv"
+        aria-label="Advantage"
+        value={mode}
+        onChange={onSetMode}
+        options={MODES.map(
+          (m): SegmentOption<RollMode> => ({
+            value: m.key,
+            label: m.label,
+            hint: m.sub,
+            disabled: (manual || !advAvailable) && m.key !== "normal",
+          }),
+        )}
+      />
 
       <div className="dice-controls__row">
-        <div className="dice-mod" role="group" aria-label="Modifier">
-          <button type="button" className="dice-mod__pm" aria-label="Decrease modifier" onClick={() => onStepModifier(-1)}>
-            −
-          </button>
-          <span className="dice-mod__val">{signed(modifier)}</span>
-          <button type="button" className="dice-mod__pm" aria-label="Increase modifier" onClick={() => onStepModifier(1)}>
-            +
-          </button>
-        </div>
-        <button type="button" className="dice-throw" onClick={onRoll} disabled={rolling || isEmpty}>
+        <Stepper
+          className="dice-mod"
+          label="modifier"
+          value={modifier}
+          formatValue={signed}
+          onDec={() => onStepModifier(-1)}
+          onInc={() => onStepModifier(1)}
+        />
+        <Button variant="primary" size="lg" className="dice-throw" onClick={onRoll} disabled={rolling || isEmpty}>
           {rolling ? "Throwing…" : "Throw"}
-        </button>
+        </Button>
       </div>
     </div>
   );
