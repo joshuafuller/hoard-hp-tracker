@@ -1934,30 +1934,7 @@ body {
   white-space: nowrap;
 }
 
-.concentration-prompt__btn {
-  appearance: none;
-  border: none;
-  border-radius: var(--radius-pill);
-  font-weight: 800;
-  font-size: 0.78rem;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  padding: 0.2rem 0.6rem;
-  transition: transform var(--dur-fast) var(--ease-spring);
-}
-
-.concentration-prompt__btn:active { transform: scale(0.9); }
-.concentration-prompt__btn:focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; }
-
-.concentration-prompt__btn--keep {
-  background: color-mix(in oklab, #a78bfa 22%, var(--obsidian-600));
-  color: #a78bfa;
-}
-
-.concentration-prompt__btn--drop {
-  background: color-mix(in oklab, var(--hp-critical) 20%, var(--obsidian-700));
-  color: var(--hp-critical);
-}
+/* Keep = Button ghost, Drop = Button danger — look/press/focus from the primitive. */
 
 /* ════════════════════════════════════════════════════════════════════════
    COIN TOKEN — the minted-gold medallion control (engraved sigil, no text)
