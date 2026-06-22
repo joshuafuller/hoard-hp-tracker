@@ -123,6 +123,35 @@ describe("rollHeadless", () => {
     }
   });
 
+  // #108 item 3 — headless explosion round-batching. The parser APPENDS explosion
+  // dice (round N+1 has exactly as many dice as exploded in round N); assignRounds
+  // tags them. Verified empirically across single / late / chained explosions.
+  it("tags a double-explosion chain with rounds 2 and 3 (1d6! → 6,6,2)", () => {
+    const f = (v: number) => (v - 1) / 6;
+    const rec = rollHeadless("1d6!", [f(6), f(6), f(2)]);
+    expect(rec.total).toBe(14); // 6 + 6 + 2
+    expect(rec.dice).toHaveLength(3);
+    expect(rec.dice.filter((d) => d.exploded)).toHaveLength(2); // both 6s exploded
+    expect(rec.dice.find((d) => d.round === 2)).toBeTruthy();
+    expect(rec.dice.find((d) => d.round === 3)?.value).toBe(2); // the final, non-exploding die
+  });
+
+  it("property: explosion rounds batch correctly — #(round≥2 dice) == #(exploded dice), total == sum", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 4 }), (count) => {
+        const rec = rollHeadless(`${count}d6!`);
+        const sum = rec.dice.filter((d) => !d.dropped).reduce((a, d) => a + d.value, 0);
+        expect(rec.total).toBe(sum);
+        // Each explosion yields exactly one die in the next round, so the number of
+        // round≥2 dice equals the number of dice that exploded.
+        const exploded = rec.dice.filter((d) => d.exploded).length;
+        const higherRound = rec.dice.filter((d) => (d.round ?? 1) >= 2).length;
+        expect(higherRound).toBe(exploded);
+      }),
+      { numRuns: 300 },
+    );
+  });
+
   it("property: every die size stays within [1, sides] (guards the round-overshoot bug)", () => {
     fc.assert(
       fc.property(
