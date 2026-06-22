@@ -85,6 +85,8 @@ export function App() {
     if (hp.status !== prevStatus.current) {
       if (hp.status === "stable") playSfx("stabilize");
       else if (hp.status === "dead") playSfx("death");
+      else if (hp.status === "dying" && prevStatus.current === "alive") playSfx("down"); // dropped to 0
+      else if (hp.status === "alive") playSfx("revive"); // back from 0
       prevStatus.current = hp.status;
     }
   }, [hp.hydrated, hp.status]);
