@@ -187,25 +187,35 @@ export function DiceTray({
           // few seconds so the player always gets a number and the button resets.
           // Clear the timer once the engine wins the race so no stray headless roll
           // fires after a normal throw.
-          const rollPromise = engine.roll(expr);
-          // The adapter rejects this throw if a later one (or the timeout below)
-          // supersedes it; swallow that so it never surfaces as an unhandled
-          // rejection — the result we use comes from the race, and a late settle is
-          // already guarded inside the engine.
-          rollPromise.catch(() => {});
           let timer: ReturnType<typeof setTimeout> | undefined;
+          let fireFallback!: (rec: RollRecord) => void;
           const timeout = new Promise<RollRecord>((res) => {
+            fireFallback = res;
+          });
+          // The safety window measures IDLE time since the LAST settle, not total
+          // time since the throw started: re-armed on every physics settle (incl.
+          // each exploding re-roll) so a long but healthy explosion chain isn't cut
+          // off — only a genuinely stuck throw (no settle for 6s) falls back (#149).
+          const armTimer = () => {
+            if (timer !== undefined) clearTimeout(timer);
             timer = setTimeout(() => {
               // Resolve the headless fallback FIRST so the race adopts it: clearing
               // the stuck throw below rejects `rollPromise` (via the adapter's
               // abandon), and that rejection must not win the race ahead of the
               // fallback — otherwise a jammed roll leaves the player empty-handed.
-              res(rollHeadless(expr));
+              fireFallback(rollHeadless(expr));
               // Then sweep the stuck throw so its eventual late settle can't resolve
               // a NEW throw with stale dice (dice-box has one result slot).
               engine.clear();
             }, 6000);
-          });
+          };
+          armTimer(); // initial window
+          const rollPromise = engine.roll(expr, armTimer);
+          // The adapter rejects this throw if a later one (or the timeout above)
+          // supersedes it; swallow that so it never surfaces as an unhandled
+          // rejection — the result we use comes from the race, and a late settle is
+          // already guarded inside the engine.
+          rollPromise.catch(() => {});
           try {
             rec = await Promise.race([rollPromise, timeout]);
           } finally {
