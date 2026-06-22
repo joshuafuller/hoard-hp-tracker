@@ -2,6 +2,9 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { CoinRow } from "./CoinRow";
+import { playSfx } from "../sound/sfx";
+
+vi.mock("../sound/sfx", () => ({ playSfx: vi.fn() }));
 
 function setup(over = {}) {
   const props = {
@@ -33,6 +36,15 @@ describe("CoinRow", () => {
     expect(p.onAdd).toHaveBeenCalledTimes(1);
     expect(p.onSpend).toHaveBeenCalledTimes(1);
     expect(p.onEdit).toHaveBeenCalledTimes(1);
+  });
+
+  it("plays the rising add / falling spend coin cues (#90)", async () => {
+    vi.mocked(playSfx).mockClear();
+    setup();
+    await userEvent.click(screen.getByRole("button", { name: /add 1 gold/i }));
+    expect(playSfx).toHaveBeenLastCalledWith("coinAdd");
+    await userEvent.click(screen.getByRole("button", { name: /spend 1 gold/i }));
+    expect(playSfx).toHaveBeenLastCalledWith("coinSpend");
   });
 
   it("disables the − stepper only when the purse can't cover a spend", () => {
