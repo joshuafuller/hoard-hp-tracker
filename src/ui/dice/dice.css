@@ -177,20 +177,8 @@
 }
 .dice-result__chipwrap { display: inline-flex; align-items: center; gap: 3px; }
 .dice-result__plus { color: var(--coin-gold); font-weight: 800; font-size: 0.8rem; }
-.dice-applyheal {
-  margin-top: 0.5rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 18px;
-  border-radius: var(--radius-pill);
-  border: 1px solid color-mix(in oklab, #4fb477 50%, transparent);
-  background: color-mix(in oklab, #4fb477 22%, var(--obsidian-700));
-  color: #a6ecc5;
-  font-weight: 700;
-  font-size: 0.84rem;
-  cursor: pointer;
-}
+/* Apply-as-heal is a Button variant=heal — look from the primitive; layout only. */
+.dice-applyheal { margin-top: 0.5rem; }
 
 /* ---- bottom dock ---- */
 .dice-tray__dock,
