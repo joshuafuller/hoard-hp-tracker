@@ -8,7 +8,7 @@
 // WebGL (the liquid orb) runs via SwiftShader in headless Chromium; if it can't,
 // the app's static fallback fill renders instead — either way the orb shows HP.
 import { chromium } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, rmSync } from "node:fs";
 
 const BASE = process.env.SHOT_URL ?? "http://localhost:4173";
 const OUT = "docs/screenshots";
@@ -115,12 +115,15 @@ await vpage.getByRole("dialog").getByRole("button", { name: "3", exact: true }).
 await vpage.waitForTimeout(400);
 await vpage.getByRole("dialog").getByRole("button", { name: /^heal/i }).click(); // 6 → 9 (slosh up)
 await vpage.waitForTimeout(1300);
-const videoPath = await vpage.video().path();
+// Grab the video handle now, but resolve its path only AFTER closing the context —
+// Playwright finalizes the .webm on close, so path() before close can race.
+const video = vpage.video();
 await vctx.close();
 await browser.close();
+const videoPath = await video.path();
 
-// webm → optimized GIF (palette for quality, ~12fps, ~360px wide). execFile (no
-// shell) — args are passed directly, so paths can't be interpreted as shell tokens.
+// webm → optimized GIF (palette for quality, fps=9, ~264px wide → ~1.1MB). execFile
+// (no shell) — args are passed directly, so paths can't be interpreted as shell tokens.
 const { execFileSync } = await import("node:child_process");
 try {
   execFileSync(
@@ -136,4 +139,5 @@ try {
 } catch (e) {
   console.warn("ffmpeg GIF step failed (static PNGs still captured):", e.message);
 }
+rmSync(vdir, { recursive: true, force: true }); // drop the temp .webm working dir
 console.log(`captured → ${OUT}/`);

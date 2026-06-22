@@ -31,8 +31,9 @@ installable PWA (works offline at the table) or a one-command Docker container.
   <img src="docs/screenshots/08-concentration.png" alt="Named character with a Concentration CON-save prompt" width="170" />
 </p>
 
-<sub>Mobile viewport (390×844). Regenerate after a UI change: build + preview, then run the capture script —
-<code>pnpm build && pnpm preview --port 4173 &</code> then <code>node scripts/capture-screenshots.mjs</code> (writes <code>docs/screenshots/</code>; needs <code>ffmpeg</code> for the GIF).</sub>
+<sub>Mobile viewport (390×844). Regenerate after a UI change, in three steps: <code>pnpm build</code> (foreground),
+then <code>pnpm preview --port 4173 &</code> (background the preview only), then <code>node scripts/capture-screenshots.mjs</code>
+— writes <code>docs/screenshots/</code>; needs <code>ffmpeg</code> for the GIF.</sub>
 
 ## Features
 
