@@ -5,16 +5,12 @@
 *Installable PWA — open it on your phone, tap **Add to Home Screen**, and it works **offline at the table**.*
 
 <p align="center">
-  <img src="docs/gallery/hero.png" alt="Hoard — the liquid HP orb draining from full (gold) to bloodied to critical (red)" width="760" />
+  <img src="docs/gallery/walkthrough.gif" alt="A walkthrough of Hoard — opening the gold radial hub, draining the liquid HP orb on damage, healing back, and the coin hoard" width="300" />
 </p>
 
 **A gorgeous, offline, single-player HP tracker for tabletop games.** A luminous liquid orb for hit
 points, plus coins, a 3D dice tray, death saves, and rests — fast one-screen tools for the
 bookkeeping you do on your turn. No account, no connection; your data stays on your device.
-
-<p align="center">
-  <img src="docs/gallery/features.png" alt="Hoard features — the radial action hub, the no-keyboard keypad, the coin tracker, and the concentration prompt" width="820" />
-</p>
 
 ## What you get
 
@@ -92,19 +88,19 @@ third-party game content.
 ---
 
 <details>
-<summary><b>Regenerate the screenshot gallery</b></summary>
+<summary><b>Regenerate the walkthrough</b></summary>
 
-The branded gallery is generated from the live app — no manual editing:
+The README walkthrough is recorded from the live app — no manual editing:
 
 ```bash
 pnpm build
 pnpm preview --port 4173 &                 # background the preview only
-node scripts/capture-screenshots.mjs       # → docs/screenshots/*.png (+ a slosh GIF; needs ffmpeg)
-node scripts/compose-gallery.mjs           # → docs/gallery/hero.png + features.png
+node scripts/record-walkthrough.mjs        # → docs/gallery/walkthrough.gif (needs ffmpeg)
 ```
 
-`capture-screenshots.mjs` drives the production build in a 390×844 mobile viewport (fresh profile →
-deterministic 10/10 seed, a sample character name, the orb tiers, keypad, coins, the radial hub, and
-the concentration prompt). `compose-gallery.mjs` composites those into the device-framed, captioned
-Molten Hoard gallery.
+`record-walkthrough.mjs` drives the production build in a 390×844 mobile viewport (fresh profile →
+deterministic 10/10 seed, a sample character name) through a short tour — opening the radial hub,
+draining the HP orb on damage, healing back, and the coin hoard — and ffmpeg-encodes it to an
+optimized looping GIF. (`scripts/capture-screenshots.mjs` still grabs individual still PNGs under
+`docs/screenshots/` if you need them.)
 </details>
