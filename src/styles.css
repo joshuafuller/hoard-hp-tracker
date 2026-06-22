@@ -1511,7 +1511,7 @@ body {
 /* Footer hosts the distill action (or, after distilling, the undo affordance). */
 /* Distill + undo live in the keypad console's footer slot (full-width). */
 /* Distill = Button primary — look/press/focus from the primitive; fill the footer. */
-.coins__distill { width: 100%; min-height: 48px; }
+.coins__distill { width: 100%; } /* height from Button (md, 44px tap target) */
 .coins__distill-glyph {
   font-size: 1.1rem;
 }
