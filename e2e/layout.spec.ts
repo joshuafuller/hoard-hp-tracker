@@ -108,8 +108,8 @@ test.describe("mobile layout", () => {
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
 
-    // Pick any digit key (there are 9: 1–9).
-    const key = dialog.locator(".keypad__key").first();
+    // Pick any digit key (there are 9: 1–9). Keys are the shared Key primitive (#89).
+    const key = dialog.locator(".ctl-key").first();
     await expect(key).toBeVisible();
 
     const keyBox = await key.boundingBox();
