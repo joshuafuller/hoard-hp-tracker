@@ -81,6 +81,17 @@ describe("App (integration)", () => {
     await waitFor(() => expect(playSfx).toHaveBeenCalledWith("toggleOn"));
   });
 
+  it("plays a down cue on dropping to 0 and a revive cue coming back (#90)", async () => {
+    render(<App />);
+    await screen.findByText("10");
+    vi.mocked(playSfx).mockClear();
+    await keypad("damage", 10); // 10 → 0: alive → dying
+    await waitFor(() => expect(playSfx).toHaveBeenCalledWith("down"));
+    expect(playSfx).not.toHaveBeenCalledWith("death"); // down is distinct from final death
+    await keypad("heal", 5); // 0 → 5: dying → alive
+    await waitFor(() => expect(playSfx).toHaveBeenCalledWith("revive"));
+  });
+
   it("edits Max HP through the pill modal", async () => {
     render(<App />);
     await screen.findByText("10");
