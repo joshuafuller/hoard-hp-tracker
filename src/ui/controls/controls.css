@@ -30,6 +30,14 @@
   --btn-radius: var(--radius-pill, 999px);
   --ring-gold: inset 0 0 0 1.5px rgba(255, 244, 206, 0.6);
   --hairline: 1px solid var(--obsidian-600, #1f1a11);
+  /* Pressed ("down") depth — the control is pushed INTO the metal: a recessed
+     top-inner shadow, less outer elevation. Distinct from rest ("up", raised) and
+     from the aria-pressed toggle (a persistent gold-on state). DESIGN.md Motion:
+     weighty + tactile. */
+  --press-recess-gold: inset 0 3px 7px rgba(40, 24, 4, 0.55);
+  --press-recess-dark: inset 0 3px 7px rgba(0, 0, 0, 0.6);
+  --press-flat: 0 1px 4px rgba(0, 0, 0, 0.4);
+  --press-fill: rgba(232, 180, 90, 0.14); /* warm tint for ghost surfaces pressed */
   /* canonical brushed-gold gradient — promoted from dice.css; literal fallback */
   --ctl-gold-body: var(
     --gold-body,
@@ -38,6 +46,19 @@
 
   font-family: "DM Sans", system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Keyboard focus ring — visible on every interactive primitive (a11y #104). Mouse/
+   touch presses use :focus-visible's UA heuristic so the ring only shows for keyboard. */
+.ctl-btn:focus-visible,
+.ctl-icon-btn:focus-visible,
+.ctl-stepper__btn:focus-visible,
+.ctl-chip:focus-visible,
+.ctl-chip__remove:focus-visible,
+.ctl-segment__option:focus-visible,
+.ctl-key:focus-visible {
+  outline: 2px solid var(--coin-gold, #e8b45a);
+  outline-offset: 2px;
 }
 
 /* ---------------------------------------------------------------- Button ---- */
@@ -113,6 +134,26 @@
   box-shadow: inset 0 0 0 1.5px rgba(255, 220, 216, 0.4);
 }
 
+/* pressed ("down"): gold/coloured fills recess into the surface; ghost fills with
+   a warm tint. The scale (above) carries the motion; these carry the depth. */
+.ctl-btn[data-variant="primary"]:active:not(:disabled) {
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0.16)), var(--ctl-gold-body);
+  box-shadow: var(--press-recess-gold), inset 0 0 0 1.5px rgba(255, 244, 206, 0.4), var(--press-flat);
+}
+.ctl-btn[data-variant="heal"]:active:not(:disabled) {
+  background: linear-gradient(180deg, #4fb377 0%, #3f9c64 100%);
+  box-shadow: var(--press-recess-gold), inset 0 0 0 1.5px rgba(220, 255, 235, 0.35), var(--press-flat);
+}
+.ctl-btn[data-variant="danger"]:active:not(:disabled) {
+  background: linear-gradient(180deg, var(--hp-critical, #d8453b) 0%, #b3352c 100%);
+  box-shadow: var(--press-recess-dark), inset 0 0 0 1.5px rgba(255, 220, 216, 0.32), var(--press-flat);
+}
+.ctl-btn[data-variant="ghost"]:active:not(:disabled) {
+  background: var(--press-fill);
+  box-shadow: var(--press-recess-dark);
+}
+
 /* ----------------------------------------------------------- IconButton ---- */
 .ctl-icon-btn {
   appearance: none;
@@ -157,6 +198,16 @@
 .ctl-icon-btn[aria-pressed="false"] {
   color: var(--ink-500, #9a8f7a);
 }
+/* pressed ("down"): token recesses into the gold; ghost gets a warm fill */
+.ctl-icon-btn[data-variant="token"]:active:not(:disabled) {
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)), var(--ctl-gold-body);
+  box-shadow: var(--press-recess-gold), var(--ring-gold), var(--press-flat);
+}
+.ctl-icon-btn[data-variant="ghost"]:active:not(:disabled) {
+  background: var(--press-fill);
+  box-shadow: var(--press-recess-dark);
+}
 
 /* -------------------------------------------------------------- Stepper ---- */
 .ctl-stepper {
@@ -178,6 +229,8 @@
 }
 .ctl-stepper__btn:active:not(:disabled) {
   transform: scale(0.94);
+  background: var(--obsidian-800, #100e0a);
+  box-shadow: var(--press-recess-dark);
 }
 .ctl-stepper__btn:disabled {
   opacity: 0.4;
@@ -213,6 +266,12 @@
 }
 .ctl-chip:active:not(:disabled) {
   transform: scale(0.96);
+  box-shadow: var(--press-recess-dark);
+}
+.ctl-chip[data-selected="true"]:active:not(:disabled) {
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0.16)), var(--ctl-gold-body);
+  box-shadow: var(--press-recess-gold), var(--ring-gold);
 }
 .ctl-chip:disabled {
   opacity: 0.4;
@@ -296,6 +355,10 @@
   background: var(--obsidian-600, #1f1a11);
   color: var(--ink-100, #f4ecdd);
 }
+.ctl-segment__option:active:not(:disabled) {
+  background: var(--press-fill);
+  box-shadow: var(--press-recess-dark);
+}
 .ctl-segment__hint {
   font-size: 0.6rem;
   font-weight: 600;
@@ -322,6 +385,8 @@
 }
 .ctl-key:active:not(:disabled) {
   transform: scale(0.94);
+  background: var(--obsidian-800, #100e0a);
+  box-shadow: var(--press-recess-dark);
 }
 .ctl-key:disabled {
   opacity: 0.4;
@@ -349,5 +414,14 @@
   .ctl-chip,
   .ctl-key {
     transition: none;
+  }
+  /* Drop the scale snap (keep the tonal/depth change as the instant pressed state). */
+  .ctl-btn:active:not(:disabled),
+  .ctl-icon-btn:active:not(:disabled),
+  .ctl-stepper__btn:active:not(:disabled),
+  .ctl-chip:active:not(:disabled),
+  .ctl-chip__remove:active:not(:disabled),
+  .ctl-key:active:not(:disabled) {
+    transform: none;
   }
 }

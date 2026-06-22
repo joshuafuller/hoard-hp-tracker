@@ -47,7 +47,6 @@
   background: rgba(8, 7, 5, 0.64);
   border: 0;
 }
-.dice-tray__close,
 .dice-tray__log {
   position: absolute;
   top: calc(env(safe-area-inset-top, 0px) + 0.9rem);
@@ -61,12 +60,12 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
+/* Positioning only — the round ghost look now comes from IconButton (.ctl-icon-btn). */
 .dice-tray__close {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 0.9rem);
   left: calc(env(safe-area-inset-left, 0px) + 0.9rem);
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  justify-content: center; /* centre the single icon horizontally */
+  z-index: 3;
 }
 /* SVG icons are centred by geometry (square viewBox) — never use text glyphs. */
 .dice-glyph { display: block; }
@@ -415,18 +414,7 @@
 }
 .dice-history__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
 .dice-history__title { font-family: "Fraunces", Georgia, serif; font-weight: 600; color: var(--ink-200); }
-.dice-history__close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: transparent;
-  border: 1px solid var(--obsidian-600);
-  color: var(--ink-300);
-  cursor: pointer;
-}
+/* close button look comes from IconButton (.ctl-icon-btn ghost); no bespoke class. */
 .dice-history__foot { display: flex; justify-content: center; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--obsidian-600); }
 .dice-history__clear {
   background: none;

@@ -16,6 +16,7 @@ import { DiceControls } from "./DiceControls";
 import { DiceResult } from "./DiceResult";
 import { DiceHistory } from "./DiceHistory";
 import { Glyph } from "../icons/Glyph";
+import { IconButton } from "../controls";
 
 /**
  * A contextual roll the app owns the rule for, routed through the shared tray:
@@ -310,9 +311,9 @@ export function DiceTray({
           reset the contextual outcome and let a second throw double-apply (a death
           save / Hit Die) — use Done / ✕ to leave instead. */}
       <div className="dice-tray__scrim" onClick={() => { if (!intent && !rolling) clearDice(); }} aria-hidden="true" />
-      <button type="button" className="dice-tray__close" aria-label="Close dice" onClick={handleClose}>
+      <IconButton variant="ghost" className="dice-tray__close" aria-label="Close dice" onClick={handleClose}>
         <Glyph name="close" />
-      </button>
+      </IconButton>
       <button type="button" className="dice-tray__log" aria-label="Roll log" onClick={() => setShowLog((v) => !v)}>
         <Glyph name="log" />
         <span>log</span>
