@@ -98,6 +98,15 @@ describe("CoinSheet", () => {
     expect(p.onDistill).toHaveBeenCalledTimes(1);
   });
 
+  it("plays the distill cascade cue when a distill is confirmed (#90)", async () => {
+    vi.mocked(playSfx).mockClear();
+    setup();
+    await userEvent.click(screen.getByRole("button", { name: /gold — 41 gp, edit/i }));
+    await userEvent.click(screen.getByRole("button", { name: /distill to fewest coins/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^distill$/i }));
+    expect(playSfx).toHaveBeenCalledWith("coinDistill");
+  });
+
   it("does not call distill if the confirmation is cancelled, returning to the console", async () => {
     const p = setup();
     await userEvent.click(screen.getByRole("button", { name: /gold — 41 gp, edit/i }));
