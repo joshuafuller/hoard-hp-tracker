@@ -16,6 +16,7 @@ vi.mock("./sound/sfx", () => ({
 describe("App (integration)", () => {
   beforeEach(async () => {
     await Dexie.delete(HP_DB_NAME);
+    vi.mocked(playSfx).mockClear(); // isolate per-test playSfx assertions (Copilot #158)
   });
 
   // The ± steppers were removed in favour of orb-drag; damage/heal now go
@@ -66,6 +67,18 @@ describe("App (integration)", () => {
     await screen.findByText("10");
     await keypad("damage", 1);
     expect(playSfx).toHaveBeenCalledWith("damage");
+  });
+
+  it("plays the toggle cue when concentration turns on, and nothing on initial load (#90)", async () => {
+    render(<App />);
+    await screen.findByText("10");
+    // No concentration cue fires just from loading/hydrating (baseline).
+    expect(playSfx).not.toHaveBeenCalledWith("toggleOn");
+    expect(playSfx).not.toHaveBeenCalledWith("toggleOff");
+    // Toggle concentration ON via the radial hub → the App-level watcher cues it.
+    await userEvent.click(screen.getByRole("button", { name: /actions/i }));
+    await userEvent.click(screen.getByRole("button", { name: /concentration/i }));
+    await waitFor(() => expect(playSfx).toHaveBeenCalledWith("toggleOn"));
   });
 
   it("edits Max HP through the pill modal", async () => {

@@ -89,6 +89,7 @@ export function App() {
     }
   }, [hp.hydrated, hp.status]);
 
+
   const undoLabel = (lc: NonNullable<HpLastChange>) =>
     lc.kind === "damage" ? `Took ${lc.amount}`
     : lc.kind === "heal" ? `Healed +${lc.amount}`
@@ -117,7 +118,14 @@ export function App() {
           onDice={() => openDice(null)}
           onAbout={() => setAboutOpen(true)}
           concentrating={hp.concentrating}
-          onToggleConcentration={() => hp.setConcentrating(!hp.concentrating)}
+          onToggleConcentration={() => {
+            const willConcentrate = !hp.concentrating;
+            // Cue from THIS gesture (not a later effect) so the first sound satisfies
+            // browser autoplay (Codex #158). A downed enable is a no-op in useHp
+            // (current ≤ 0) — skip the cue so a rejected toggle stays silent.
+            if (!(willConcentrate && dying)) playSfx(willConcentrate ? "toggleOn" : "toggleOff");
+            hp.setConcentrating(!hp.concentrating);
+          }}
           soundEnabled={soundEnabled}
           onToggleSound={onToggleSound}
         />
