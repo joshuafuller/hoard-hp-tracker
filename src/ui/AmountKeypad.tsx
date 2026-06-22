@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Button, Key, type ButtonVariant } from "./controls";
+import { playSfx } from "../sound/sfx";
 
 /** Map a keypad action's tone to a Button variant (damage = ruby, heal = emerald). */
 const variantFor = (tone?: string): ButtonVariant =>
@@ -41,9 +42,12 @@ export function AmountKeypad({ ariaLabel, context, header, footer, primary, seco
   const typed = digits !== "";
   const ok = (a: KeypadAction) => (a.gate === "positive" ? hasAmount : typed);
 
-  const push = (d: string) => { haptic(); setDigits((c) => (c === "0" ? d : (c + d).slice(0, MAX_DIGITS))); };
-  const back = () => { haptic(); setDigits((c) => c.slice(0, -1)); };
-  const clear = () => { haptic(); setDigits(""); };
+  // The neutral keypad "tap" feedback: a haptic + the `step` cue (its recipe existed
+  // in sfx.ts but had no call site until now — #90 / sound-design.md §3). Inlined
+  // (not a local helper) so push/back stay stable for the keydown effect's deps.
+  const push = (d: string) => { haptic(); playSfx("step"); setDigits((c) => (c === "0" ? d : (c + d).slice(0, MAX_DIGITS))); };
+  const back = () => { haptic(); playSfx("step"); setDigits((c) => c.slice(0, -1)); };
+  const clear = () => { haptic(); playSfx("step"); setDigits(""); };
   const commit = (a: KeypadAction) => {
     if (!ok(a)) return;
     haptic();

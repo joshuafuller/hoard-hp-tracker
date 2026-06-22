@@ -2,10 +2,21 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { AmountKeypad } from "./AmountKeypad";
+import { playSfx } from "../sound/sfx";
+
+vi.mock("../sound/sfx", () => ({ playSfx: vi.fn() }));
 
 const tap = (n: string | RegExp) => userEvent.click(screen.getByRole("button", { name: n }));
 
 describe("AmountKeypad", () => {
+  it("plays the neutral 'step' tap cue on a key press (#90)", async () => {
+    vi.mocked(playSfx).mockClear();
+    render(<AmountKeypad ariaLabel="x" context="x" closeOnCommit={false}
+      primary={[{ label: () => "Add", ariaLabel: "Add", gate: "positive", onCommit: vi.fn() }]} onClose={vi.fn()} />);
+    await tap("7");
+    expect(playSfx).toHaveBeenCalledWith("step");
+  });
+
   it("renders the configured actions and commits the typed amount", async () => {
     const add = vi.fn(), onClose = vi.fn();
     render(<AmountKeypad ariaLabel="Gold coins" context="Gold" closeOnCommit={false}

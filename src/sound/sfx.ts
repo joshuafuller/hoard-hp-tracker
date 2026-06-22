@@ -45,8 +45,11 @@ interface Voice {
   delay?: number;
 }
 
-/** The recipe for each cue: one or more short voices. */
-const RECIPES: Record<SfxName, Voice[]> = {
+/** Peak-gain ceiling — no cue may exceed this, so a play never startles (sound-design.md §4). */
+export const MAX_CUE_GAIN = 0.22;
+
+/** The recipe for each cue: one or more short voices. Exported for the loudness guard test. */
+export const RECIPES: Record<SfxName, Voice[]> = {
   // Low, blunt thud.
   damage: [{ type: "sawtooth", freq: 150, endFreq: 70, gain: 0.18, duration: 0.18 }],
   // Bright rising two-note lift.

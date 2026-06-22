@@ -137,3 +137,15 @@ describe("playSfx", () => {
     expect(oscillators.length).toBe(0);
   });
 });
+
+describe("cue loudness guard (sound-design.md §4)", () => {
+  it("no cue voice exceeds the peak-gain ceiling, so a play never startles", async () => {
+    const { RECIPES, MAX_CUE_GAIN } = await import("./sfx");
+    expect(MAX_CUE_GAIN).toBe(0.22);
+    for (const [name, voices] of Object.entries(RECIPES)) {
+      for (const v of voices) {
+        expect(v.gain, `cue "${name}" voice gain ${v.gain} > ceiling`).toBeLessThanOrEqual(MAX_CUE_GAIN);
+      }
+    }
+  });
+});
