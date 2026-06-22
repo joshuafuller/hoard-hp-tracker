@@ -74,8 +74,10 @@ test.describe("mobile layout", () => {
     const vw = page.viewportSize()!.width;
     const vh = page.viewportSize()!.height;
 
-    // Open the tray and build a mixed pool to stress the chip row + dock.
-    await page.getByLabel("Roll dice").click();
+    // Open the tray (now via the radial hub) and build a mixed pool to stress the
+    // chip row + dock.
+    await page.getByLabel("Actions").click();
+    await page.getByRole("button", { name: "Dice" }).click();
     await page.getByLabel("Add d20").click();
     await page.getByLabel("Add d6").click();
     await page.getByLabel("Add d6").click();

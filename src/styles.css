@@ -1402,14 +1402,6 @@ body {
    in tap-target and border radius so the two controls read as a matched pair.
    Tinted gold (--coin-gold) so it's immediately legible as "wealth" without a
    label — the same hue used for gp dots and the total readout. */
-/* The coins button is now an IconButton (variant=token) — primitive owns the
-   gold medallion look + press + focus. Only the inner sigil needs styling. */
-.coin-button__icon {
-  width: 22px;
-  height: 22px;
-  display: block;
-}
-
 /* ── Coin sheet ─────────────────────────────────────────────────────────── */
 /* Per-denomination coin colours, shared by the sheet rows, the switcher strip,
    and the distill preview so a coin reads the same everywhere. Each gets a soft
@@ -1781,20 +1773,6 @@ body {
    it clearly from the green/amber/red HP accent family so "concentrating" reads
    as a distinct state at a glance. The violet-400 (#a78bfa) is used inline as
    a literal rather than a token — concentration is a one-off state, not a tier. */
-/* Concentration is an IconButton (variant=ghost, pressed) — the primitive owns the
-   round look, press + focus. DESIGN.md keeps its "on" state a muted PURPLE (distinct
-   from the HP gold accent), so override the primitive's gold-on pressed colour for
-   this one toggle (higher specificity so it wins over .ctl-icon-btn[aria-pressed]). */
-.ctl-icon-btn.concentration-toggle[aria-pressed="true"] {
-  color: #a78bfa;
-  border-color: color-mix(in oklab, #a78bfa 40%, var(--obsidian-600));
-  box-shadow: 0 0 14px color-mix(in oklab, #a78bfa 30%, transparent);
-}
-
-.concentration-toggle__icon {
-  display: block;
-}
-
 /* ── Concentration prompt (#30) ─────────────────────────────────────────── */
 /* Stacks above the undo pill so both can coexist on-screen. The violet tint
    signals "spell save needed" without competing with the HP accent palette. */

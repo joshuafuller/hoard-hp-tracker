@@ -7,28 +7,45 @@ export interface RadialHubProps {
   onCoins: () => void;
   /** Open the dice tray. */
   onDice: () => void;
-  /** Open the rest flow (short/long). */
-  onRests: () => void;
-  /** Toggle / manage concentration. */
-  onConcentration: () => void;
+  /** Open the About panel (source-repo link). */
+  onAbout: () => void;
+  /** Current concentration state (the chip reflects it via aria-pressed). */
+  concentrating: boolean;
+  /** Toggle concentration. */
+  onToggleConcentration: () => void;
+  /** Current sound-on state. */
+  soundEnabled: boolean;
+  /** Toggle sound (mute). */
+  onToggleSound: () => void;
 }
 
-interface HubAction {
+interface HubItem {
   key: string;
   label: string;
-  fn: () => void;
+  onSelect: () => void;
+  /** Set for toggles → exposes aria-pressed; omitted for plain actions. */
+  pressed?: boolean;
 }
 
 /**
  * The single gold sigil that replaces the accumulating chrome row (#74). A
  * disclosure control: the hub carries `aria-expanded`/`aria-haspopup`, and
- * activating it reveals a fan of the secondary actions (Coins, Dice, Rests,
- * Concentration). Selecting one fires it and closes; Escape or a tap outside
- * cancels. The radial arc geometry + motion are layered on in CSS (slice 3) — the
- * markup is a plain, keyboard-reachable button group so it degrades gracefully and
- * stays accessible under prefers-reduced-motion.
+ * activating it fans out the secondary controls — Coins + Dice (actions),
+ * Concentration + Sound (toggles, reflecting state via aria-pressed), and About
+ * (the source-repo link panel). Rests stay in the footer. Selecting an item runs it
+ * and closes; Escape or a tap outside cancels. The radial arc + motion live in CSS
+ * and simplify under prefers-reduced-motion; the markup stays a plain, keyboard-
+ * reachable button group.
  */
-export function RadialHub({ onCoins, onDice, onRests, onConcentration }: RadialHubProps) {
+export function RadialHub({
+  onCoins,
+  onDice,
+  onAbout,
+  concentrating,
+  onToggleConcentration,
+  soundEnabled,
+  onToggleSound,
+}: RadialHubProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -48,11 +65,12 @@ export function RadialHub({ onCoins, onDice, onRests, onConcentration }: RadialH
     };
   }, [open]);
 
-  const actions: HubAction[] = [
-    { key: "coins", label: "Coins", fn: onCoins },
-    { key: "dice", label: "Dice", fn: onDice },
-    { key: "rests", label: "Rest", fn: onRests },
-    { key: "concentration", label: "Concentration", fn: onConcentration },
+  const items: HubItem[] = [
+    { key: "coins", label: "Coins", onSelect: onCoins },
+    { key: "dice", label: "Dice", onSelect: onDice },
+    { key: "concentration", label: "Concentration", onSelect: onToggleConcentration, pressed: concentrating },
+    { key: "sound", label: "Sound", onSelect: onToggleSound, pressed: soundEnabled },
+    { key: "about", label: "About", onSelect: onAbout },
   ];
 
   const select = (fn: () => void) => () => {
@@ -78,15 +96,16 @@ export function RadialHub({ onCoins, onDice, onRests, onConcentration }: RadialH
       </IconButton>
       {open && (
         <div className="radial-hub__fan">
-          {actions.map((a) => (
+          {items.map((item) => (
             <button
-              key={a.key}
+              key={item.key}
               type="button"
               className="radial-hub__action"
-              data-action={a.key}
-              onClick={select(a.fn)}
+              data-action={item.key}
+              aria-pressed={item.pressed === undefined ? undefined : item.pressed}
+              onClick={select(item.onSelect)}
             >
-              {a.label}
+              {item.label}
             </button>
           ))}
         </div>
