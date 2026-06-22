@@ -792,7 +792,10 @@ body {
 
 /* Layout only — the gold/ghost look + press/focus come from the Button primitive.
    Long Rest = primary (gold), Short Rest = ghost (spec §5). */
-.rest-controls__btn {
+/* Specificity (0,3,0) so the short-screen height clamp wins over the primitive's
+   .ctl-btn[data-size="lg"] { min-height: 56px } — the rest buttons must still
+   compress on short viewports to hold the one-screen budget (#32). */
+.rest-controls .ctl-btn.rest-controls__btn {
   min-width: 9.5rem;
   min-height: 56px; /* fallback for browsers without svh */
   min-height: clamp(42px, 6.5svh, 56px);
