@@ -42,31 +42,37 @@ test.describe("dice tray — roll → result → apply (reduced-motion / headles
     await page.getByRole("button", { name: "Throw", exact: true }).click();
   }
 
+  // Relative damage of `n` via the keypad (10 → 10-n).
+  async function damage(page: import("@playwright/test").Page, n: number) {
+    await page.getByLabel("Edit current HP").click();
+    const kp = page.getByRole("dialog");
+    for (const d of String(n)) await kp.getByRole("button", { name: d, exact: true }).click();
+    await kp.getByRole("button", { name: /^damage/i }).click();
+  }
+
   const hpCurrent = (page: import("@playwright/test").Page) => page.getByTestId("hp-current");
   const readHp = async (page: import("@playwright/test").Page) =>
     Number((await hpCurrent(page).textContent())?.trim());
 
-  test("rolls an ad-hoc expression and applies the total as heal", async ({ page }) => {
-    // Damage to 3/10 FIRST — Apply-as-heal clamps at max, so healing from full HP is a
-    // vacuous pass (the advisor's gotcha).
-    await page.getByLabel("Edit current HP").click();
-    const kp = page.getByRole("dialog");
-    await kp.getByRole("button", { name: "7", exact: true }).click();
-    await kp.getByRole("button", { name: /^damage/i }).click();
-    await expect.poll(() => readHp(page)).toBe(3);
+  test("rolls an ad-hoc expression and applies the total as heal (exact, non-clamped)", async ({ page }) => {
+    // Damage to 4/10 first AND keep the roll's MAX (1d4+1 = 5) below the missing HP (6),
+    // so Apply-as-heal is never clamped at max — otherwise the assertion passes for any
+    // heal ≥ missing and proves nothing (advisor + Codex #187).
+    await damage(page, 6);
+    await expect.poll(() => readHp(page)).toBe(4);
 
     await openTray(page);
-    await roll(page, "2d6+3");
+    await roll(page, "1d4+1");
 
     const total = page.locator(".dice-result__total");
     await expect(total).toBeVisible();
     const value = Number((await total.textContent())?.trim());
-    expect(value).toBeGreaterThanOrEqual(5); // 2d6+3 min
-    expect(value).toBeLessThanOrEqual(15); // 2d6+3 max
+    expect(value).toBeGreaterThanOrEqual(2); // 1d4+1 min
+    expect(value).toBeLessThanOrEqual(5); // 1d4+1 max (< 6 missing → never clamped)
 
     await page.getByRole("button", { name: /apply as heal/i }).click();
-    // HP rose by the rolled total, clamped at max (10).
-    await expect.poll(() => readHp(page)).toBe(Math.min(10, 3 + value));
+    // Exact arithmetic: HP rose by precisely the rolled total, no clamp involved.
+    await expect.poll(() => readHp(page)).toBe(4 + value);
   });
 
   test("an exploding expression resolves to a result without hanging", async ({ page }) => {
@@ -81,7 +87,11 @@ test.describe("dice tray — roll → result → apply (reduced-motion / headles
   });
 
   test("closing after a result, then reopening, starts clean (no stale dice, no double-apply)", async ({ page }) => {
-    const hpBefore = await readHp(page);
+    // Damage first so HP has headroom — at full HP a wrongful close-apply would clamp to
+    // max and hide the bug. With 1d4+1 (≤5) below the missing 7, an erroneous apply would
+    // raise HP detectably (Codex #187).
+    await damage(page, 7);
+    await expect.poll(() => readHp(page)).toBe(3);
 
     await openTray(page);
     await roll(page, "1d4+1");
@@ -90,11 +100,11 @@ test.describe("dice tray — roll → result → apply (reduced-motion / headles
     // Closing must NOT apply the roll to HP (only Apply-as-heal does).
     await page.getByLabel("Close dice").click();
     await expect(page.locator(".dice-tray")).toHaveAttribute("data-open", "false");
-    expect(await readHp(page)).toBe(hpBefore);
+    expect(await readHp(page)).toBe(3);
 
     // Reopening starts clean — no stale result plate carried over, HP untouched.
     await openTray(page);
     await expect(page.locator(".dice-result")).toHaveCount(0);
-    expect(await readHp(page)).toBe(hpBefore);
+    expect(await readHp(page)).toBe(3);
   });
 });
