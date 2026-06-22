@@ -1405,39 +1405,8 @@ body {
    in tap-target and border radius so the two controls read as a matched pair.
    Tinted gold (--coin-gold) so it's immediately legible as "wealth" without a
    label — the same hue used for gp dots and the total readout. */
-.coin-button {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-pill);
-  border: 1px solid color-mix(in oklab, var(--coin-gold) 28%, var(--obsidian-600));
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--coin-gold);
-  background: var(--obsidian-700);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  transition:
-    transform var(--dur-fast) var(--ease-spring),
-    background var(--dur-fast) ease,
-    box-shadow var(--dur-fast) ease;
-}
-@media (hover: hover) {
-  .coin-button:hover {
-    background: var(--obsidian-600);
-  }
-}
-.coin-button:active {
-  transform: scale(0.92);
-}
-.coin-button:focus-visible {
-  outline: 2px solid var(--coin-gold);
-  outline-offset: 3px;
-}
+/* The coins button is now an IconButton (variant=token) — primitive owns the
+   gold medallion look + press + focus. Only the inner sigil needs styling. */
 .coin-button__icon {
   width: 22px;
   height: 22px;
@@ -1926,49 +1895,14 @@ body {
    it clearly from the green/amber/red HP accent family so "concentrating" reads
    as a distinct state at a glance. The violet-400 (#a78bfa) is used inline as
    a literal rather than a token — concentration is a one-off state, not a tier. */
-.concentration-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-pill);
-  border: 1px solid color-mix(in oklab, var(--coin-gold) 30%, var(--obsidian-600));
-  color: var(--coin-gold);
-  background: var(--obsidian-700);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  transition:
-    transform var(--dur-fast) var(--ease-spring),
-    color var(--dur-fast) ease,
-    background var(--dur-fast) ease,
-    box-shadow var(--dur-fast) ease;
-}
-
-.concentration-toggle[data-concentrating="true"] {
+/* Concentration is an IconButton (variant=ghost, pressed) — the primitive owns the
+   round look, press + focus. DESIGN.md keeps its "on" state a muted PURPLE (distinct
+   from the HP gold accent), so override the primitive's gold-on pressed colour for
+   this one toggle (higher specificity so it wins over .ctl-icon-btn[aria-pressed]). */
+.ctl-icon-btn.concentration-toggle[aria-pressed="true"] {
   color: #a78bfa;
   border-color: color-mix(in oklab, #a78bfa 40%, var(--obsidian-600));
   box-shadow: 0 0 14px color-mix(in oklab, #a78bfa 30%, transparent);
-}
-
-.concentration-toggle[data-concentrating="false"] {
-  color: var(--ink-500);
-}
-
-@media (hover: hover) {
-  .concentration-toggle:hover {
-    background: var(--obsidian-600);
-  }
-}
-
-.concentration-toggle:active {
-  transform: scale(0.92);
-}
-
-.concentration-toggle:focus-visible {
-  outline: 2px solid #a78bfa;
-  outline-offset: 3px;
 }
 
 .concentration-toggle__icon {

@@ -55,10 +55,15 @@
 .ctl-stepper__btn:focus-visible,
 .ctl-chip:focus-visible,
 .ctl-chip__remove:focus-visible,
-.ctl-segment__option:focus-visible,
 .ctl-key:focus-visible {
   outline: 2px solid var(--coin-gold, #e8b45a);
   outline-offset: 2px;
+}
+/* Segment clips its rounded corners (overflow:hidden), so an outset ring would be
+   cut off — inset it so keyboard focus stays visible on each option. */
+.ctl-segment__option:focus-visible {
+  outline: 2px solid var(--coin-gold, #e8b45a);
+  outline-offset: -2px;
 }
 
 /* ---------------------------------------------------------------- Button ---- */
