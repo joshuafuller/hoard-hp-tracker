@@ -1,5 +1,3 @@
-import { useEffect, useRef } from "react";
-import { playSfx } from "../sound/sfx";
 import { IconButton } from "./controls";
 
 export interface ConcentrationToggleProps {
@@ -14,20 +12,13 @@ export interface ConcentrationToggleProps {
  * stable accessible name ("Concentration") with `aria-pressed` reflecting the
  * on/off state. When active, the button glows with a distinct concentration
  * tint (a muted purple to distinguish it from the HP accent).
+ *
+ * NB: the concentration toggle/break sound cue is intentionally NOT wired here —
+ * it needs App-level hydration baselining (mirroring the status sounds) so a
+ * persisted `concentrating: true` doesn't fire a false confirmation on reopen, and
+ * so a downed-rejected enable stays silent (Codex #145). Tracked under #90.
  */
 export function ConcentrationToggle({ concentrating, onToggle }: ConcentrationToggleProps) {
-  // Confirm with a cue only when the state ACTUALLY changes — not optimistically on
-  // tap. `useHp` no-ops setConcentrating(true) while downed (current ≤ 0), so a
-  // rejected enable must not play the toggle-on cue (Codex #145). Fires on real
-  // transitions either way (incl. an auto-drop on hitting 0).
-  const prev = useRef(concentrating);
-  useEffect(() => {
-    if (concentrating !== prev.current) {
-      playSfx(concentrating ? "toggleOn" : "toggleOff");
-      prev.current = concentrating;
-    }
-  }, [concentrating]);
-
   return (
     <IconButton
       variant="ghost"
