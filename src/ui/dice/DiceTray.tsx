@@ -16,7 +16,7 @@ import { DiceControls } from "./DiceControls";
 import { DiceResult } from "./DiceResult";
 import { DiceHistory } from "./DiceHistory";
 import { Glyph } from "../icons/Glyph";
-import { IconButton } from "../controls";
+import { Button, IconButton } from "../controls";
 
 /**
  * A contextual roll the app owns the rule for, routed through the shared tray:
@@ -354,20 +354,20 @@ export function DiceTray({
           </span>
           {intent.kind === "death-save" && deathSaveRoll != null ? (
             // Death save already ticked its pip on settle — Done just closes.
-            <button type="button" className="dice-throw" onClick={handleClose}>
+            <Button variant="primary" size="lg" className="dice-throw" onClick={handleClose}>
               Done
-            </button>
+            </Button>
           ) : intent.kind === "hit-die" && hitDieRoll != null ? (
             // A settled Hit Die's ONLY commit is Apply (spend + heal). No re-throw and
             // no discard-as-Done — both would hand out a free short-rest reroll by
-            // tossing a low roll and reopening (Codex #130).
-            <button type="button" className="dice-throw" onClick={applyHitDie}>
+            // tossing a low roll and reopening (Codex #130). It heals → heal variant.
+            <Button variant="heal" size="lg" className="dice-throw" onClick={applyHitDie}>
               Apply {hitDieRoll}{conLabel(intent.conMod)} = {Math.max(0, hitDieRoll + intent.conMod)} heal
-            </button>
+            </Button>
           ) : (
-            <button type="button" className="dice-throw" onClick={throwIntent} disabled={rolling}>
+            <Button variant="primary" size="lg" className="dice-throw" onClick={throwIntent} disabled={rolling}>
               {rolling ? "Throwing…" : `Throw ${intentNotation(intent)}`}
-            </button>
+            </Button>
           )}
         </div>
       ) : (
