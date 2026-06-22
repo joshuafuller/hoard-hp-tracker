@@ -1129,8 +1129,6 @@ body {
   filter: blur(3px);
 }
 
-/* Live preview while dragging the orb to damage/heal: a big signed amount over
-   the orb, tinted ruby (damage) or emerald (heal). */
 /* Live drag delta: a floating chip centred over the orb, ABOVE the readout (it's a
    last-sibling of .vessel now, not trapped inside the orb's isolation context). Its
    own translucent backdrop surface lifts it off the totals — like the dice card. */

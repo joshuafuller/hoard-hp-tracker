@@ -61,10 +61,12 @@ describe("LiquidVessel orb-drag input", () => {
     const vessel = orb.closest(".vessel")!;
     expect(delta!.parentElement).toBe(vessel);
     expect(delta!.closest(".vessel__orb")).toBeNull();
+    const readout = vessel.querySelector(".vessel__readout");
+    expect(readout, "readout must exist for a meaningful order check").toBeTruthy();
     const kids = [...vessel.children];
-    expect(kids.indexOf(delta as Element)).toBeGreaterThan(
-      kids.indexOf(vessel.querySelector(".vessel__readout") as Element),
-    );
+    const readoutIdx = kids.indexOf(readout as Element);
+    expect(readoutIdx).toBeGreaterThanOrEqual(0);
+    expect(kids.indexOf(delta as Element)).toBeGreaterThan(readoutIdx);
 
     fireEvent.pointerUp(orb, { clientY: 100, pointerId: 1 });
   });
