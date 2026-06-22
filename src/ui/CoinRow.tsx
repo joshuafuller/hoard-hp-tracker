@@ -1,4 +1,5 @@
 import type { CoinKind } from "../domain/coins";
+import { Stepper } from "./controls";
 
 export interface CoinRowProps {
   kind: CoinKind;
@@ -39,16 +40,15 @@ export function CoinRow({ kind, label, unit, count, canSpend, onAdd, onSpend, on
         <span className="coin-row__label">{label}</span>
         <span className="coin-row__unit">{unit}</span>
       </span>
-      <span className="coin-row__controls">
-        <button
-          type="button"
-          className="coin-row__step"
-          aria-label={`Spend 1 ${label}`}
-          disabled={!canSpend}
-          onClick={tap(onSpend)}
-        >
-          −
-        </button>
+      <Stepper
+        className="coin-row__controls"
+        label={label}
+        decLabel={`Spend 1 ${label}`}
+        incLabel={`Add 1 ${label}`}
+        decDisabled={!canSpend}
+        onDec={tap(onSpend)}
+        onInc={tap(onAdd)}
+      >
         <button
           type="button"
           className="coin-row__count"
@@ -57,10 +57,7 @@ export function CoinRow({ kind, label, unit, count, canSpend, onAdd, onSpend, on
         >
           {count}
         </button>
-        <button type="button" className="coin-row__step" aria-label={`Add 1 ${label}`} onClick={tap(onAdd)}>
-          +
-        </button>
-      </span>
+      </Stepper>
     </div>
   );
 }
