@@ -1,3 +1,4 @@
+import { playSfx } from "../sound/sfx";
 import { IconButton } from "./controls";
 
 export interface ConcentrationToggleProps {
@@ -21,7 +22,12 @@ export function ConcentrationToggle({ concentrating, onToggle }: ConcentrationTo
       data-concentrating={concentrating}
       aria-label="Concentration"
       pressed={concentrating}
-      onClick={onToggle}
+      onClick={() => {
+        // toggle-off when dropping concentration, toggle-on when picking it up
+        // (concentrating is the pre-toggle state).
+        playSfx(concentrating ? "toggleOff" : "toggleOn");
+        onToggle();
+      }}
       title={concentrating ? "Concentrating — tap to drop" : "Not concentrating — tap to enable"}
     >
       {/* Stylised "C" diamond — a simple glyph that reads as "spell focus". */}

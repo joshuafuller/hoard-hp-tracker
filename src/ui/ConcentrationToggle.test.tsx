@@ -2,8 +2,21 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ConcentrationToggle } from "./ConcentrationToggle";
+import { playSfx } from "../sound/sfx";
+
+vi.mock("../sound/sfx", () => ({ playSfx: vi.fn() }));
 
 describe("ConcentrationToggle", () => {
+  it("plays toggle-on when enabling and toggle-off when dropping (#90)", async () => {
+    vi.mocked(playSfx).mockClear();
+    const { rerender } = render(<ConcentrationToggle concentrating={false} onToggle={vi.fn()} />);
+    await userEvent.click(screen.getByRole("button", { name: "Concentration" }));
+    expect(playSfx).toHaveBeenLastCalledWith("toggleOn");
+    rerender(<ConcentrationToggle concentrating onToggle={vi.fn()} />);
+    await userEvent.click(screen.getByRole("button", { name: "Concentration" }));
+    expect(playSfx).toHaveBeenLastCalledWith("toggleOff");
+  });
+
   it("renders a button with accessible label", () => {
     render(<ConcentrationToggle concentrating={false} onToggle={vi.fn()} />);
     expect(screen.getByRole("button", { name: "Concentration" })).toBeInTheDocument();

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { playSfx } from "../sound/sfx";
 import { Button } from "./controls";
 
 export interface UndoPillProps {
@@ -24,7 +25,7 @@ export function UndoPill({ label, onUndo, onDismiss, timeout = 4000 }: UndoPillP
   return (
     <div className="undo-pill" role="status">
       <span className="undo-pill__label">{label}</span>
-      <Button variant="ghost" size="sm" className="undo-pill__btn" onClick={onUndo}>↶ Undo</Button>
+      <Button variant="ghost" size="sm" className="undo-pill__btn" onClick={() => { playSfx("undo"); onUndo(); }}>↶ Undo</Button>
     </div>
   );
 }

@@ -1,11 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   __resetSoundPreference,
   MUTE_STORAGE_KEY,
 } from "../sound/soundSettings";
 import { SoundToggle } from "./SoundToggle";
+import { playSfx } from "../sound/sfx";
+
+vi.mock("../sound/sfx", () => ({ playSfx: vi.fn() }));
 
 beforeEach(() => {
   localStorage.clear();
@@ -20,6 +23,13 @@ afterEach(() => {
 describe("SoundToggle", () => {
   // Stable accessible name; on/off conveyed via aria-pressed.
   const button = () => screen.getByRole("button", { name: /sound effects/i });
+
+  it("fires the toggle-on cue on tap (silent when muting — playSfx self-gates) (#90)", async () => {
+    vi.mocked(playSfx).mockClear();
+    render(<SoundToggle />);
+    await userEvent.click(button());
+    expect(playSfx).toHaveBeenCalledWith("toggleOn");
+  });
 
   it("renders enabled (pressed) by default", () => {
     render(<SoundToggle />);
