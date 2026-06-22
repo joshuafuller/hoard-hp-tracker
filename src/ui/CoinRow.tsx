@@ -1,5 +1,4 @@
 import type { CoinKind } from "../domain/coins";
-import { playSfx } from "../sound/sfx";
 import { Stepper } from "./controls";
 
 export interface CoinRowProps {
@@ -47,8 +46,8 @@ export function CoinRow({ kind, label, unit, count, canSpend, onAdd, onSpend, on
         decLabel={`Spend 1 ${label}`}
         incLabel={`Add 1 ${label}`}
         decDisabled={!canSpend}
-        onDec={() => { playSfx("coinSpend"); tap(onSpend)(); }}
-        onInc={() => { playSfx("coinAdd"); tap(onAdd)(); }}
+        onDec={tap(onSpend)}
+        onInc={tap(onAdd)}
       >
         <button
           type="button"

@@ -163,4 +163,9 @@ describe("cue loudness guard (sound-design.md §4)", () => {
       }
     }
   });
+
+  it("the noise-tick (coin) cue gain also stays under the ceiling", async () => {
+    const { COIN_TICK_GAIN, MAX_CUE_GAIN } = await import("./sfx");
+    expect(COIN_TICK_GAIN).toBeLessThanOrEqual(MAX_CUE_GAIN);
+  });
 });

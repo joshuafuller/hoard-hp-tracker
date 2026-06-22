@@ -202,11 +202,13 @@ function playClatter(context: AudioContext): void {
  * falls for a spend ("out") so the two read as mirror transactions. Gains stay well
  * under the 0.22 cue ceiling. — sound-design.md §3 (transactional family).
  */
+/** Peak gain of a coin tick — kept under MAX_CUE_GAIN (asserted by the loudness guard). */
+export const COIN_TICK_GAIN = 0.11;
 function playCoinTicks(context: AudioContext, direction: "add" | "spend"): void {
   const now = context.currentTime;
   const freqs = [2600, 3200, 3900]; // bright metallic band
   if (direction === "spend") freqs.reverse(); // falling lilt for coins out
-  freqs.forEach((freq, i) => playTick(context, now + i * 0.06, freq, 0.11, 0.05));
+  freqs.forEach((freq, i) => playTick(context, now + i * 0.06, freq, COIN_TICK_GAIN, 0.05));
 }
 
 /**
