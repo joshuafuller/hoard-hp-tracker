@@ -1,44 +1,60 @@
-# Hoard HP Tracker
+<div align="center">
 
-### ▶ **[Open the live app →](https://joshuafuller.github.io/hoard-hp-tracker/)**
+# 🪙 Hoard
 
-Installable PWA — open it on your phone and tap **Add to Home Screen** to use it offline at the table.
+**A gorgeous, offline, single-player HP tracker for tabletop games.**
+*A luminous liquid orb for hit points — plus coins, a 3D dice tray, death saves, and rests.*
 
-> 🧪 **Beta:** work-in-progress builds from the `beta` branch deploy to
-> **[/beta/](https://joshuafuller.github.io/hoard-hp-tracker/beta/)** — production above is never affected.
+[![Open the live app](https://img.shields.io/badge/▶_Open_the_live_app-d9b85c?style=for-the-badge&labelColor=14110a)](https://joshuafuller.github.io/hoard-hp-tracker/)
 
-**A gorgeous, fullscreen, mobile-first HP tracker for tabletop games — installable, offline, and
-self-hostable.** Original open-source code; ships no game content.
+[![PWA](https://img.shields.io/badge/PWA-installable-d9b85c?labelColor=14110a)](https://joshuafuller.github.io/hoard-hp-tracker/)
+[![Offline](https://img.shields.io/badge/works-offline-4fb477?labelColor=14110a)](#use-it)
+[![React 19](https://img.shields.io/badge/React-19-5fb3d4?labelColor=14110a&logo=react)](#tech--quality)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?labelColor=14110a&logo=typescript&logoColor=white)](#tech--quality)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-a78bfa?labelColor=14110a)](LICENSE)
 
-Track current / max / temporary hit points with big thumb-reach **−/+** controls, plus death saves,
-short/long rest with Hit Dice, a tap-to-edit pill, satisfying haptics, and optional sound. Runs as an
-installable PWA (works offline at the table) or a one-command Docker container.
+<br>
 
-## Features
+<img src="docs/gallery/walkthrough.gif" alt="A walkthrough of Hoard — opening the gold radial hub, draining the liquid HP orb on damage, healing back, and the coin hoard" width="300" />
 
-- **HP at a glance** — luminous readout, a tiered bar (green → amber → red) with a temp-HP overshield.
-- **Death saves** — three success / three failure pips and a d20 roll; revive / stabilize / dead.
-- **Rests** — spend Hit Dice on a short rest; full recovery on a long rest (with a CON modifier).
-- **Tap to set** — tap any value for a pill editor: `−` · type · `+`.
-- **Feel** — haptics on supported devices, optional sound effects (mutable).
-- **Offline-first PWA** — installable; works with no connection. Your data stays on your device.
+</div>
 
-## Run it
+Fast one-screen tools for the bookkeeping you do on your turn — **no account, no connection; your
+data stays on your device.** Open the app, **Add to Home Screen**, and it works offline at the table.
 
-**Dev**
+## What you get
+
+- **HP at a glance** — a liquid orb that drains gold → bloodied → critical; tap to open the keypad or
+  drag the orb up/down to heal/damage, with one-tap undo.
+- **Coins** — track the hoard across pp/gp/sp/cp with quick steppers and one-tap **auto-distill**.
+- **Dice** — a 3D physics tray for ad-hoc rolls, death-save d20s, and Hit Dice; advantage, modifiers,
+  exploding/keep-drop notation, and a roll log.
+- **Death saves & rests** — success/failure pips + a d20; **short rest** spends Hit Dice, **long rest**
+  restores to full.
+- **Concentration** — a CON-save prompt when you take damage while concentrating.
+- **One gold sigil** — the radial action hub fans out coins, dice, concentration, sound, and about, so
+  the screen stays calm.
+- **Feel** — a cohesive synth sound palette + haptics, both optional and mutable.
+- **Offline-first PWA** — installable; works with no connection.
+
+## Use it
+
+- **Just play it** — [open the app](https://joshuafuller.github.io/hoard-hp-tracker/), then **Add to
+  Home Screen** on your phone for a fullscreen, offline app.
+- **Beta builds** — work-in-progress from the `beta` branch deploys to
+  **[/beta/](https://joshuafuller.github.io/hoard-hp-tracker/beta/)** (production above is never affected).
+
+It's free, open source, and ships **no game content** — an independent, unofficial fan tool.
+
+---
+
+## Build & self-host
+
+For developers. Players don't need any of this — just the link above.
 
 ```bash
 pnpm install
 pnpm dev            # http://localhost:5173
-```
-
-**Quality gates** (test-driven; every change ships with tests)
-
-```bash
-pnpm test           # Vitest
-pnpm typecheck      # tsc --noEmit (strict)
-pnpm lint           # eslint
-pnpm build          # tsc + vite build (emits the PWA service worker)
 ```
 
 **Self-host with Docker**
@@ -49,31 +65,52 @@ docker run -p 8080:8080 hoard-hp      # http://localhost:8080
 # or: docker compose up --build
 ```
 
-## Tech
+**Quality gates** (test-driven; every change ships with tests)
+
+```bash
+pnpm test           # Vitest
+pnpm typecheck      # tsc --noEmit (strict)
+pnpm lint           # eslint
+pnpm build          # tsc + vite build (emits the PWA service worker)
+pnpm mutation       # Stryker mutation testing over src/domain
+```
+
+## Tech & quality
 
 React 19 + Vite + TypeScript (strict) + Vitest, `vite-plugin-pwa` (Workbox) for offline/install, and
 Dexie (IndexedDB) for local persistence. The HP rules live in a small **pure, fully-tested domain
-core** (`src/domain/`); the UI is presentational.
-
-## Quality
-
-The rules domain is held to a high bar: **example + property-based tests** (fast-check) for its
-invariants, and **mutation testing** (Stryker) over the domain — CI **fails the build below a 90%
-mutation score**, so injected faults must be caught by a test. CI enforces lint, types, tests,
-build, and the mutation threshold.
-
-```bash
-pnpm mutation        # Stryker mutation testing over src/domain
-```
+core** (`src/domain/`); the UI is presentational. The domain is held to a high bar — **example +
+property-based tests** (fast-check) and **mutation testing** (Stryker), with CI failing the build
+below a 90% mutation score.
 
 ## Product direction
 
-Hoard is **a single player's utility belt at the tabletop** — fast, offline, one-screen tools for
-the bookkeeping a player does on their turn (HP, coins, and more to come). What belongs in the app
-(and what deliberately doesn't) is governed by an explicit **Scope-Fit Test**. See the
+Hoard is **a single player's utility belt at the tabletop** — fast, offline, one-screen tools for the
+bookkeeping a player does on their turn. What belongs in the app (and what deliberately doesn't) is
+governed by an explicit **Scope-Fit Test**. See the
 **[Product Requirements Document](docs/PRD.md)** for the vision, personas, and how scope grows.
 
 ## License
 
 [AGPL-3.0](LICENSE). See [`NOTICE`](NOTICE). This is an independent, unofficial fan tool and ships no
 third-party game content.
+
+---
+
+<details>
+<summary><b>Regenerate the walkthrough</b></summary>
+
+The README walkthrough is recorded from the live app — no manual editing:
+
+```bash
+pnpm build
+pnpm preview --port 4173 &                 # background the preview only
+node scripts/record-walkthrough.mjs        # → docs/gallery/walkthrough.gif (needs ffmpeg)
+```
+
+`record-walkthrough.mjs` drives the production build in a 390×844 mobile viewport (fresh profile →
+deterministic 10/10 seed, a sample character name) through a short tour — opening the radial hub,
+draining the HP orb on damage, healing back, and the coin hoard — and ffmpeg-encodes it to an
+optimized looping GIF. (`scripts/capture-screenshots.mjs` still grabs individual still PNGs under
+`docs/screenshots/` if you need them.)
+</details>

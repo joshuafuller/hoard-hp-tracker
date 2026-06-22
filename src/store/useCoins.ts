@@ -11,6 +11,7 @@ import {
   totalGp,
 } from "../domain/coins";
 import { db as defaultDb, HP_ID, type HpDb, type HpRecord, isReloading } from "./db";
+import { reportSaveError } from "./saveError";
 
 export interface UseCoinsResult extends Coins {
   hydrated: boolean;
@@ -43,6 +44,9 @@ export function useCoins(db: HpDb = defaultDb): UseCoinsResult {
     const run = () =>
       db.transaction("rw", db.hp, async () => {
         const cur = await db.hp.get(HP_ID);
+        // Safe no-op: the record is always seeded on first-run populate (see
+        // createHpDb), so a missing record here means the store is mid-init, not
+        // lost. Guarding avoids writing a coins-only row with no HP fields.
         if (!cur) return;
         await db.hp.put({ ...cur, ...fn(coinsOf(cur)) });
       });
@@ -54,7 +58,12 @@ export function useCoins(db: HpDb = defaultDb): UseCoinsResult {
         if (!db.isOpen()) await db.open();
         await run();
       } catch (err2) {
-        console.error("[hoard] coin write failed; the change was not saved", err ?? err2);
+        // Both attempts failed (quota, private mode, blocked upgrade). Log the
+        // *retry* error (the relevant one) with the original as context, then
+        // propagate so callers/UI can react instead of treating it as success
+        // (which would be silent data loss).
+        console.error("[hoard] coin write failed; the change was not saved", err2, err);
+        reportSaveError(); // surface to the UI; no throw — call sites are fire-and-forget (#101)
       }
     }
   };

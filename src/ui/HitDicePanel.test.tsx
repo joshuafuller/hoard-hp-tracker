@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { HitDicePanel } from "./HitDicePanel";
@@ -130,5 +130,55 @@ describe("HitDicePanel", () => {
     await userEvent.type(input, "-1");
     await userEvent.tab();
     expect(onSetConMod).toHaveBeenCalledWith(-1);
+  });
+
+  it("marks the open body as a modal dialog", async () => {
+    renderPanel();
+    await expand();
+    const dialog = screen.getByRole("dialog", { name: /hit dice/i });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+  });
+
+  it("closes on Escape", async () => {
+    renderPanel();
+    await expand();
+    expect(screen.getByRole("dialog", { name: /hit dice/i })).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: /hit dice/i })).not.toBeInTheDocument();
+  });
+
+  it("traps Tab focus within the open dialog (wraps last → first)", async () => {
+    renderPanel();
+    await expand();
+    const dialog = screen.getByRole("dialog", { name: /hit dice/i });
+    // The dialog contains the select + four NumberEditor controls; grab the
+    // full ordered focusable set the trap will see.
+    const all = Array.from(
+      dialog.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+    const first = all[0]!;
+    const last = all[all.length - 1]!;
+    expect(all.length).toBeGreaterThan(1);
+    last.focus();
+    await userEvent.tab();
+    expect(first).toHaveFocus();
+  });
+
+  it("traps Shift+Tab focus within the open dialog (wraps first → last)", async () => {
+    renderPanel();
+    await expand();
+    const dialog = screen.getByRole("dialog", { name: /hit dice/i });
+    const all = Array.from(
+      dialog.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+    const first = all[0]!;
+    const last = all[all.length - 1]!;
+    first.focus();
+    await userEvent.tab({ shift: true });
+    expect(last).toHaveFocus();
   });
 });

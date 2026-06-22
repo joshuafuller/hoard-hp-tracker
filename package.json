@@ -7,16 +7,20 @@
   "license": "AGPL-3.0-only",
   "packageManager": "pnpm@10.30.2",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "vendor:dice": "node scripts/vendor-dice.mjs",
+    "dev": "node scripts/vendor-dice.mjs && vite",
+    "build": "node scripts/vendor-dice.mjs && tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "typecheck:e2e": "tsc -p tsconfig.e2e.json --noEmit",
     "test": "vitest run",
     "e2e": "playwright test",
     "mutation": "stryker run"
   },
   "dependencies": {
+    "@3d-dice/dice-box": "^1.1.4",
+    "@3d-dice/dice-parser-interface": "^0.2.1",
     "dexie": "^4.0.10",
     "dexie-react-hooks": "^1.1.7",
     "react": "^19.0.0",
@@ -24,6 +28,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "@playwright/test": "1.60.0",
     "@stryker-mutator/core": "^9.6.1",
     "@stryker-mutator/vitest-runner": "^9.6.1",
     "@testing-library/jest-dom": "^6.6.3",
@@ -38,7 +43,6 @@
     "fast-check": "^3.23.1",
     "globals": "^15.14.0",
     "jsdom": "^25.0.1",
-    "@playwright/test": "1.60.0",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.2",
     "vite": "^6.0.5",

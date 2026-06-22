@@ -1,14 +1,10 @@
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noEmit": true,
+    // Playwright specs get `test`/`expect` from the explicit @playwright/test
+    // import; do NOT inherit the app's vitest/jest-dom globals (they clash).
+    "types": []
   },
   "include": ["e2e/**/*.ts", "playwright.config.ts"]
 }

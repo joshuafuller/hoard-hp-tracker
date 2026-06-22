@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { type CoinKind, type Coins, coinsEqual, distill } from "../domain/coins";
+import { type CoinKind, type Coins, canSpend, coinsEqual, distill, totalCp } from "../domain/coins";
+import { playSfx } from "../sound/sfx";
 import { AmountKeypad } from "./AmountKeypad";
 import { CoinRow } from "./CoinRow";
 import { DistillConfirm } from "./DistillConfirm";
+import { Glyph } from "./icons/Glyph";
+import { Button, IconButton } from "./controls";
 
 export interface CoinSheetProps {
   pp: number;
@@ -60,6 +63,35 @@ export function CoinSheet({
   const [editing, setEditing] = useState<CoinKind | null>(null);
   const [confirming, setConfirming] = useState(false);
 
+  // Transactional cue driven by the ACTUAL purse value, not optimistically per tap:
+  // a rise plays coinAdd, a fall plays coinSpend, and an unchanged total is silent —
+  // so a rejected spend (rapid double-tap past the funds boundary, before the live
+  // query re-renders) makes no sound, and value-preserving distill stays silent too
+  // (Codex #148). Covers the keypad path as well as the steppers. First value is the
+  // baseline (no cue on mount/hydration). — sound-design.md §3 (transactional).
+  const totalCpValue = totalCp(coins);
+  const prevTotalCp = useRef<number | null>(null);
+  useEffect(() => {
+    if (prevTotalCp.current !== null && totalCpValue !== prevTotalCp.current) {
+      playSfx(totalCpValue > prevTotalCp.current ? "coinAdd" : "coinSpend");
+    }
+    prevTotalCp.current = totalCpValue;
+  }, [totalCpValue]);
+
+  // Escape closes the overview. While a sub-view is up (the keypad or the
+  // distill confirmation) that sub-view owns Escape — returning to the overview
+  // rather than closing the whole sheet — so we stand down in those states.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  useEffect(() => {
+    if (editing || confirming) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCloseRef.current();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editing, confirming]);
+
   // Auto-dismiss the undo affordance after a beat, mirroring the HP undo pill.
   const onDismissRef = useRef(onDismissDistill);
   onDismissRef.current = onDismissDistill;
@@ -75,7 +107,15 @@ export function CoinSheet({
   // The confirmation is reached from the console's distill action; cancelling or
   // committing returns to the console (the keypad stays open underneath).
   if (confirming) {
-    return <DistillConfirm coins={coins} onConfirm={onDistill} onClose={() => setConfirming(false)} />;
+    return (
+      <DistillConfirm
+        coins={coins}
+        // Distill is value-preserving (totalCp unchanged), so the purse-value watcher
+        // above won't fire — cue the cascade from this confirm gesture instead (#90).
+        onConfirm={() => { playSfx("coinDistill"); onDistill(); }}
+        onClose={() => setConfirming(false)}
+      />
+    );
   }
 
   if (editing) {
@@ -108,17 +148,20 @@ export function CoinSheet({
     const distillFooter = lastDistill ? (
       <div className="coins__undo" role="status">
         <span className="coins__undo-label">Distilled</span>
-        <button type="button" className="coins__undo-btn" onClick={onUndoDistill}>
+        <Button variant="ghost" size="sm" className="coins__undo-btn" onClick={onUndoDistill}>
           ↶ Undo
-        </button>
+        </Button>
       </div>
     ) : (
-      <button type="button" className="coins__distill" disabled={!canDistill} onClick={() => setConfirming(true)}>
-        <span className="coins__distill-glyph" aria-hidden="true">
-          ⚗
-        </span>
+      <Button
+        variant="primary"
+        className="coins__distill"
+        disabled={!canDistill}
+        leading={<span className="coins__distill-glyph" aria-hidden="true">⚗</span>}
+        onClick={() => setConfirming(true)}
+      >
         {canDistill ? "Distill to fewest coins" : "Already distilled"}
-      </button>
+      </Button>
     );
     return (
       <AmountKeypad
@@ -148,9 +191,9 @@ export function CoinSheet({
       >
         <div className="coins__head">
           <span className="coins__label">HOARD</span>
-          <button type="button" className="coins__close" aria-label="Close" onClick={onClose}>
-            ✕
-          </button>
+          <IconButton variant="ghost" aria-label="Close" onClick={onClose}>
+            <Glyph name="close" />
+          </IconButton>
         </div>
         <div className="coins__hero">
           <span className="coins__total" data-testid="coins-total">
@@ -166,6 +209,7 @@ export function CoinSheet({
               label={r.label}
               unit={r.unit}
               count={counts[r.kind]}
+              canSpend={canSpend(coins, r.kind, 1)}
               onAdd={() => onAdd(r.kind, 1)}
               onSpend={() => onSpend(r.kind, 1)}
               onEdit={() => setEditing(r.kind)}

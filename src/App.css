@@ -59,6 +59,19 @@
   align-items: center;
   gap: 0.5rem;
 }
+/* The radial hub lives in the chrome, so its own z-index can't escape this z:10
+   context to sit above sibling app content (the orb stage, save banner). While the
+   hub is OPEN, lift the whole chrome above everything so the fan's chips stay on top
+   and clickable; it drops back to 10 when closed (below the keypad/sheets). — #152 */
+.hp-tracker__chrome:has(.radial-hub[data-open]) {
+  z-index: 90;
+}
+/* Unify the chrome icon row to one size + shape (spec §5): coins · dice (token)
+   and sound · concentration (ghost toggles) all sit at the 44px tap target. */
+.hp-tracker__chrome .ctl-icon-btn[data-variant] {
+  width: 44px;
+  height: 44px;
+}
 
 /* The stat card: a charcoal rounded panel framing the name + orb + panel
    (the controls live below it). Flexes to fill the middle; the orb stage inside
@@ -81,4 +94,32 @@
   box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 244, 206, 0.05);
+}
+
+/* Save-failure banner (#101) — ruby alert, dismissible, existing tokens only. */
+.save-error {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--ink-100);
+  background: color-mix(in oklab, var(--hp-critical) 30%, var(--obsidian-800));
+  border-bottom: 1px solid color-mix(in oklab, var(--hp-critical) 60%, transparent);
+}
+.save-error span { flex: 1; }
+.save-error__dismiss {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink-100);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.25rem;
 }

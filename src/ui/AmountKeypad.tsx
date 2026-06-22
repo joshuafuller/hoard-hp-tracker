@@ -1,4 +1,10 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { Button, Key, type ButtonVariant } from "./controls";
+import { playSfx } from "../sound/sfx";
+
+/** Map a keypad action's tone to a Button variant (damage = ruby, heal = emerald). */
+const variantFor = (tone?: string): ButtonVariant =>
+  tone === "damage" ? "danger" : tone === "heal" ? "heal" : "primary";
 
 export interface KeypadAction {
   label: (amount: number) => ReactNode;
@@ -36,9 +42,12 @@ export function AmountKeypad({ ariaLabel, context, header, footer, primary, seco
   const typed = digits !== "";
   const ok = (a: KeypadAction) => (a.gate === "positive" ? hasAmount : typed);
 
-  const push = (d: string) => { haptic(); setDigits((c) => (c === "0" ? d : (c + d).slice(0, MAX_DIGITS))); };
-  const back = () => { haptic(); setDigits((c) => c.slice(0, -1)); };
-  const clear = () => { haptic(); setDigits(""); };
+  // The neutral keypad "tap" feedback: a haptic + the `step` cue (its recipe existed
+  // in sfx.ts but had no call site until now — #90 / sound-design.md §3). Inlined
+  // (not a local helper) so push/back stay stable for the keydown effect's deps.
+  const push = (d: string) => { haptic(); playSfx("step"); setDigits((c) => (c === "0" ? d : (c + d).slice(0, MAX_DIGITS))); };
+  const back = () => { haptic(); playSfx("step"); setDigits((c) => c.slice(0, -1)); };
+  const clear = () => { haptic(); playSfx("step"); setDigits(""); };
   const commit = (a: KeypadAction) => {
     if (!ok(a)) return;
     haptic();
@@ -88,20 +97,20 @@ export function AmountKeypad({ ariaLabel, context, header, footer, primary, seco
         <div className="keypad__amount" data-testid="keypad-amount" aria-live="polite">{amount}</div>
         <div className="keypad__context">{context}</div>
         <div className="keypad__pad">
-          {pads.map((d) => (<button key={d} type="button" className="keypad__key" onClick={() => push(d)}>{d}</button>))}
-          <button type="button" className="keypad__key keypad__key--muted" aria-label="Clear" onClick={clear}>C</button>
-          <button type="button" className="keypad__key" onClick={() => push("0")}>0</button>
-          <button type="button" className="keypad__key keypad__key--muted" aria-label="Backspace" onClick={back}>⌫</button>
+          {pads.map((d) => (<Key key={d} onClick={() => push(d)}>{d}</Key>))}
+          <Key tone="muted" aria-label="Clear" onClick={clear}>C</Key>
+          <Key onClick={() => push("0")}>0</Key>
+          <Key tone="muted" aria-label="Backspace" onClick={back}>⌫</Key>
         </div>
         <div className="keypad__actions">
           {primary.map((a, i) => (
-            <button key={i} type="button" className="keypad__apply" data-kind={a.tone} aria-label={a.ariaLabel} disabled={!ok(a)} onClick={() => commit(a)}>{a.label(amount)}</button>
+            <Button key={i} variant={variantFor(a.tone)} className="keypad__apply" data-kind={a.tone} aria-label={a.ariaLabel} disabled={!ok(a)} onClick={() => commit(a)}>{a.label(amount)}</Button>
           ))}
         </div>
         {secondary.length > 0 && (
           <div className="keypad__secondary">
             {secondary.map((a, i) => (
-              <button key={i} type="button" className="keypad__minor" data-kind={a.tone} disabled={!ok(a)} onClick={() => commit(a)}>{a.label(amount)}</button>
+              <Button key={i} variant="ghost" className="keypad__minor" data-kind={a.tone} disabled={!ok(a)} onClick={() => commit(a)}>{a.label(amount)}</Button>
             ))}
           </div>
         )}

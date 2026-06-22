@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_PARAMS, kernels, poly6, Sph } from "./sph";
 
 // A small deterministic RNG so spawn jitter is reproducible across runs.
@@ -144,6 +144,33 @@ describe("Sph.step — containment", () => {
     const sim = makeSim(0);
     expect(() => sim.step(0.001, 0, 1)).not.toThrow();
     expect(sim.count).toBe(0);
+  });
+});
+
+describe("Sph.step — neighbour grid is rebuilt between constraint iterations", () => {
+  // applyDeltaP moves particles each constraint iteration, so the spatial-hash
+  // grid built on the pre-solve positions goes stale: a particle nudged into a
+  // new cell would be missed by (or wrongly attributed to) the next iteration's
+  // neighbour search. The grid must be rebuilt before *every* iteration so each
+  // computeLambda/applyDeltaP pass buckets particles by their current position.
+  it("rebuilds the grid once per constraint iteration", () => {
+    const iterations = 4;
+    const sim = makeSim(60, { iterations });
+    // buildGrid is private; spy on it via a cast on the instance.
+    const spy = vi.spyOn(sim as unknown as { buildGrid: () => void }, "buildGrid");
+    sim.step(0.004, 0, 1);
+    expect(spy).toHaveBeenCalledTimes(iterations);
+  });
+
+  it("still builds the grid once when the constraint solve is disabled (iterations = 0)", () => {
+    // With iterations === 0 the solve loop never runs, but step() still falls
+    // through to the XSPH neighbour pass, which reads the grid — so the grid must
+    // be built at least once or XSPH viscosity reads an empty/stale bucket list.
+    const sim = makeSim(60, { iterations: 0 });
+    const spy = vi.spyOn(sim as unknown as { buildGrid: () => void }, "buildGrid");
+    sim.step(0.004, 0, 1);
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(allFinite(sim)).toBe(true);
   });
 });
 

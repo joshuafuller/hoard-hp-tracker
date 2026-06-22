@@ -1,3 +1,5 @@
+import { Button } from "./controls";
+
 export interface ConcentrationPromptProps {
   /** The Constitution save DC for this check. */
   dc: number;
@@ -18,22 +20,12 @@ export function ConcentrationPrompt({ dc, onDismiss, onDrop }: ConcentrationProm
       <span className="concentration-prompt__label">
         Concentration — CON save DC {dc}
       </span>
-      <button
-        type="button"
-        className="concentration-prompt__btn concentration-prompt__btn--keep"
-        onClick={onDismiss}
-        aria-label="Keep concentration"
-      >
+      <Button variant="ghost" size="sm" onClick={onDismiss} aria-label="Keep concentration">
         Keep
-      </button>
-      <button
-        type="button"
-        className="concentration-prompt__btn concentration-prompt__btn--drop"
-        onClick={onDrop}
-        aria-label="Drop concentration"
-      >
+      </Button>
+      <Button variant="danger" size="sm" onClick={onDrop} aria-label="Drop concentration">
         Drop
-      </button>
+      </Button>
     </div>
   );
 }

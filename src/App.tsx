@@ -1,13 +1,15 @@
 import "./styles.css";
 import "./App.css";
 import "./sound/sound.css";
+import "./ui/dice/dice.css";
 import { useEffect, useRef, useState } from "react";
 import { playSfx } from "./sound/sfx";
+import { useSoundEnabled } from "./sound/soundSettings";
 import { useHp } from "./store/useHp";
 import type { HpLastChange } from "./store/useHp";
 import { useCoins } from "./store/useCoins";
+import { useSaveError, clearSaveError } from "./store/saveError";
 import { CharacterName } from "./ui/CharacterName";
-import { ConcentrationToggle } from "./ui/ConcentrationToggle";
 import { ConcentrationPrompt } from "./ui/ConcentrationPrompt";
 import { DeathSaves } from "./ui/DeathSaves";
 import { HitDicePanel } from "./ui/HitDicePanel";
@@ -16,11 +18,12 @@ import { glowCss, hpColor, rgbCss } from "./ui/hpColor";
 import { HpKeypad } from "./ui/HpKeypad";
 import { HpValueEditor } from "./ui/HpValueEditor";
 import { LiquidVessel } from "./ui/LiquidVessel";
+import { RadialHub } from "./ui/RadialHub";
 import { RestControls } from "./ui/RestControls";
-import { SoundToggle } from "./ui/SoundToggle";
+import { AboutPanel } from "./ui/AboutPanel";
 import { UndoPill } from "./ui/UndoPill";
-import { CoinButton } from "./ui/CoinButton";
 import { CoinSheet } from "./ui/CoinSheet";
+import { DiceTray, type DiceIntent } from "./ui/dice/DiceTray";
 
 /**
  * The composed HP Tracker: reactive state from `useHp` flows into the
@@ -35,7 +38,28 @@ export function App() {
   const [editingMax, setEditingMax] = useState(false);
   const [keypadOpen, setKeypadOpen] = useState(false);
   const coins = useCoins();
+  const saveFailed = useSaveError();
   const [coinsOpen, setCoinsOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [soundEnabled, toggleSound] = useSoundEnabled();
+  // Toggle-on cue only when ENABLING (playSfx self-gates on mute, so muting is
+  // silent); the override updates synchronously so the cue actually sounds.
+  const onToggleSound = () => {
+    const willEnable = !soundEnabled;
+    toggleSound();
+    if (willEnable) playSfx("toggleOn");
+  };
+  const [diceOpen, setDiceOpen] = useState(false);
+  // The active dice-tray intent: null = ad-hoc builder; otherwise a contextual roll
+  // (death save / Hit Die) whose 5e rule the app applies on settle.
+  const [diceIntent, setDiceIntent] = useState<DiceIntent | null>(null);
+  const openDice = (intent: DiceIntent | null = null) => {
+    setKeypadOpen(false);
+    setEditingMax(false);
+    setCoinsOpen(false);
+    setDiceIntent(intent);
+    setDiceOpen(true);
+  };
 
   // The panel slot is a shared scroll container for Hit Dice and Death Saves.
   // Reset its scroll whenever the two swap, so the incoming panel starts at the
@@ -51,6 +75,7 @@ export function App() {
   // sound. The engine self-gates on mute, so these calls are otherwise unconditional.
   const prevStatus = useRef(hp.status);
   const baselined = useRef(false);
+  const statusCueTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     if (!hp.hydrated) return;
     if (!baselined.current) {
@@ -61,9 +86,18 @@ export function App() {
     if (hp.status !== prevStatus.current) {
       if (hp.status === "stable") playSfx("stabilize");
       else if (hp.status === "dead") playSfx("death");
+      // Boundary crossings (alive↔0) also fire the damage/heal cue from the same
+      // gesture, so STAGGER the status cue ~140ms to layer after it rather than mask
+      // it (sound-design.md "never double-fire" — Codex #162). Hold the timer id so a
+      // status change WITHIN the window cancels the now-stale cue (cleanup below) —
+      // e.g. a quick heal/undo, or 3 failures → dead, mustn't trail a late "down".
+      else if (hp.status === "dying" && prevStatus.current === "alive") statusCueTimer.current = setTimeout(() => playSfx("down"), 140);
+      else if (hp.status === "alive") statusCueTimer.current = setTimeout(() => playSfx("revive"), 140);
       prevStatus.current = hp.status;
     }
+    return () => clearTimeout(statusCueTimer.current); // cancel a still-pending staggered cue
   }, [hp.hydrated, hp.status]);
+
 
   const undoLabel = (lc: NonNullable<HpLastChange>) =>
     lc.kind === "damage" ? `Took ${lc.amount}`
@@ -79,12 +113,30 @@ export function App() {
 
   return (
     <main className="hp-tracker" data-tier={tierFor(current, max)} style={accentStyle}>
+      {saveFailed && (
+        <div className="save-error" role="alert">
+          <span>Couldn't save — your last change may not have persisted.</span>
+          <button type="button" className="save-error__dismiss" aria-label="Dismiss" onClick={clearSaveError}>
+            ×
+          </button>
+        </div>
+      )}
       <div className="hp-tracker__chrome">
-        <CoinButton onOpen={() => { setKeypadOpen(false); setEditingMax(false); setCoinsOpen(true); }} />
-        <SoundToggle />
-        <ConcentrationToggle
+        <RadialHub
+          onCoins={() => { setKeypadOpen(false); setEditingMax(false); setCoinsOpen(true); }}
+          onDice={() => openDice(null)}
+          onAbout={() => setAboutOpen(true)}
           concentrating={hp.concentrating}
-          onToggle={() => hp.setConcentrating(!hp.concentrating)}
+          onToggleConcentration={() => {
+            const willConcentrate = !hp.concentrating;
+            // Cue from THIS gesture (not a later effect) so the first sound satisfies
+            // browser autoplay (Codex #158). A downed enable is a no-op in useHp
+            // (current ≤ 0) — skip the cue so a rejected toggle stays silent.
+            if (!(willConcentrate && dying)) playSfx(willConcentrate ? "toggleOn" : "toggleOff");
+            hp.setConcentrating(!hp.concentrating);
+          }}
+          soundEnabled={soundEnabled}
+          onToggleSound={onToggleSound}
         />
       </div>
       <div className="hp-tracker__card">
@@ -111,10 +163,7 @@ export function App() {
             status={hp.status}
             onSetSuccesses={hp.setSuccesses}
             onSetFailures={hp.setFailures}
-            onRoll={() => {
-              playSfx("roll");
-              return hp.rollDeathSave();
-            }}
+            onRoll={() => openDice({ kind: "death-save" })}
           />
         ) : (
           <HitDicePanel
@@ -134,10 +183,7 @@ export function App() {
             keypad (the desktop click path). Only rests live down here. */}
         <RestControls
           hitDiceAvailable={hp.hitDiceAvailable}
-          onShortRest={() => {
-            playSfx("shortRest");
-            return hp.shortRest();
-          }}
+          onShortRest={() => openDice({ kind: "hit-die", sides: hp.hitDieSize, conMod: hp.conMod })}
           onLongRest={() => {
             playSfx("longRest");
             return hp.longRest();
@@ -181,6 +227,19 @@ export function App() {
           onClose={() => { coins.dismissDistill(); setCoinsOpen(false); }}
         />
       )}
+
+      {aboutOpen && <AboutPanel onClose={() => setAboutOpen(false)} />}
+
+      {/* Always mounted so it's inert-when-closed (display:none) rather than
+          remounting — keeps the lazy-loaded 3D engine warm between opens. */}
+      <DiceTray
+        open={diceOpen}
+        intent={diceIntent}
+        onClose={() => { setDiceOpen(false); setDiceIntent(null); }}
+        onApplyHeal={(n) => { playSfx("heal"); setDiceOpen(false); return hp.heal(n); }}
+        onDeathSave={(d20) => hp.rollDeathSave(d20)}
+        onHitDie={(roll) => { playSfx("heal"); hp.shortRest(roll); }}
+      />
 
       {hp.lastChange && (
         <UndoPill

@@ -1,15 +1,19 @@
 import "fake-indexeddb/auto";
 import Dexie from "dexie";
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createHpDb, HP_ID, type HpDb } from "./db";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createHpDb, HP_ID, type HpDb, resetReloadingForTests } from "./db";
 import { useHp } from "./useHp";
+import { clearSaveError, useSaveError } from "./saveError";
 
 const DB_NAME = "hoard-hp-test";
 
 let db: HpDb;
 
 beforeEach(async () => {
+  // Reset the module-level reload flag so a prior reload test can't leak
+  // `reloading=true` (which makes write() bail before reporting save errors).
+  resetReloadingForTests();
   // Delete via Dexie's captured factory so each test starts from a clean store
   // and the first-run `populate` seed fires deterministically.
   await Dexie.delete(DB_NAME);
@@ -46,6 +50,52 @@ describe("createHpDb seeding", () => {
   it("stores exactly one hp record", async () => {
     const count = await db.hp.count();
     expect(count).toBe(1);
+  });
+});
+
+describe("createHpDb migration", () => {
+  // Fix 5: a legacy record (written before `concentrating` existed) must be
+  // backfilled to `false` on upgrade. Assert on the RAW record — the hook masks
+  // a missing field with `?? false`, which would hide a missing migration.
+  it("backfills concentrating:false on legacy records (v6 -> v7)", async () => {
+    // Open the store at v6 (has the rolls table but predates `concentrating`),
+    // seed a roll + an hp record with the field absent, then reopen via
+    // createHpDb to run the v7 upgrade.
+    const legacy = new Dexie(DB_NAME);
+    legacy.version(6).stores({ hp: "id", rolls: "++id" });
+    await legacy.open();
+    await legacy.table("hp").put({
+      id: HP_ID,
+      current: 7,
+      max: 10,
+      temp: 0,
+      successes: 0,
+      failures: 0,
+      hitDieSize: 8,
+      hitDiceTotal: 1,
+      hitDiceAvailable: 1,
+      conMod: 0,
+      pp: 0,
+      gp: 0,
+      sp: 0,
+      cp: 0,
+      name: "",
+      // concentrating intentionally omitted (legacy record)
+    });
+    await legacy.table("rolls").add({ value: 17 });
+    legacy.close();
+
+    const upgraded = createHpDb(DB_NAME);
+    try {
+      const record = await upgraded.hp.get(HP_ID);
+      expect(record?.concentrating).toBe(false);
+      // Untouched fields survive the upgrade.
+      expect(record?.current).toBe(7);
+      // The v6 rolls table is preserved (not dropped) by the v7 schema.
+      expect(await upgraded.table("rolls").count()).toBe(1);
+    } finally {
+      upgraded.close();
+    }
   });
 });
 
@@ -773,5 +823,158 @@ describe("useHp concentration", () => {
     await act(() => result.current.heal(3));
     await waitFor(() => expect(result.current.current).toBe(8));
     expect(result.current.concentrating).toBe(true);
+  });
+
+  // Fix 1: clearing the transient prompt on down via setCurrent. A lingering
+  // prompt (dismissed-but-still-set via a prior hit) must not survive a drop.
+  it("setCurrent to 0 clears a pending concentration check", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+    // Raise a check via a non-lethal hit, then drop to 0 with setCurrent.
+    await act(() => result.current.damage(3));
+    await waitFor(() => expect(result.current.concentrationCheck).not.toBeNull());
+
+    await act(() => result.current.setCurrent(0));
+    await waitFor(() => expect(result.current.current).toBe(0));
+    expect(result.current.concentrationCheck).toBeNull();
+  });
+
+  // Fix 1: clearing the transient prompt on down via stepCurrent.
+  it("stepCurrent to 0 clears concentration and a pending check", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+    await act(() => result.current.damage(3)); // 10 -> 7, raises a check
+    await waitFor(() => expect(result.current.concentrationCheck).not.toBeNull());
+
+    await act(() => result.current.stepCurrent(-7)); // 7 -> 0
+    await waitFor(() => expect(result.current.current).toBe(0));
+    expect(result.current.concentrating).toBe(false);
+    expect(result.current.concentrationCheck).toBeNull();
+  });
+
+  // Fix 2: long rest must also clear the transient prompt, not just the flag.
+  it("long rest clears a pending concentration check", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+    await act(() => result.current.damage(3)); // raises a check
+    await waitFor(() => expect(result.current.concentrationCheck).not.toBeNull());
+
+    await act(() => result.current.longRest());
+    await waitFor(() => expect(result.current.concentrating).toBe(false));
+    expect(result.current.concentrationCheck).toBeNull();
+  });
+
+  // Fix 3: turning concentration off should clear any visible prompt.
+  it("setConcentrating(false) clears a pending concentration check", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+    await act(() => result.current.damage(3)); // raises a check, stays alive
+    await waitFor(() => expect(result.current.concentrationCheck).not.toBeNull());
+
+    await act(() => result.current.setConcentrating(false));
+    await waitFor(() => expect(result.current.concentrating).toBe(false));
+    expect(result.current.concentrationCheck).toBeNull();
+  });
+
+  // Fix 4: undo after being downed restores the concentrating flag.
+  it("undo after being downed restores concentration", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+
+    await act(() => result.current.damage(10)); // 10 -> 0, drops concentration
+    await waitFor(() => expect(result.current.current).toBe(0));
+    expect(result.current.concentrating).toBe(false);
+
+    await act(() => result.current.undo()); // un-down AND re-concentrate
+    await waitFor(() => expect(result.current.current).toBe(10));
+    expect(result.current.concentrating).toBe(true);
+  });
+
+  // Fix 4 (setCurrent path): undo restores concentration there too.
+  it("undo after setCurrent(0) restores concentration", async () => {
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await act(() => result.current.setConcentrating(true));
+    await waitFor(() => expect(result.current.concentrating).toBe(true));
+
+    await act(() => result.current.setCurrent(0));
+    await waitFor(() => expect(result.current.current).toBe(0));
+    expect(result.current.concentrating).toBe(false);
+
+    await act(() => result.current.undo());
+    await waitFor(() => expect(result.current.current).toBe(10));
+    expect(result.current.concentrating).toBe(true);
+  });
+});
+
+describe("useHp write durability", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("reports a save error (no silent loss, no unhandled rejection) when both the txn and reopen-retry fail", async () => {
+    clearSaveError();
+    const { result } = renderHook(() => useHp(db));
+    const { result: saveErr } = renderHook(() => useSaveError());
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+
+    // Both the original transaction AND the reopen/retry hit db.hp.put, so a
+    // persistent put failure simulates quota/private-mode/blocked-upgrade. The
+    // action must surface the failure via the saveError signal WITHOUT rejecting
+    // (call sites are fire-and-forget — a rejection would be unhandled).
+    vi.spyOn(db.hp, "put").mockRejectedValue(new Error("QuotaExceededError"));
+
+    await act(async () => {
+      await result.current.damage(3); // resolves; no throw into the void
+    });
+    await waitFor(() => expect(saveErr.current).toBe(true));
+    clearSaveError();
+  });
+
+  it("does not record the change as undoable when the write fails", async () => {
+    clearSaveError();
+    const { result } = renderHook(() => useHp(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+
+    vi.spyOn(db.hp, "put").mockRejectedValue(new Error("QuotaExceededError"));
+
+    await act(async () => {
+      await result.current.heal(3);
+    });
+    // The undo pill must not appear for a write that never persisted.
+    expect(result.current.lastChange).toBeNull();
+    clearSaveError();
+  });
+
+  it("clears the save-error signal once a later write succeeds", async () => {
+    clearSaveError();
+    const { result } = renderHook(() => useHp(db));
+    const { result: saveErr } = renderHook(() => useSaveError());
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+
+    // First write fails → signal set.
+    const spy = vi.spyOn(db.hp, "put").mockRejectedValue(new Error("QuotaExceededError"));
+    await act(async () => {
+      await result.current.damage(1);
+    });
+    await waitFor(() => expect(saveErr.current).toBe(true));
+
+    // A subsequent successful write clears the stale banner.
+    spy.mockRestore();
+    await act(async () => {
+      await result.current.heal(1);
+    });
+    await waitFor(() => expect(saveErr.current).toBe(false));
+    clearSaveError();
   });
 });

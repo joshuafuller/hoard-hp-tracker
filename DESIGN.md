@@ -35,7 +35,9 @@ Latin; preload the display weight used on first paint.
   Character name, headers, big moments ("You are bloodied").
 - **Body / UI / Labels:** **DM Sans** — clean, legible, humanist-geometric.
 - **Numerals / Data:** **DM Sans** with `font-variant-numeric: tabular-nums lining-nums` — HP,
-  coin counts, anything that updates in place must not reflow or shimmer.
+  coin counts, anything that updates in place must not reflow or shimmer. This includes every
+  **large total/readout** (orb HP, coin total, **dice total**) — they share the `--font-num`
+  token so they read as one face. Fraunces is for identity/headings only, **never** numerals.
 - **Mono accent (optional):** **JetBrains Mono** — dice expressions / technical readouts only.
 - **Loading:** self-host woff2 (do **not** depend on a network font — see PRD §5.4 / #45).
 - **Scale (rem, 16px base):** 0.69 / 0.81 / 0.94 (body) / 1.13 / 1.5 / 2.0 / 3.0 / 3.75 (hero HP).
@@ -117,6 +119,21 @@ treasure instead of a yellow rectangle.
 - **Duration:** micro 50–100ms · short 150–250ms · medium 250–400ms · long 400–700ms.
 - **Accessibility:** honor `prefers-reduced-motion` (drop slosh/choreography, keep instant state).
 
+## Controls — the button system
+One small set of primitives in `src/ui/controls/` is the **standard** for the app's
+controls — buttons, icon buttons, steppers, chips, segments, keypad keys. **New UI must
+use them**, not a bespoke per-surface button. Full spec + migration map: [`docs/design/button-system.md`](docs/design/button-system.md).
+Every button / icon button / stepper / chip / segment / keypad key in the app is on a
+primitive. Two **specialised selector/toggle controls** intentionally stay bespoke —
+they aren't standard buttons: the **death-save pips** (a row of toggle dots) and the
+**coin denomination switcher tabs** (a tabbed selector with live counts). They still
+honour the design tokens + focus rules; fold them into a primitive only if one ever fits.
+- **Primitives:** `Button` (variants `primary` gold · `ghost` hairline · `heal` emerald · `danger` ruby; sizes `lg`/`md`/`sm`), `IconButton` (`token` gold medallion · `ghost`, with `pressed` for toggles), `Stepper` (`− value +`, with an optional interactive middle), `Chip` (selectable/badge/removable), `Segment` (co-equal grouped choice), `Key` (numeric-pad key).
+- **Colour language:** gold = info/primary action · emerald = heals you · ruby = danger/destructive · sapphire = temp/ward (reserved, e.g. the Temp keypad action).
+- **Press states ("up → down"):** a press reads as the control pushed *into* the metal — a recessed inner shadow + slight darken + a small scale, distinct from rest (raised) and from the `aria-pressed` toggle (a persistent gold-on, or muted purple for concentration). `prefers-reduced-motion` keeps the tonal/depth change but drops the scale. Preview: [`docs/design/button-states.html`](docs/design/button-states.html).
+- **Focus:** every primitive shows a gold `:focus-visible` ring (inset on the segmented control so `overflow:hidden` can't clip it).
+- **Placement:** one primary action per surface, anchored low; close-X is a `ghost` `IconButton` (top-right of overlays; the dice tray keeps close top-left to leave room for the log toggle top-right). Rest: Long Rest = `primary`, Short Rest = `ghost` (Long is the bigger commit).
+
 ## Anti-slop guardrails
 No purple/violet gradients, no 3-column icon grids, no centered-everything, no uniform bubbly
 radius on everything, no gradient-button-as-default, no generic SaaS hero. Gold is earned, not sprayed.
@@ -127,3 +144,6 @@ radius on everything, no gradient-button-as-default, no generic SaaS hero. Gold 
 | 2026-06-19 | Initial design system: **Molten Hoard** | `/design-consultation`. Audience confirmed dark/glanceable/tactile/fast; user chose a fresh direction over extending the shipped "Liquid Obsidian" look. Gold-on-warm-black owns the product's name and the premium-game-object feel while staying glanceable in dim rooms. |
 | 2026-06-19 | Body/numeral font = **DM Sans** (not Geist) | DM Sans is freely available and self-hostable as woff2, satisfying the offline-PWA font requirement (#45) with the same clean feel. |
 | 2026-06-19 | Gold = **sensor-driven brushed/foil shimmer**, not flat | Per user: gold only "works" if it reads as brushed metal that shimmers like a foil/holo trading card when the phone tilts. Drive the specular sweep from the device-orientation sensor (reuse `useGyro`), with a static brushed-gradient fallback when no sensor / reduced-motion. |
+| 2026-06-20 | Dice tray = **Variant B "immersive dock"** | Chosen from a 3-variant shotgun. Dice + giant Fraunces total own the screen (premium game object, glanceable); slim thumb-low dock holds controls. Co-equal Disadvantage·Normal·Advantage segment. Colour language: gold = informational/attack, emerald = heals you, ruby = dropped/failure. Reference: [`docs/design/dice-tray.md`](docs/design/dice-tray.md) + [`docs/design/dice-tray.html`](docs/design/dice-tray.html). |
+| 2026-06-21 | Dice total uses **DM Sans** (`--font-num`), not Fraunces | #114 — large numeric readouts (orb HP, coin total, dice total) share one heavy sans face for a consistent type system; **supersedes** the "giant Fraunces total" wording in the 2026-06-20 row. Fraunces remains for identity/headings only (incl. the dice-history title). |
+| 2026-06-22 | **One button system** (`src/ui/controls/` primitives) | #89 — the app's buttons/icon-buttons/steppers/chips/segments/keypad-keys migrated onto a small primitive set with distinct "pushed-in" press states + a gold focus ring (Rest: Long = `primary`, Short = `ghost`). Two specialised toggles (death-save pips, coin denomination tabs) stay bespoke by design. See the **Controls** section above + [`docs/design/button-system.md`](docs/design/button-system.md). |

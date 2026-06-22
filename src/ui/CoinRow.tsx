@@ -1,4 +1,5 @@
 import type { CoinKind } from "../domain/coins";
+import { Stepper } from "./controls";
 
 export interface CoinRowProps {
   kind: CoinKind;
@@ -7,6 +8,8 @@ export interface CoinRowProps {
   /** Abbreviation, e.g. "gp". */
   unit: string;
   count: number;
+  /** Whether a spend of one is possible (purse can cover it via conversion). */
+  canSpend: boolean;
   /** Add one coin of this kind. */
   onAdd: () => void;
   /** Spend one coin of this kind (converts across denominations when short). */
@@ -25,7 +28,7 @@ function haptic() {
  * single-coin nudges, and a tappable count that opens the keypad for larger
  * Add/Spend/Set amounts. Presentational — all mutation flows through the props.
  */
-export function CoinRow({ kind, label, unit, count, onAdd, onSpend, onEdit }: CoinRowProps) {
+export function CoinRow({ kind, label, unit, count, canSpend, onAdd, onSpend, onEdit }: CoinRowProps) {
   const tap = (fn: () => void) => () => {
     haptic();
     fn();
@@ -37,16 +40,15 @@ export function CoinRow({ kind, label, unit, count, onAdd, onSpend, onEdit }: Co
         <span className="coin-row__label">{label}</span>
         <span className="coin-row__unit">{unit}</span>
       </span>
-      <span className="coin-row__controls">
-        <button
-          type="button"
-          className="coin-row__step"
-          aria-label={`Spend 1 ${label}`}
-          disabled={count <= 0}
-          onClick={tap(onSpend)}
-        >
-          −
-        </button>
+      <Stepper
+        className="coin-row__controls"
+        label={label}
+        decLabel={`Spend 1 ${label}`}
+        incLabel={`Add 1 ${label}`}
+        decDisabled={!canSpend}
+        onDec={tap(onSpend)}
+        onInc={tap(onAdd)}
+      >
         <button
           type="button"
           className="coin-row__count"
@@ -55,10 +57,7 @@ export function CoinRow({ kind, label, unit, count, onAdd, onSpend, onEdit }: Co
         >
           {count}
         </button>
-        <button type="button" className="coin-row__step" aria-label={`Add 1 ${label}`} onClick={tap(onAdd)}>
-          +
-        </button>
-      </span>
+      </Stepper>
     </div>
   );
 }

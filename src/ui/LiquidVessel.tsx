@@ -6,6 +6,7 @@ import { LiquidRenderer } from "./liquid/renderer";
 import { useGyro } from "./liquid/useGyro";
 import { useLiquidEngine } from "./liquid/useLiquidEngine";
 import { type DragApply, dragAmount, isTap } from "./liquid/dragInput";
+import { useOrbDragHint } from "./orbDragHint";
 
 /** Liquid Obsidian centerpiece: HP as a real fluid (PBF sim) in a glass orb. */
 
@@ -31,6 +32,7 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
   const flash = useChangeFlash(current + temp);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const orbRef = useRef<HTMLDivElement | null>(null);
   const foilRef = useRef<HTMLDivElement | null>(null);
   const { gravity } = useGyro();
 
@@ -69,20 +71,33 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
   const [drag, setDrag] = useState<DragApply | null>(null);
   const dragRef = useRef<{ startY: number; orbPx: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
+  // First-run affordance: telegraph that the orb is draggable until the user drags
+  // once, then it recedes for good (#94).
+  const { seen: dragHintSeen, markSeen: markDragSeen } = useOrbDragHint();
 
   function onOrbPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (e.button > 0) return;
-    const orb = e.currentTarget;
+    // The drag can start on the orb OR on the centered readout overlay (the
+    // numerals are the most natural grab target). Either way, scale to the ORB's
+    // height — fall back to the event target if the orb ref isn't measured yet.
+    const orb = orbRef.current ?? e.currentTarget;
     const orbPx = orb.clientHeight || orb.getBoundingClientRect().height;
     dragRef.current = { startY: e.clientY, orbPx, moved: false };
-    orb.setPointerCapture?.(e.pointerId);
+    // NB: pointer capture is deferred to the first real move (below). Capturing on
+    // a *tap* of a numeral retargets the synthesized click to the capture element,
+    // so the value buttons would never open their editor. Taps must not capture.
   }
   function onOrbPointerMove(e: React.PointerEvent<HTMLDivElement>) {
     const st = dragRef.current;
     if (!st) return;
     const dy = e.clientY - st.startY;
     if (!st.moved && isTap(dy)) return;
-    st.moved = true;
+    if (!st.moved) {
+      // First frame that counts as a real drag — now capture so tracking
+      // continues even if the pointer leaves the element.
+      st.moved = true;
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+    }
     setDrag(dragAmount(dy, st.orbPx, max));
   }
   function onOrbPointerUp(e: React.PointerEvent<HTMLDivElement>) {
@@ -97,8 +112,15 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
         if (kind === "damage") onDamage?.(amount);
         else onHeal?.(amount);
         suppressClick.current = true;
+        markDragSeen(); // a real drag committed — the affordance is discovered
       }
     }
+  }
+  // pointercancel (browser/OS yanked the gesture — scroll takeover, app switch,
+  // palm rejection) must NOT compute or commit an amount. Just drop the drag.
+  function onOrbPointerCancel() {
+    dragRef.current = null;
+    setDrag(null);
   }
   function onOrbClickCapture(e: React.MouseEvent<HTMLDivElement>) {
     if (suppressClick.current) {
@@ -109,17 +131,18 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
   }
 
   return (
-    <div className="vessel" data-tier={tier} data-flash={flash ?? undefined} style={accentStyle}>
+    <div className="vessel" data-tier={tier} data-flash={flash ?? undefined} data-dragging={drag ? "" : undefined} style={accentStyle}>
       <div className="vessel__aura" aria-hidden="true" />
       <div
         className="vessel__orb"
         data-testid="hp-bar"
         data-tier={tier}
         data-dragging={drag ? "" : undefined}
+        ref={orbRef}
         onPointerDown={onOrbPointerDown}
         onPointerMove={onOrbPointerMove}
         onPointerUp={onOrbPointerUp}
-        onPointerCancel={onOrbPointerUp}
+        onPointerCancel={onOrbPointerCancel}
         onClickCapture={onOrbClickCapture}
       >
         {active ? (
@@ -127,20 +150,50 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
         ) : (
           <div className="vessel__fallback" aria-hidden="true">
             <div className="vessel__fallback-fill" style={{ height: `${ratio * 100}%` }} />
+            {/* temp HP as a sapphire ward band that rides ON the HP surface, like
+                the WebGL temp layer. Absolutely positioned (not stacked in flow)
+                and its bottom anchor is clamped so a full-HP character still sees
+                the band at the brim instead of it clipping out the top — #110,
+                Codex P2 on #119. */}
+            {tempRatio > 0 &&
+              (() => {
+                const tempH = Math.min(1, tempRatio);
+                const tempBottom = Math.min(ratio, 1 - tempH); // never push the top past the brim
+                return (
+                  <div
+                    className="vessel__fallback-temp"
+                    style={{ bottom: `${tempBottom * 100}%`, height: `${tempH * 100}%` }}
+                  />
+                );
+              })()}
           </div>
         )}
         <div className="vessel__foil" aria-hidden="true" ref={foilRef} />
         <div className="vessel__rim" aria-hidden="true" />
         <div className="vessel__shine" aria-hidden="true" />
-        {drag && drag.amount > 0 && (
-          <div className="vessel__drag" data-kind={drag.kind} aria-hidden="true">
-            {drag.kind === "damage" ? "−" : "+"}
-            {drag.amount}
+        {/* First-run drag affordance: faint up (heal) / down (damage) chevrons that
+            recede once the user drags. Decorative + inert so it never blocks the drag
+            or the tap-to-keypad path; honours reduced motion (static, no pulse). */}
+        {!dragHintSeen && !drag && current > 0 && (
+          <div className="vessel__drag-hint" aria-hidden="true">
+            <svg className="vessel__drag-chevron" data-dir="up" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 14 12 8 18 14" />
+            </svg>
+            <svg className="vessel__drag-chevron" data-dir="down" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 10 12 16 18 10" />
+            </svg>
           </div>
         )}
       </div>
 
-      <div className="vessel__readout">
+      <div
+        className="vessel__readout"
+        onPointerDown={onOrbPointerDown}
+        onPointerMove={onOrbPointerMove}
+        onPointerUp={onOrbPointerUp}
+        onPointerCancel={onOrbPointerCancel}
+        onClickCapture={onOrbClickCapture}
+      >
         <output
           role="status"
           className="vessel__nums"
@@ -172,6 +225,17 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
           )
         )}
       </div>
+
+      {/* Live drag delta — a floating chip ABOVE the readout (last sibling, outside
+          the orb's isolation context so it can't be trapped behind the numerals;
+          the earlier #94 fix over-corrected and hid it). Its own backdrop surface
+          separates it from the totals, like the dice-result card. */}
+      {drag && drag.amount > 0 && (
+        <div className="vessel__drag" data-kind={drag.kind} aria-hidden="true">
+          {drag.kind === "damage" ? "−" : "+"}
+          {drag.amount}
+        </div>
+      )}
     </div>
   );
 }
@@ -190,7 +254,11 @@ function useFoilTilt(
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (reducedMotion || typeof requestAnimationFrame !== "function") {
+    // No reason to spin a per-frame loop when there's no input to read: under
+    // reduced motion, with no rAF, or on a device with no orientation sensor
+    // (desktop, #100) gravity.x never moves — rest the highlight centered once.
+    const hasSensor = typeof window !== "undefined" && "DeviceOrientationEvent" in window;
+    if (reducedMotion || typeof requestAnimationFrame !== "function" || !hasSensor) {
       el.style.setProperty("--foil-shift", "0%");
       return;
     }

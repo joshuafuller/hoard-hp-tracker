@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Button } from "./controls";
 
 export interface RestControlsProps {
   /** Unspent Hit Dice — Short Rest is disabled when this hits 0. */
@@ -51,8 +52,11 @@ export function RestControls({
 
   return (
     <div className="rest-controls">
-      <button
-        type="button"
+      {/* Short Rest is the smaller commit → ghost; Long Rest is the bigger one →
+          primary (the one dominant gold action). DESIGN.md / spec §5. */}
+      <Button
+        variant="ghost"
+        size="lg"
         className="rest-controls__btn"
         data-kind="short"
         aria-label="Short Rest"
@@ -64,14 +68,14 @@ export function RestControls({
       >
         <span className="rest-controls__label">Short Rest</span>
         <span className="rest-controls__sub">Spend a Hit Die</span>
-      </button>
+      </Button>
 
       {confirming ? (
         <div className="rest-controls__confirm" role="group" aria-label="Confirm Long Rest">
           <span className="rest-controls__confirm-prompt">Long Rest?</span>
-          <button
+          <Button
             ref={confirmRef}
-            type="button"
+            variant="primary"
             className="rest-controls__confirm-btn"
             data-kind="confirm"
             aria-label="Confirm Long Rest"
@@ -82,9 +86,9 @@ export function RestControls({
             }}
           >
             Confirm
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="ghost"
             className="rest-controls__confirm-btn"
             data-kind="cancel"
             aria-label="Cancel Long Rest"
@@ -94,12 +98,13 @@ export function RestControls({
             }}
           >
             Cancel
-          </button>
+          </Button>
         </div>
       ) : (
-        <button
+        <Button
           ref={longRestRef}
-          type="button"
+          variant="primary"
+          size="lg"
           className="rest-controls__btn"
           data-kind="long"
           aria-label="Long Rest"
@@ -110,7 +115,7 @@ export function RestControls({
         >
           <span className="rest-controls__label">Long Rest</span>
           <span className="rest-controls__sub">Full recovery</span>
-        </button>
+        </Button>
       )}
     </div>
   );

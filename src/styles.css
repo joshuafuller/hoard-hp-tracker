@@ -12,7 +12,7 @@
 @font-face {
   font-family: "DM Sans";
   font-style: normal;
-  font-weight: 400 700;
+  font-weight: 400 900; /* cover the heavy numeral weight (800) so it isn't faux-bolded — #114 */
   font-display: swap;
   src: url("./fonts/dm-sans.woff2") format("woff2");
 }
@@ -25,6 +25,8 @@
 }
 
 :root {
+  /* Numeric readouts (HP orb, coin total, dice total) share one heavy sans face — #114. */
+  --font-num: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   /* Canvas — Molten Hoard: warm volcanic near-blacks for depth without hard edges. */
   --obsidian-900: #0b0a08;
   --obsidian-800: #100e0a;
@@ -529,27 +531,9 @@ body {
 }
 .death-saves__pip:disabled { cursor: default; }
 
-.death-saves__roll {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-top: 0.2rem;
-  padding: 0.7rem 1.4rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--obsidian-600);
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--ink-100);
-  background: radial-gradient(circle at 50% 25%, var(--obsidian-600), var(--obsidian-800));
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast) ease;
-}
-.death-saves__roll:active { transform: scale(0.95); }
+/* Roll = Button primary — look/press/focus from the primitive; keep spacing + die spin. */
+.death-saves__roll { margin-top: 0.2rem; }
 .death-saves__roll:active .death-saves__die { transform: rotate(-32deg); }
-.death-saves__roll:disabled { opacity: 0.45; cursor: default; }
-.death-saves__roll:focus-visible { outline: 2px solid var(--ink-300); outline-offset: 3px; }
 
 .death-saves__die {
   display: inline-grid;
@@ -788,52 +772,23 @@ body {
   width: min(100%, 30rem);
 }
 
-.rest-controls__btn {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.15rem;
+/* Layout only — the gold/ghost look + press/focus come from the Button primitive.
+   Long Rest = primary (gold), Short Rest = ghost (spec §5). */
+/* Specificity (0,3,0) so the short-screen height clamp wins over the primitive's
+   .ctl-btn[data-size="lg"] { min-height: 56px } — the rest buttons must still
+   compress on short viewports to hold the one-screen budget (#32). */
+.rest-controls .ctl-btn.rest-controls__btn {
   min-width: 9.5rem;
   min-height: 56px; /* fallback for browsers without svh */
   min-height: clamp(42px, 6.5svh, 56px);
-  padding: 0.6rem 1.4rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(120, 80, 24, 0.5);
-  font-weight: 700;
-  /* polished-gold body, engraved dark text */
-  color: #3a2606;
-  background: linear-gradient(180deg, #fbe6ac 0%, #f4c66a 40%, #cf9a3f 100%);
-  box-shadow:
-    inset 0 0 0 1.5px rgba(255, 244, 206, 0.55),
-    inset 0 2px 5px rgba(255, 248, 222, 0.55),
-    inset 0 -7px 14px rgba(40, 24, 4, 0.4),
-    0 8px 22px rgba(0, 0, 0, 0.45);
-  text-shadow: 0 1px 0 rgba(255, 244, 206, 0.4);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast) ease;
 }
-
-.rest-controls__btn:active {
-  transform: scale(0.95);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 2px 6px rgba(0, 0, 0, 0.5);
-}
-
-.rest-controls__btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-
-.rest-controls__btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-  box-shadow: none;
-}
-
-.rest-controls__btn[data-kind="long"] {
-  border-color: color-mix(in oklab, var(--hp-temp) 28%, var(--obsidian-600));
+/* Stack the two-line label/sub inside the shared Button label wrapper. */
+.rest-controls__btn .ctl-btn__label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.08rem;
+  line-height: 1.12;
 }
 
 .rest-controls__label {
@@ -846,7 +801,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(58, 38, 6, 0.72); /* engraved bronze on the gold body */
+  opacity: 0.72; /* inherits the button's text colour (dark on gold, ivory on ghost) */
 }
 
 /* The confirm step takes the Long Rest button's place: a prompt flanked by a
@@ -882,40 +837,9 @@ body {
   color: var(--ink-300);
 }
 
+/* Confirm = primary, Cancel = ghost — look from the Button primitive; layout only. */
 .rest-controls__confirm-btn {
   min-width: 44px;
-  min-height: 44px;
-  padding: 0 1.1rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--obsidian-600);
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: var(--ink-100);
-  background: var(--obsidian-600);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast) ease;
-}
-
-.rest-controls__confirm-btn:active {
-  transform: scale(0.93);
-}
-
-.rest-controls__confirm-btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-
-.rest-controls__confirm-btn[data-kind="confirm"] {
-  color: var(--obsidian-900);
-  background: var(--hp-temp);
-  border-color: var(--hp-temp);
-  box-shadow: 0 0 18px color-mix(in oklab, var(--hp-temp) 40%, transparent);
-}
-
-.rest-controls__confirm-btn[data-kind="cancel"] {
-  color: var(--ink-300);
-  background: var(--obsidian-700);
 }
 
 /* ── HP value editor (pill modal) ──────────────────────────────────────── */
@@ -966,40 +890,14 @@ body {
 }
 
 /* The pill: rounded track with a typable number flanked by big ± halves. */
-.hp-editor__pill {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  width: 100%;
-  border-radius: var(--radius-pill);
-  background: var(--obsidian-900);
-  border: 1px solid var(--obsidian-600);
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-}
-
-.hp-editor__step {
-  width: 4.25rem;
-  height: 4.25rem;
-  border: none;
-  background: transparent;
-  color: var(--ink-100);
-  font-size: 2.25rem;
-  font-weight: 700;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: background var(--dur-fast) ease, transform var(--dur-fast) var(--ease-spring);
-}
-.hp-editor__step[data-side="minus"] { border-right: 1px solid var(--obsidian-700); }
-.hp-editor__step[data-side="plus"] { border-left: 1px solid var(--obsidian-700); }
-.hp-editor__step:active {
-  transform: scale(0.9);
-  background: color-mix(in oklab, var(--accent) 22%, transparent);
-}
-.hp-editor__step:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
+/* The −/+ pill is the shared Stepper; make it full-width, size the round buttons
+   up for this big editor, and let the typed value fill the middle. */
+.hp-editor__pill { width: 100%; }
+.hp-editor__pill .ctl-stepper__btn { width: 4.25rem; height: 4.25rem; }
 
 .hp-editor__value {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   border: none;
   background: transparent;
   text-align: center;
@@ -1022,19 +920,8 @@ body {
   margin: 0;
 }
 
-.hp-editor__done {
-  padding: 0.6rem 2.5rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--obsidian-600);
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--obsidian-900);
-  background: var(--ink-100);
-  cursor: pointer;
-  transition: transform var(--dur-fast) var(--ease-spring);
-}
-.hp-editor__done:active { transform: scale(0.95); }
-.hp-editor__done:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* Done = Button primary — look/press/focus from the primitive. */
+.hp-editor__done { align-self: center; }
 
 /* ════════════════════════════════════════════════════════════════════════
    LIQUID OBSIDIAN — the glass vessel of living HP (beta redesign)
@@ -1083,6 +970,9 @@ body {
   opacity: 0.95;
   animation: lv-aura-a 16s ease-in-out infinite;
   transition: background var(--dur-flow) ease;
+  /* #106: the aura extends far past the orb (inset:-65%) — without this it would
+     hit-test over the character-name button above the stage on compact layouts. */
+  pointer-events: none;
 }
 .vessel__aura::before,
 .vessel__aura::after {
@@ -1090,6 +980,9 @@ body {
   position: absolute;
   inset: 0;
   border-radius: 50%;
+  /* #106: match the base element's transition so a tier/accent colour change
+     cross-fades on the blobs too, instead of snapping. */
+  transition: background var(--dur-flow) ease;
 }
 .vessel__aura::before {
   background: radial-gradient(32% 32% at 62% 58%, var(--accent-glow) 0%, transparent 72%);
@@ -1130,6 +1023,10 @@ body {
   inset: 0;
   border-radius: 50%;
   overflow: hidden;
+  /* Establish a stacking context so the orb's children (fill, foil, drag overlay,
+     drag hint) keep their z-order INSIDE the orb and can't escape above the readout
+     numerals (a later sibling) — #94 / Copilot #141. */
+  isolation: isolate;
   touch-action: none; /* vertical drag = damage/heal, not page scroll */
   cursor: ns-resize;
   background: radial-gradient(120% 120% at 50% 28%, var(--obsidian-800) 0%, var(--obsidian-900) 72%);
@@ -1154,6 +1051,19 @@ body {
   box-shadow: 0 0 24px var(--accent-glow);
   transition: height var(--dur-flow) cubic-bezier(0.34, 1.2, 0.5, 1), background var(--dur-flow) ease;
 }
+/* #110: temp HP as a sapphire ward band that rides on top of the HP surface in
+   the static fallback, matching the WebGL temp layer (same --hp-temp token).
+   Absolutely positioned + bottom-anchored (clamped in JSX) so it stays visible
+   at full HP instead of being pushed out the top — Codex P2 on #119. Painting
+   over the static in-flow fill is automatic per stacking order; no z-index. */
+.vessel__fallback-temp {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--hp-temp) 80%, white 8%), color-mix(in oklab, var(--hp-temp) 70%, black));
+  box-shadow: 0 0 18px color-mix(in oklab, var(--hp-temp) 45%, transparent);
+  transition: bottom var(--dur-flow) cubic-bezier(0.34, 1.2, 0.5, 1), height var(--dur-flow) cubic-bezier(0.34, 1.2, 0.5, 1);
+}
 
 /* Brushed-gold FOIL over the fluid — fine metal grain + a specular sweep that
    travels across the orb like a tilted foil card. Clipped to the orb circle by
@@ -1163,7 +1073,8 @@ body {
   inset: 0;
   border-radius: 50%;
   pointer-events: none;
-  z-index: 1;
+  /* #110: no explicit z-index — rely on DOM order (foil < rim < shine, all
+     before the readout) so the numerals always paint on top. */
   /* Smooth spherical shade — bright near the top-left falling to a soft dark
      terminator at the lower edge, so the orb reads as a polished 3D gold ball.
      No grain: the Claude Design reference is glass-smooth, not brushed. */
@@ -1202,7 +1113,6 @@ body {
   inset: 0;
   border-radius: 50%;
   pointer-events: none;
-  z-index: 2;
   box-shadow:
     inset 0 3px 8px rgba(255, 248, 222, 0.28),
     inset 0 -10px 22px rgba(24, 15, 3, 0.35);
@@ -1215,28 +1125,82 @@ body {
   height: 20%;
   border-radius: 50%;
   pointer-events: none;
-  z-index: 2;
   background: radial-gradient(closest-side, rgba(255, 250, 235, 0.32), transparent);
   filter: blur(3px);
 }
 
-/* Live preview while dragging the orb to damage/heal: a big signed amount over
-   the orb, tinted ruby (damage) or emerald (heal). */
+/* Live drag delta: a floating chip centred over the orb, ABOVE the readout (it's a
+   last-sibling of .vessel now, not trapped inside the orb's isolation context). Its
+   own translucent backdrop surface lifts it off the totals — like the dice card. */
 .vessel__drag {
   position: absolute;
-  inset: 0;
-  z-index: 5;
-  display: grid;
-  place-items: center;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10; /* belt-and-braces above the readout numerals */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 1.15rem;
+  border-radius: 999px;
   font-family: "DM Sans", system-ui, sans-serif;
   font-weight: 800;
-  font-size: clamp(2.5rem, 22cqmin, 5rem);
+  font-size: clamp(2.2rem, 20cqmin, 4.4rem);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
+  line-height: 1.05;
+  pointer-events: none;
+  background: color-mix(in oklab, var(--obsidian-900) 80%, transparent);
+  -webkit-backdrop-filter: blur(7px) saturate(1.1);
+  backdrop-filter: blur(7px) saturate(1.1);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  border: 1.5px solid transparent;
+}
+.vessel__drag[data-kind="damage"] {
+  color: #ffd9d2;
+  border-color: color-mix(in oklab, #d8453b 65%, transparent);
+  text-shadow: 0 2px 18px rgba(216, 69, 59, 0.7);
+}
+.vessel__drag[data-kind="heal"] {
+  color: #d6ffe7;
+  border-color: color-mix(in oklab, #4fb477 65%, transparent);
+  text-shadow: 0 2px 18px rgba(79, 180, 119, 0.7);
+}
+/* Dim the totals while dragging so the delta chip reads as the foreground surface. */
+.vessel__readout { transition: opacity 0.18s ease; }
+.vessel[data-dragging] .vessel__readout { opacity: 0.25; }
+
+/* First-run drag affordance (#94): faint up/down chevrons framing the numeral
+   (top + bottom, never over it) that bob toward their direction, telegraphing
+   "drag me up to heal / down to damage." Inert + decorative; recedes once dragged. */
+.vessel__drag-hint {
+  position: absolute;
+  inset: 9% 0;
+  z-index: 3; /* above the fill/foil, below the readout numerals (separate sibling) */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   pointer-events: none;
 }
-.vessel__drag[data-kind="damage"] { color: #ffd9d2; text-shadow: 0 2px 18px rgba(216, 69, 59, 0.9); }
-.vessel__drag[data-kind="heal"] { color: #d6ffe7; text-shadow: 0 2px 18px rgba(79, 180, 119, 0.9); }
+.vessel__drag-chevron {
+  width: 26px;
+  height: 26px;
+  color: var(--ink-100);
+  opacity: 0.32;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+  animation: vessel-hint-bob 2.4s ease-in-out infinite;
+}
+.vessel__drag-chevron[data-dir="down"] { --hint-bob: 3px; animation-delay: 1.2s; }
+@keyframes vessel-hint-bob {
+  0%, 100% { opacity: 0.26; transform: translateY(0); }
+  50% { opacity: 0.62; transform: translateY(var(--hint-bob, -3px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vessel__drag-chevron { animation: none; opacity: 0.42; }
+}
 
 /* Centered readout, legible over liquid or void. */
 .vessel__readout {
@@ -1247,10 +1211,16 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-  pointer-events: none;
+  /* #105: the readout is a drag target too — a vertical drag that starts on the
+     numerals (the most natural grab) must damage/heal like a drag on the orb.
+     Taps on the value buttons still fall through to their own onClick. */
+  pointer-events: auto;
+  touch-action: none;
+  cursor: ns-resize;
 }
 .vessel__nums { display: flex; align-items: baseline; gap: 0.4rem; line-height: 1; }
 .vessel__current {
+  font-family: var(--font-num); /* explicit so the orb numeral can't drift off the body font (#114) */
   font-size: clamp(2rem, 32cqmin, 6rem);
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -1259,13 +1229,18 @@ body {
   color: #2a1c06;
   text-shadow: 0 1.5px 0 rgba(255, 244, 206, 0.4), 0 2px 10px rgba(20, 12, 2, 0.25);
 }
-.vessel__max { font-size: clamp(0.9rem, 11cqmin, 1.8rem); font-weight: 700; color: rgba(42, 28, 6, 0.66); text-shadow: 0 1px 0 rgba(255, 244, 206, 0.35); font-variant-numeric: tabular-nums; }
-/* On the low-HP ruby/down states the body goes dark — flip numerals back to light. */
+.vessel__max { font-family: var(--font-num); font-size: clamp(0.9rem, 11cqmin, 1.8rem); font-weight: 700; color: rgba(42, 28, 6, 0.66); text-shadow: 0 1px 0 rgba(255, 244, 206, 0.35); font-variant-numeric: tabular-nums; }
+/* On the low-HP states the engraved dark numerals lose their gold backing: the
+   fill only reaches the lower orb so the upper half (where the centered numerals
+   sit) is dark glass. #110 — flip numerals to light from bloodied down so they
+   stay legible when the fill no longer backs them. */
+.vessel[data-tier="bloodied"] .vessel__current,
 .vessel[data-tier="critical"] .vessel__current,
 .vessel[data-tier="down"] .vessel__current {
   color: var(--ink-100);
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7), 0 0 30px var(--accent-glow);
 }
+.vessel[data-tier="bloodied"] .vessel__max,
 .vessel[data-tier="critical"] .vessel__max,
 .vessel[data-tier="down"] .vessel__max { color: var(--ink-300); text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7); }
 .vessel__edit { appearance: none; background: none; border: none; padding: 0 0.2rem; border-radius: 14px; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
@@ -1276,6 +1251,7 @@ body {
   appearance: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
   padding: 0.15rem 0.7rem; border-radius: var(--radius-pill);
   font-size: 1rem; font-weight: 700; color: var(--hp-temp);
+  font-variant-numeric: tabular-nums; /* #95 — stable digit width for legibility */
   background: color-mix(in oklab, var(--hp-temp) 18%, transparent);
   border: 1px solid color-mix(in oklab, var(--hp-temp) 40%, transparent);
   box-shadow: 0 0 16px color-mix(in oklab, var(--hp-temp) 30%, transparent);
@@ -1294,34 +1270,24 @@ body {
    STRETCH to the full sheet width, or their 1fr columns collapse to content
    and the keys render tiny (≈39px) and fiddly to tap. */
 .keypad { width: min(100%, 23rem); gap: 0.5rem; display: flex; flex-direction: column; align-items: stretch; }
-.keypad__key, .keypad__apply, .keypad__minor { width: 100%; }
 .keypad__amount {
   text-align: center; font-size: clamp(2.4rem, 12vw, 3.2rem); font-weight: 800;
   font-variant-numeric: tabular-nums; color: var(--ink-100); line-height: 1;
 }
 .keypad__context { text-align: center; font-size: 0.8rem; color: var(--hp-temp); }
 .keypad__pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-top: 0.25rem; }
-.keypad__key {
-  appearance: none; border: 1px solid var(--obsidian-600); background: var(--obsidian-700);
-  color: var(--ink-100); font-size: 1.5rem; font-weight: 600; border-radius: 14px;
-  min-height: clamp(52px, 8svh, 66px); cursor: pointer; -webkit-tap-highlight-color: transparent;
-}
-.keypad__key:active { transform: scale(0.94); }
-.keypad__key--muted { color: var(--ink-300); font-size: 1.1rem; }
+/* Keys are Key primitives — size up for a comfortable numpad tap target (look from .ctl-key). */
+.keypad__pad .ctl-key { min-height: clamp(52px, 8svh, 66px); font-size: 1.5rem; border-radius: 14px; }
 .keypad__actions, .keypad__secondary { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-.keypad__apply {
-  appearance: none; border: none; border-radius: 14px; font-weight: 800; font-size: 1.05rem;
-  min-height: clamp(46px, 7svh, 58px); cursor: pointer; color: #fff;
+/* Actions are Button primitives (variant by tone) — fill the cell at the action height. */
+.keypad__actions .ctl-btn, .keypad__secondary .ctl-btn {
+  width: 100%; min-height: clamp(46px, 7svh, 58px); border-radius: 14px;
 }
-.keypad__apply[data-kind="damage"] { background: color-mix(in oklab, var(--hp-critical) 75%, black); }
-.keypad__apply[data-kind="heal"] { background: var(--hp-healthy); color: #06281f; }
-.keypad__apply:disabled { opacity: 0.4; }
-.keypad__minor {
-  appearance: none; background: none; border: 1px solid var(--obsidian-600); border-radius: 12px;
-  color: var(--ink-200); font-weight: 700; min-height: 46px; font-size: 0.95rem; cursor: pointer;
+/* Keep Temp's sapphire identity on the ghost minor action. */
+.ctl-btn.keypad__minor[data-kind="temp"] {
+  color: var(--hp-temp);
+  border-color: color-mix(in oklab, var(--hp-temp) 30%, var(--obsidian-600));
 }
-.keypad__minor[data-kind="temp"] { color: var(--hp-temp); border-color: color-mix(in oklab, var(--hp-temp) 30%, var(--obsidian-600)); }
-.keypad__minor:disabled { opacity: 0.4; }
 
 /* ── Character name ─────────────────────────────────────────────────────── */
 /* A single short line above the orb stage. Blank shows a faint interactive
@@ -1429,52 +1395,13 @@ body {
 }
 @keyframes undo-pill-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .undo-pill__label { font-size: 0.85rem; color: var(--ink-200); }
-.undo-pill__btn { appearance: none; background: none; border: none; color: var(--hp-temp); font-weight: 800; font-size: 0.85rem; cursor: pointer; }
+/* Undo is a Button variant=ghost size=sm — look from the primitive. */
 
 /* ── Coin button (chrome) ───────────────────────────────────────────────── */
 /* The ¢ trigger in the top-right chrome. Matches the SoundToggle's 44px pill
    in tap-target and border radius so the two controls read as a matched pair.
    Tinted gold (--coin-gold) so it's immediately legible as "wealth" without a
    label — the same hue used for gp dots and the total readout. */
-.coin-button {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-pill);
-  border: 1px solid color-mix(in oklab, var(--coin-gold) 28%, var(--obsidian-600));
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--coin-gold);
-  background: var(--obsidian-700);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  transition:
-    transform var(--dur-fast) var(--ease-spring),
-    background var(--dur-fast) ease,
-    box-shadow var(--dur-fast) ease;
-}
-@media (hover: hover) {
-  .coin-button:hover {
-    background: var(--obsidian-600);
-  }
-}
-.coin-button:active {
-  transform: scale(0.92);
-}
-.coin-button:focus-visible {
-  outline: 2px solid var(--coin-gold);
-  outline-offset: 3px;
-}
-.coin-button__icon {
-  width: 22px;
-  height: 22px;
-  display: block;
-}
-
 /* ── Coin sheet ─────────────────────────────────────────────────────────── */
 /* Per-denomination coin colours, shared by the sheet rows, the switcher strip,
    and the distill preview so a coin reads the same everywhere. Each gets a soft
@@ -1535,31 +1462,7 @@ body {
   color: var(--ink-500);
 }
 
-.coins__close {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--ink-500);
-  font-size: 0.95rem;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-@media (hover: hover) {
-  .coins__close:hover {
-    background: color-mix(in oklab, var(--ink-100) 6%, transparent);
-    color: var(--ink-200);
-  }
-}
-.coins__close:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
+/* close button look comes from IconButton (.ctl-icon-btn ghost); no bespoke class. */
 
 /* Hero total — the headline number, in coin gold. */
 .coins__hero {
@@ -1572,6 +1475,7 @@ body {
 }
 
 .coins__total {
+  font-family: var(--font-num);
   font-size: 2rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
@@ -1625,47 +1529,8 @@ body {
   color: var(--ink-500);
 }
 
-.coin-row__controls {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-/* The ± steppers — round, tactile, ≥40px tap targets. */
-.coin-row__step {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--obsidian-600);
-  background: var(--obsidian-700);
-  color: var(--ink-200);
-  font-size: 1.3rem;
-  font-weight: 700;
-  line-height: 1;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--dur-fast) var(--ease-spring), background var(--dur-fast) ease;
-}
-@media (hover: hover) {
-  .coin-row__step:hover {
-    background: var(--obsidian-600);
-  }
-}
-.coin-row__step:active {
-  transform: scale(0.9);
-}
-.coin-row__step:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-.coin-row__step:disabled {
-  opacity: 0.3;
-  cursor: default;
-}
+/* The −/+ steppers are now the shared Stepper primitive (.ctl-stepper owns the
+   layout + round buttons). Only the interactive middle count is bespoke. */
 
 /* The count doubles as the "edit" affordance — tap to open the keypad. */
 .coin-row__count {
@@ -1696,44 +1561,8 @@ body {
 
 /* Footer hosts the distill action (or, after distilling, the undo affordance). */
 /* Distill + undo live in the keypad console's footer slot (full-width). */
-.coins__distill {
-  appearance: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-  min-height: 48px;
-  border-radius: var(--radius-md);
-  border: 1px solid color-mix(in oklab, var(--coin-gold) 30%, var(--obsidian-600));
-  background: color-mix(in oklab, var(--coin-gold) 12%, var(--obsidian-700));
-  color: var(--coin-gold);
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--dur-fast) var(--ease-spring), background var(--dur-fast) ease;
-}
-@media (hover: hover) {
-  .coins__distill:hover:not(:disabled) {
-    background: color-mix(in oklab, var(--coin-gold) 20%, var(--obsidian-700));
-  }
-}
-.coins__distill:active:not(:disabled) {
-  transform: scale(0.98);
-}
-.coins__distill:focus-visible {
-  outline: 2px solid var(--coin-gold);
-  outline-offset: 2px;
-}
-.coins__distill:disabled {
-  opacity: 0.45;
-  cursor: default;
-  color: var(--ink-500);
-  border-color: var(--obsidian-600);
-  background: var(--obsidian-700);
-}
-
+/* Distill = Button primary — look/press/focus from the primitive; fill the footer. */
+.coins__distill { width: 100%; } /* height from Button (md, 44px tap target) */
 .coins__distill-glyph {
   font-size: 1.1rem;
 }
@@ -1752,19 +1581,7 @@ body {
   font-weight: 700;
   color: var(--ink-200);
 }
-.coins__undo-btn {
-  appearance: none;
-  background: none;
-  border: none;
-  color: var(--coin-gold);
-  font-weight: 800;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-.coins__undo-btn:focus-visible {
-  outline: 2px solid var(--coin-gold);
-  outline-offset: 2px;
-}
+/* Undo = Button ghost sm — look from the primitive. */
 
 /* ── Distill confirmation ───────────────────────────────────────────────── */
 /* Reuses the .hp-editor backdrop + sheet; .distill stretches content to host
@@ -1880,35 +1697,11 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 0.6rem;
 }
-.distill__cancel,
-.distill__confirm {
-  appearance: none;
+/* Cancel = Button ghost, Distill = Button primary — look/press/focus from the
+   primitive; just fill the grid cells at the action tap-target height. */
+.distill__actions .ctl-btn {
+  width: 100%;
   min-height: 48px;
-  border-radius: var(--radius-md);
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--dur-fast) var(--ease-spring);
-}
-.distill__cancel {
-  border: 1px solid var(--obsidian-600);
-  background: var(--obsidian-700);
-  color: var(--ink-200);
-}
-.distill__confirm {
-  border: none;
-  background: color-mix(in oklab, var(--coin-gold) 80%, black);
-  color: var(--obsidian-900);
-}
-.distill__cancel:active,
-.distill__confirm:active {
-  transform: scale(0.98);
-}
-.distill__cancel:focus-visible,
-.distill__confirm:focus-visible {
-  outline: 2px solid var(--coin-gold);
-  outline-offset: 2px;
 }
 
 /* ── Coin switcher strip (in the shared keypad header) ──────────────────── */
@@ -1980,55 +1773,6 @@ body {
    it clearly from the green/amber/red HP accent family so "concentrating" reads
    as a distinct state at a glance. The violet-400 (#a78bfa) is used inline as
    a literal rather than a token — concentration is a one-off state, not a tier. */
-.concentration-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-pill);
-  border: 1px solid color-mix(in oklab, var(--coin-gold) 30%, var(--obsidian-600));
-  color: var(--coin-gold);
-  background: var(--obsidian-700);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  transition:
-    transform var(--dur-fast) var(--ease-spring),
-    color var(--dur-fast) ease,
-    background var(--dur-fast) ease,
-    box-shadow var(--dur-fast) ease;
-}
-
-.concentration-toggle[data-concentrating="true"] {
-  color: #a78bfa;
-  border-color: color-mix(in oklab, #a78bfa 40%, var(--obsidian-600));
-  box-shadow: 0 0 14px color-mix(in oklab, #a78bfa 30%, transparent);
-}
-
-.concentration-toggle[data-concentrating="false"] {
-  color: var(--ink-500);
-}
-
-@media (hover: hover) {
-  .concentration-toggle:hover {
-    background: var(--obsidian-600);
-  }
-}
-
-.concentration-toggle:active {
-  transform: scale(0.92);
-}
-
-.concentration-toggle:focus-visible {
-  outline: 2px solid #a78bfa;
-  outline-offset: 3px;
-}
-
-.concentration-toggle__icon {
-  display: block;
-}
-
 /* ── Concentration prompt (#30) ─────────────────────────────────────────── */
 /* Stacks above the undo pill so both can coexist on-screen. The violet tint
    signals "spell save needed" without competing with the HP accent palette. */
@@ -2051,30 +1795,7 @@ body {
   white-space: nowrap;
 }
 
-.concentration-prompt__btn {
-  appearance: none;
-  border: none;
-  border-radius: var(--radius-pill);
-  font-weight: 800;
-  font-size: 0.78rem;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  padding: 0.2rem 0.6rem;
-  transition: transform var(--dur-fast) var(--ease-spring);
-}
-
-.concentration-prompt__btn:active { transform: scale(0.9); }
-.concentration-prompt__btn:focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; }
-
-.concentration-prompt__btn--keep {
-  background: color-mix(in oklab, #a78bfa 22%, var(--obsidian-600));
-  color: #a78bfa;
-}
-
-.concentration-prompt__btn--drop {
-  background: color-mix(in oklab, var(--hp-critical) 20%, var(--obsidian-700));
-  color: var(--hp-critical);
-}
+/* Keep = Button ghost, Drop = Button danger — look/press/focus from the primitive. */
 
 /* ════════════════════════════════════════════════════════════════════════
    COIN TOKEN — the minted-gold medallion control (engraved sigil, no text)

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Button press states — Molten Hoard (#89)</title>
+<!-- The REAL primitive stylesheet, so this preview can't drift from the app. -->
+<link rel="stylesheet" href="../../src/ui/controls/controls.css" />
+<style>
+  :root { --obsidian-600:#2A2418; --obsidian-700:#16130D; --obsidian-800:#100E0A;
+          --ink-100:#F4ECDD; --ink-200:#E4DAC6; --ink-300:#C9BCA0; --ink-500:#9A8F7A;
+          --coin-gold:#E8B45A; --hp-critical:#D8453B; --radius-pill:999px; --radius-md:14px; }
+  body { margin:0; background:#0B0A08; color:#F4ECDD; font-family:"DM Sans",system-ui,sans-serif;
+         padding:28px; }
+  h1 { font-size:1.1rem; font-weight:800; letter-spacing:.02em; margin:0 0 4px; }
+  p.sub { color:#9A8F7A; margin:0 0 22px; font-size:.85rem; }
+  .grid { display:grid; grid-template-columns:120px 1fr 1fr; gap:18px 26px; align-items:center; }
+  .head { color:#9A8F7A; font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; font-weight:700; }
+  .role { color:#C9BCA0; font-size:.82rem; font-weight:700; }
+  .cell { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  hr { border:0; border-top:1px solid #2A2418; grid-column:1/-1; margin:2px 0; }
+
+  /* Preview-only: force the PRESSED ("down") look in the right column, mirroring the
+     :active rules from controls.css so a static screenshot shows up vs down. */
+  .down .ctl-btn[data-variant="primary"]{background:linear-gradient(rgba(0,0,0,.16),rgba(0,0,0,.16)),var(--ctl-gold-body);box-shadow:var(--press-recess-gold),inset 0 0 0 1.5px rgba(255,244,206,.4),var(--press-flat);transform:scale(.97)}
+  .down .ctl-btn[data-variant="heal"]{background:linear-gradient(180deg,#4fb377,#3f9c64);box-shadow:var(--press-recess-gold),inset 0 0 0 1.5px rgba(220,255,235,.35),var(--press-flat);transform:scale(.97)}
+  .down .ctl-btn[data-variant="ghost"]{background:var(--press-fill);box-shadow:var(--press-recess-dark);transform:scale(.97)}
+  .down .ctl-icon-btn[data-variant="token"]{background:linear-gradient(rgba(0,0,0,.18),rgba(0,0,0,.18)),var(--ctl-gold-body);box-shadow:var(--press-recess-gold),var(--ring-gold),var(--press-flat);transform:scale(.94)}
+  .down .ctl-icon-btn[data-variant="ghost"]{background:var(--press-fill);box-shadow:var(--press-recess-dark);transform:scale(.94)}
+  .down .ctl-stepper__btn,.ctl-stepper__btn.down{background:var(--obsidian-800);box-shadow:var(--press-recess-dark);transform:scale(.94)}
+  .down .ctl-chip{box-shadow:var(--press-recess-dark);transform:scale(.96)}
+  .down .ctl-chip[data-selected="true"]{background:linear-gradient(rgba(0,0,0,.16),rgba(0,0,0,.16)),var(--ctl-gold-body);box-shadow:var(--press-recess-gold),var(--ring-gold);transform:scale(.96)}
+  .down .ctl-key{background:var(--obsidian-800);box-shadow:var(--press-recess-dark);transform:scale(.94)}
+  .down .ctl-segment__option,.ctl-segment__option.down{background:var(--press-fill);box-shadow:var(--press-recess-dark)}
+</style>
+</head>
+<body>
+  <h1>Button press states — distinct up &rarr; down</h1>
+  <p class="sub">Left = resting (raised). Right = pressed (pushed into the metal). Tap any real button to feel it live; this page links the app's controls.css.</p>
+  <div class="grid">
+    <div class="head"></div><div class="head">Up — rest</div><div class="head">Down — pressed</div>
+    <hr/>
+
+    <div class="role">Primary<br/>(Throw, Apply)</div>
+    <div class="cell"><button class="ctl-btn" data-variant="primary" data-size="lg">Throw 1d20</button></div>
+    <div class="cell down"><button class="ctl-btn" data-variant="primary" data-size="lg">Throw 1d20</button></div>
+
+    <div class="role">Heal<br/>(Apply heal)</div>
+    <div class="cell"><button class="ctl-btn" data-variant="heal" data-size="lg">Apply +6 heal</button></div>
+    <div class="cell down"><button class="ctl-btn" data-variant="heal" data-size="lg">Apply +6 heal</button></div>
+
+    <div class="role">Ghost<br/>(Cancel, Clear)</div>
+    <div class="cell"><button class="ctl-btn" data-variant="ghost" data-size="md">Cancel</button></div>
+    <div class="cell down"><button class="ctl-btn" data-variant="ghost" data-size="md">Cancel</button></div>
+
+    <div class="role">Icon · token<br/>(coins, dice)</div>
+    <div class="cell"><button class="ctl-icon-btn" data-variant="token" aria-label="Dice">🎲</button></div>
+    <div class="cell down"><button class="ctl-icon-btn" data-variant="token" aria-label="Dice">🎲</button></div>
+
+    <div class="role">Icon · ghost<br/>(close X)</div>
+    <div class="cell"><button class="ctl-icon-btn" data-variant="ghost" aria-label="Close">✕</button></div>
+    <div class="cell down"><button class="ctl-icon-btn" data-variant="ghost" aria-label="Close">✕</button></div>
+
+    <div class="role">Stepper<br/>(− value +)</div>
+    <div class="cell"><span class="ctl-stepper"><button class="ctl-stepper__btn" aria-label="dec">−</button><span class="ctl-stepper__value">+3</span><button class="ctl-stepper__btn" aria-label="inc">+</button></span></div>
+    <div class="cell"><span class="ctl-stepper"><button class="ctl-stepper__btn down" style="display:grid" aria-label="dec">−</button><span class="ctl-stepper__value">+3</span><button class="ctl-stepper__btn" aria-label="inc">+</button></span></div>
+
+    <div class="role">Chip<br/>(die / denom)</div>
+    <div class="cell"><button class="ctl-chip">d6</button><button class="ctl-chip" data-selected="true">d20</button></div>
+    <div class="cell"><span class="down"><button class="ctl-chip">d6</button></span><span class="down"><button class="ctl-chip" data-selected="true">d20</button></span></div>
+
+    <div class="role">Segment<br/>(adv/normal/dis)</div>
+    <div class="cell"><div class="ctl-segment" style="--ctl-segment-count:3;min-width:240px"><button class="ctl-segment__option">Disadv</button><button class="ctl-segment__option" data-active="true">Normal</button><button class="ctl-segment__option">Adv</button></div></div>
+    <div class="cell"><div class="ctl-segment" style="--ctl-segment-count:3;min-width:240px"><button class="ctl-segment__option down">Disadv</button><button class="ctl-segment__option" data-active="true">Normal</button><button class="ctl-segment__option">Adv</button></div></div>
+
+    <div class="role">Keypad key</div>
+    <div class="cell"><div style="width:64px"><button class="ctl-key">7</button></div></div>
+    <div class="cell"><div style="width:64px" class="down"><button class="ctl-key">7</button></div></div>
+  </div>
+</body>
+</html>

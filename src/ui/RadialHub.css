@@ -1,0 +1,215 @@
+/* Radial action hub (#74) — one gold sigil that fans its secondary actions out on
+   an arc. Built for DEPTH, not flatness: a dimming scrim floats the fan above the
+   app, a gold bloom sits behind it, the sigil breathes at rest + rotates open, and
+   the icon chips spring out staggered with layered shadows. Everything simplifies
+   under prefers-reduced-motion. The hub lives top-right, so the fan opens DOWN-LEFT. */
+
+.radial-hub {
+  position: relative;
+  display: inline-flex;
+}
+/* When open, lift the whole hub into its own stacking context above the app so the
+   scrim + fan float over everything else. */
+.radial-hub[data-open] {
+  z-index: 60;
+}
+
+/* ── Depth layer 1: scrim (dims + blurs the app behind the fan) ───────────── */
+.radial-hub__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(120% 90% at 88% 8%, rgba(8, 6, 2, 0.32), rgba(6, 4, 1, 0.66));
+  -webkit-backdrop-filter: blur(2.5px);
+  backdrop-filter: blur(2.5px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+.radial-hub[data-open] .radial-hub__scrim {
+  opacity: 1;
+}
+
+/* ── Depth layer 2: gold bloom behind the fan ─────────────────────────────── */
+.radial-hub__glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 320px;
+  height: 320px;
+  z-index: 0;
+  transform: translate(-72%, -22%) scale(0.4);
+  background: radial-gradient(circle, color-mix(in oklab, var(--coin-gold, #d9b85c) 30%, transparent) 0%, transparent 62%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.radial-hub[data-open] .radial-hub__glow {
+  opacity: 1;
+  transform: translate(-72%, -22%) scale(1);
+}
+
+/* ── The sigil ────────────────────────────────────────────────────────────── */
+.radial-hub__sigil {
+  position: relative;
+  z-index: 3;
+  transition: box-shadow 0.3s ease;
+}
+/* A slow gold breathing at rest telegraphs "this opens" (drops when open / reduced). */
+.radial-hub:not([data-open]) .radial-hub__sigil {
+  animation: radial-hub-breathe 3.6s ease-in-out infinite;
+}
+.radial-hub[data-open] .radial-hub__sigil {
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--coin-gold, #d9b85c) 55%, transparent),
+    0 6px 22px rgba(0, 0, 0, 0.5);
+}
+/* Only the GLYPH rotates (sunburst → ✕) — the medallion + its fixed shine stay put,
+   so the light source doesn't spin with it (user feedback). */
+.radial-hub__glyph {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.radial-hub[data-open] .radial-hub__glyph {
+  transform: rotate(135deg);
+}
+@keyframes radial-hub-breathe {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--coin-gold, #d9b85c) 0%, transparent); }
+  50% { box-shadow: 0 0 18px 2px color-mix(in oklab, var(--coin-gold, #d9b85c) 28%, transparent); }
+}
+
+/* ── The fan + chips ──────────────────────────────────────────────────────── */
+.radial-hub__fan {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  z-index: 1;
+}
+
+.radial-hub__action {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  padding: 0.5rem 0.95rem 0.5rem 0.6rem;
+  border-radius: var(--radius-pill, 999px);
+  /* Match the Button primitive: weight 800, pill radius, the same press scale. */
+  font: 800 0.84rem/1 "DM Sans", system-ui, sans-serif;
+  letter-spacing: 0.01em;
+  color: var(--ink-100, #f4ecd8);
+  /* OPAQUE — the scrim already supplies the floating-depth blur, so a per-chip
+     backdrop-filter only frosts + washes the chip when it sits over bright content
+     (the gold orb). A solid fill reads crisp over anything behind it. */
+  background:
+    linear-gradient(180deg, rgba(255, 250, 235, 0.05), rgba(0, 0, 0, 0.12)),
+    linear-gradient(180deg, #211b12, #15110b);
+  border: 1px solid color-mix(in oklab, var(--coin-gold, #d9b85c) 30%, var(--obsidian-600, #1f1a11));
+  /* Layered shadow: tight ambient + soft key + an inner top sheen = real depth. */
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 10px 28px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 247, 224, 0.08);
+  cursor: pointer;
+  /* Collapsed at the sigil until open. */
+  transform: translate(-50%, -50%) scale(0.4);
+  opacity: 0;
+  transition:
+    transform 0.42s cubic-bezier(0.34, 1.62, 0.5, 1),
+    opacity 0.24s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.radial-hub__action-icon {
+  display: inline-flex;
+  color: var(--coin-gold, #d9b85c);
+}
+.radial-hub__action-label {
+  display: inline-block;
+}
+.radial-hub__action:hover,
+.radial-hub__action:focus-visible {
+  border-color: var(--coin-gold, #d9b85c);
+  transform: translate(var(--x, 0), var(--y, 0)) scale(1.05);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    0 14px 34px rgba(0, 0, 0, 0.55),
+    0 0 18px color-mix(in oklab, var(--coin-gold, #d9b85c) 26%, transparent),
+    inset 0 1px 0 rgba(255, 247, 224, 0.14);
+}
+
+/* Open: fan the chips out along a quarter-arc (left → down), fully LEFT of the
+   far-right sigil so nothing clips. Each carries its open offset in --x/--y so the
+   hover scale composes with it. Staggered for a springy cascade. */
+.radial-hub[data-open] .radial-hub__action {
+  opacity: 1;
+  transform: translate(var(--x), var(--y)) scale(1);
+}
+.radial-hub[data-open] .radial-hub__action[data-action="coins"] { --x: calc(-100% - 36px); --y: -14px; transition-delay: 0.03s; }
+.radial-hub[data-open] .radial-hub__action[data-action="dice"] { --x: calc(-100% - 28px); --y: 32px; transition-delay: 0.08s; }
+.radial-hub[data-open] .radial-hub__action[data-action="concentration"] { --x: calc(-100% - 18px); --y: 78px; transition-delay: 0.13s; }
+.radial-hub[data-open] .radial-hub__action[data-action="sound"] { --x: calc(-100% - 8px); --y: 124px; transition-delay: 0.18s; }
+.radial-hub[data-open] .radial-hub__action[data-action="about"] { --x: calc(-100% - 2px); --y: 170px; transition-delay: 0.23s; }
+
+/* Press = the same "push into the metal" as the Button primitive (scale 0.96),
+   composed with the chip's open offset. */
+.radial-hub[data-open] .radial-hub__action:active {
+  transform: translate(var(--x), var(--y)) scale(0.96);
+}
+
+/* Toggle chips that are ON read like a PRIMARY button — the same gold body + dark
+   ink — so "on" is the gold the rest of the app already uses, not a bespoke colour. */
+.radial-hub__action[aria-pressed="true"] {
+  color: #2a1c06;
+  /* The Button primitive's gold body, written out — its --ctl-gold-body custom prop
+     is scoped to .ctl-btn and isn't visible here, so a bare var() resolved to
+     transparent and the orb showed through (the "washed" look). */
+  background: radial-gradient(62% 56% at 38% 30%, #fff1c6 0%, #f4c66a 28%, #d49a3f 62%, #9c6a23 100%);
+  border-color: rgba(120, 84, 24, 0.7);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 247, 224, 0.5),
+    0 0 0 1px rgba(0, 0, 0, 0.25),
+    0 10px 28px rgba(0, 0, 0, 0.55);
+}
+.radial-hub__action[aria-pressed="true"] .radial-hub__action-icon {
+  color: #1c1606;
+}
+/* Concentration keeps its DESIGN.md "on" hue — a muted PURPLE, distinct from gold. */
+.radial-hub__action[data-action="concentration"][aria-pressed="true"] {
+  border-color: #c4b5fd;
+  color: #161031;
+  background: linear-gradient(180deg, color-mix(in oklab, #b9a3ff 96%, white 4%),
+    color-mix(in oklab, #a78bfa 80%, black 8%));
+  box-shadow:
+    inset 0 0 0 1.5px rgba(233, 226, 255, 0.5),
+    0 10px 28px rgba(0, 0, 0, 0.5);
+}
+.radial-hub__action[data-action="concentration"][aria-pressed="true"] .radial-hub__action-icon {
+  color: #161031;
+}
+
+/* ── Reduced motion: keep the depth (scrim + glow dim in), drop the sweep ───── */
+@media (prefers-reduced-motion: reduce) {
+  .radial-hub:not([data-open]) .radial-hub__sigil { animation: none; }
+  .radial-hub__sigil,
+  .radial-hub__glyph,
+  .radial-hub__action,
+  .radial-hub__glow {
+    transition: opacity 0.14s ease;
+  }
+  .radial-hub[data-open] .radial-hub__sigil { transform: none; }
+  .radial-hub[data-open] .radial-hub__glow { transform: translate(-72%, -22%) scale(1); }
+  /* Stack the chips straight down, anchored LEFT of the sigil (never centred — it
+     sits at the far right, so a centred chip would clip the edge). */
+  .radial-hub[data-open] .radial-hub__action {
+    transform: translate(-100%, -50%) scale(1);
+    transition-delay: 0s;
+  }
+  .radial-hub[data-open] .radial-hub__action[data-action="coins"] { top: 46px; }
+  .radial-hub[data-open] .radial-hub__action[data-action="dice"] { top: 92px; }
+  .radial-hub[data-open] .radial-hub__action[data-action="concentration"] { top: 138px; }
+  .radial-hub[data-open] .radial-hub__action[data-action="sound"] { top: 184px; }
+  .radial-hub[data-open] .radial-hub__action[data-action="about"] { top: 230px; }
+}

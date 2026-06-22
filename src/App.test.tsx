@@ -16,6 +16,7 @@ vi.mock("./sound/sfx", () => ({
 describe("App (integration)", () => {
   beforeEach(async () => {
     await Dexie.delete(HP_DB_NAME);
+    vi.mocked(playSfx).mockClear(); // isolate per-test playSfx assertions (Copilot #158)
   });
 
   // The ± steppers were removed in favour of orb-drag; damage/heal now go
@@ -66,6 +67,29 @@ describe("App (integration)", () => {
     await screen.findByText("10");
     await keypad("damage", 1);
     expect(playSfx).toHaveBeenCalledWith("damage");
+  });
+
+  it("plays the toggle cue when concentration turns on, and nothing on initial load (#90)", async () => {
+    render(<App />);
+    await screen.findByText("10");
+    // No concentration cue fires just from loading/hydrating (baseline).
+    expect(playSfx).not.toHaveBeenCalledWith("toggleOn");
+    expect(playSfx).not.toHaveBeenCalledWith("toggleOff");
+    // Toggle concentration ON via the radial hub → the App-level watcher cues it.
+    await userEvent.click(screen.getByRole("button", { name: /actions/i }));
+    await userEvent.click(screen.getByRole("button", { name: /concentration/i }));
+    await waitFor(() => expect(playSfx).toHaveBeenCalledWith("toggleOn"));
+  });
+
+  it("plays a down cue on dropping to 0 and a revive cue coming back (#90)", async () => {
+    render(<App />);
+    await screen.findByText("10");
+    vi.mocked(playSfx).mockClear();
+    await keypad("damage", 10); // 10 → 0: alive → dying
+    await waitFor(() => expect(playSfx).toHaveBeenCalledWith("down"));
+    expect(playSfx).not.toHaveBeenCalledWith("death"); // down is distinct from final death
+    await keypad("heal", 5); // 0 → 5: dying → alive
+    await waitFor(() => expect(playSfx).toHaveBeenCalledWith("revive"));
   });
 
   it("edits Max HP through the pill modal", async () => {
@@ -199,9 +223,10 @@ describe("App (integration)", () => {
     await waitFor(() => expect(screen.getByTestId("hp-temp-badge")).toHaveTextContent("9"));
   });
 
-  it("opens the coin sheet from the chrome and adds gold", async () => {
+  it("opens the coin sheet from the radial hub and adds gold", async () => {
     render(<App />);
     await screen.findByText("10");
+    await userEvent.click(screen.getByRole("button", { name: /actions/i })); // open the hub
     await userEvent.click(screen.getByRole("button", { name: /^coins$/i }));
     expect(await screen.findByRole("dialog", { name: /coins/i })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /gold — 0 gp, edit/i }));

@@ -70,6 +70,48 @@ test.describe("mobile layout", () => {
     expect(Math.abs(boxAfter!.y - boxBefore!.y)).toBeLessThanOrEqual(2);
   });
 
+  test("dice tray: all die chips fit within the viewport (no clipping)", async ({ page }) => {
+    const vw = page.viewportSize()!.width;
+    const vh = page.viewportSize()!.height;
+
+    // The radial hub + dice tray animate in; under full motion their spring entrance
+    // trips Playwright's actionability hit-test (the chips ARE the topmost element —
+    // verified via document.elementFromPoint — but the moving boxes confuse the
+    // checker). Emulate reduced-motion so the controls settle instantly and clicks
+    // are reliable; the chip-clipping geometry this test guards is identical.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    // Open the tray via the radial hub. The fan sits over the WebGL orb canvas, which
+    // confuses Playwright's pointer hit-test (it reports the orb stage intercepting,
+    // and even force:true mis-routes the synthetic tap to the canvas). Dispatch the
+    // click straight on the chip element so its handler fires regardless of hit-test;
+    // the chip-clipping geometry this test guards is unaffected.
+    await page.getByLabel("Actions").click();
+    await page.getByRole("button", { name: "Dice", exact: true }).dispatchEvent("click"); // not "Hit Dice"
+    await page.getByLabel("Add d20").waitFor({ state: "visible" });
+    await page.getByLabel("Add d20").click();
+    await page.getByLabel("Add d6").click();
+    await page.getByLabel("Add d6").click();
+    await page.getByLabel("Add d4").click();
+
+    // Every die chip must sit fully within the viewport width (the pre-rework
+    // overflow:auto circles clipped d100 on narrow phones — this guards it).
+    const chips = page.locator(".dice-chip");
+    const count = await chips.count();
+    expect(count).toBe(7);
+    for (let i = 0; i < count; i++) {
+      const box = await chips.nth(i).boundingBox();
+      expect(box, "chip must be laid out").not.toBeNull();
+      expect(box!.x).toBeGreaterThanOrEqual(-2);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(vw + 2);
+    }
+
+    // The dock itself must not overflow the screen bottom (one-screen budget).
+    const dock = page.locator(".dice-tray__dock");
+    const dockBox = await dock.boundingBox();
+    expect(dockBox, "dock must be laid out").not.toBeNull();
+    expect(dockBox!.y + dockBox!.height).toBeLessThanOrEqual(vh + 2);
+  });
+
   test("keypad opens with adequately-sized keys", async ({ page }) => {
     // Tapping the current-HP number opens the quick-entry keypad.
     await page.getByLabel("Edit current HP").click();
@@ -78,8 +120,8 @@ test.describe("mobile layout", () => {
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
 
-    // Pick any digit key (there are 9: 1–9).
-    const key = dialog.locator(".keypad__key").first();
+    // Pick any digit key (there are 9: 1–9). Keys are the shared Key primitive (#89).
+    const key = dialog.locator(".ctl-key").first();
     await expect(key).toBeVisible();
 
     const keyBox = await key.boundingBox();

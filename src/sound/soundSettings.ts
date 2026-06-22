@@ -70,11 +70,12 @@ export function useSoundEnabled(): readonly [enabled: boolean, toggle: () => voi
   const [enabled, setEnabled] = useState<boolean>(() => isSoundEnabled());
 
   const toggle = useCallback(() => {
-    setEnabled((prev) => {
-      const next = !prev;
-      setMuted(!next);
-      return next;
-    });
+    // Update the authoritative in-memory override SYNCHRONOUSLY (not inside the
+    // setState updater, which defers to commit) so the engine — and any cue fired
+    // right after toggle() — sees the new mute state immediately.
+    const next = !isSoundEnabled();
+    setMuted(!next);
+    setEnabled(next);
   }, []);
 
   return [enabled, toggle] as const;
