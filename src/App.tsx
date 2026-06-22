@@ -4,12 +4,12 @@ import "./sound/sound.css";
 import "./ui/dice/dice.css";
 import { useEffect, useRef, useState } from "react";
 import { playSfx } from "./sound/sfx";
+import { useSoundEnabled } from "./sound/soundSettings";
 import { useHp } from "./store/useHp";
 import type { HpLastChange } from "./store/useHp";
 import { useCoins } from "./store/useCoins";
 import { useSaveError, clearSaveError } from "./store/saveError";
 import { CharacterName } from "./ui/CharacterName";
-import { ConcentrationToggle } from "./ui/ConcentrationToggle";
 import { ConcentrationPrompt } from "./ui/ConcentrationPrompt";
 import { DeathSaves } from "./ui/DeathSaves";
 import { HitDicePanel } from "./ui/HitDicePanel";
@@ -18,12 +18,11 @@ import { glowCss, hpColor, rgbCss } from "./ui/hpColor";
 import { HpKeypad } from "./ui/HpKeypad";
 import { HpValueEditor } from "./ui/HpValueEditor";
 import { LiquidVessel } from "./ui/LiquidVessel";
+import { RadialHub } from "./ui/RadialHub";
 import { RestControls } from "./ui/RestControls";
-import { SoundToggle } from "./ui/SoundToggle";
+import { AboutPanel } from "./ui/AboutPanel";
 import { UndoPill } from "./ui/UndoPill";
-import { CoinButton } from "./ui/CoinButton";
 import { CoinSheet } from "./ui/CoinSheet";
-import { DiceToken } from "./ui/dice/DiceToken";
 import { DiceTray, type DiceIntent } from "./ui/dice/DiceTray";
 
 /**
@@ -41,6 +40,15 @@ export function App() {
   const coins = useCoins();
   const saveFailed = useSaveError();
   const [coinsOpen, setCoinsOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [soundEnabled, toggleSound] = useSoundEnabled();
+  // Toggle-on cue only when ENABLING (playSfx self-gates on mute, so muting is
+  // silent); the override updates synchronously so the cue actually sounds.
+  const onToggleSound = () => {
+    const willEnable = !soundEnabled;
+    toggleSound();
+    if (willEnable) playSfx("toggleOn");
+  };
   const [diceOpen, setDiceOpen] = useState(false);
   // The active dice-tray intent: null = ad-hoc builder; otherwise a contextual roll
   // (death save / Hit Die) whose 5e rule the app applies on settle.
@@ -104,12 +112,14 @@ export function App() {
         </div>
       )}
       <div className="hp-tracker__chrome">
-        <CoinButton onOpen={() => { setKeypadOpen(false); setEditingMax(false); setCoinsOpen(true); }} />
-        <DiceToken onOpen={() => openDice(null)} />
-        <SoundToggle />
-        <ConcentrationToggle
+        <RadialHub
+          onCoins={() => { setKeypadOpen(false); setEditingMax(false); setCoinsOpen(true); }}
+          onDice={() => openDice(null)}
+          onAbout={() => setAboutOpen(true)}
           concentrating={hp.concentrating}
-          onToggle={() => hp.setConcentrating(!hp.concentrating)}
+          onToggleConcentration={() => hp.setConcentrating(!hp.concentrating)}
+          soundEnabled={soundEnabled}
+          onToggleSound={onToggleSound}
         />
       </div>
       <div className="hp-tracker__card">
@@ -200,6 +210,8 @@ export function App() {
           onClose={() => { coins.dismissDistill(); setCoinsOpen(false); }}
         />
       )}
+
+      {aboutOpen && <AboutPanel onClose={() => setAboutOpen(false)} />}
 
       {/* Always mounted so it's inert-when-closed (display:none) rather than
           remounting — keeps the lazy-loaded 3D engine warm between opens. */}

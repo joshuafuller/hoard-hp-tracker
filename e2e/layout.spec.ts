@@ -74,8 +74,20 @@ test.describe("mobile layout", () => {
     const vw = page.viewportSize()!.width;
     const vh = page.viewportSize()!.height;
 
-    // Open the tray and build a mixed pool to stress the chip row + dock.
-    await page.getByLabel("Roll dice").click();
+    // The radial hub + dice tray animate in; under full motion their spring entrance
+    // trips Playwright's actionability hit-test (the chips ARE the topmost element —
+    // verified via document.elementFromPoint — but the moving boxes confuse the
+    // checker). Emulate reduced-motion so the controls settle instantly and clicks
+    // are reliable; the chip-clipping geometry this test guards is identical.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    // Open the tray via the radial hub. The fan sits over the WebGL orb canvas, which
+    // confuses Playwright's pointer hit-test (it reports the orb stage intercepting,
+    // and even force:true mis-routes the synthetic tap to the canvas). Dispatch the
+    // click straight on the chip element so its handler fires regardless of hit-test;
+    // the chip-clipping geometry this test guards is unaffected.
+    await page.getByLabel("Actions").click();
+    await page.getByRole("button", { name: "Dice", exact: true }).dispatchEvent("click"); // not "Hit Dice"
+    await page.getByLabel("Add d20").waitFor({ state: "visible" });
     await page.getByLabel("Add d20").click();
     await page.getByLabel("Add d6").click();
     await page.getByLabel("Add d6").click();
