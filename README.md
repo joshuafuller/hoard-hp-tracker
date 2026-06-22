@@ -14,6 +14,27 @@ Track current / max / temporary hit points with big thumb-reach **−/+** contro
 short/long rest with Hit Dice, a tap-to-edit pill, satisfying haptics, and optional sound. Runs as an
 installable PWA (works offline at the table) or a one-command Docker container.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/06-keypad-slosh.gif" alt="Quick damage then heal via the no-keyboard keypad — the liquid HP orb sloshes with the change" width="250" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/01-hero-full.png" alt="Full HP — healthy gold liquid orb at 10/10" width="170" />
+  <img src="docs/screenshots/02-hero-bloodied.png" alt="Bloodied — amber orb at 5/10" width="170" />
+  <img src="docs/screenshots/03-hero-critical.png" alt="Critical — ruby orb at 2/10" width="170" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/04-keypad.png" alt="Quick-entry keypad — damage / heal / set, no OS keyboard" width="170" />
+  <img src="docs/screenshots/05-coins.png" alt="Coin tracker — denominations with steppers and auto-distill" width="170" />
+  <img src="docs/screenshots/08-concentration.png" alt="Named character with a Concentration CON-save prompt" width="170" />
+</p>
+
+<sub>Mobile viewport (390×844). Regenerate after a UI change, in three steps: <code>pnpm build</code> (foreground),
+then <code>pnpm preview --port 4173 &</code> (background the preview only), then <code>node scripts/capture-screenshots.mjs</code>
+— writes <code>docs/screenshots/</code>; needs <code>ffmpeg</code> for the GIF.</sub>
+
 ## Features
 
 - **HP at a glance** — luminous readout, a tiered bar (green → amber → red) with a temp-HP overshield.
