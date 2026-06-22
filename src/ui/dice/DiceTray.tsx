@@ -195,11 +195,14 @@ export function DiceTray({
           let timer: ReturnType<typeof setTimeout> | undefined;
           const timeout = new Promise<RollRecord>((res) => {
             timer = setTimeout(() => {
-              // Sweep the stuck throw so its eventual late settle can't resolve a
-              // NEW throw with stale dice (dice-box has one result slot), then fall
-              // back to a headless number so the player isn't left empty-handed.
-              engine.clear();
+              // Resolve the headless fallback FIRST so the race adopts it: clearing
+              // the stuck throw below rejects `rollPromise` (via the adapter's
+              // abandon), and that rejection must not win the race ahead of the
+              // fallback — otherwise a jammed roll leaves the player empty-handed.
               res(rollHeadless(expr));
+              // Then sweep the stuck throw so its eventual late settle can't resolve
+              // a NEW throw with stale dice (dice-box has one result slot).
+              engine.clear();
             }, 6000);
           });
           try {

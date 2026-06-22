@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 import Dexie from "dexie";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHpDb, type HpDb } from "../../store/db";
@@ -187,6 +187,35 @@ describe("DiceTray", () => {
     resolveRoll({ notation: "1d20", total: 9, result: [9], dice: [{ sides: 20, value: 9, dropped: false }] });
     await waitFor(() => expect(document.querySelector(".dice-result__total")?.textContent).toBe("9"));
     expect(screen.getByRole("button", { name: /^throw/i })).toBeEnabled();
+  });
+
+  it("a jammed roll falls back to a headless result at the 6s timeout (not an empty result)", async () => {
+    // Regression for Codex #130: the timeout's engine.clear() rejects the racing
+    // roll promise; if that rejection beats the headless fallback, doRoll returns
+    // null and the player gets NO number. The fallback must win the race.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      // Faithful to bindTray: the roll never settles on its own, and clear() REJECTS
+      // it (abandon) — exactly the interaction that made the buggy order return null.
+      let rejectRoll: ((e: Error) => void) | undefined;
+      const tray = {
+        roll: vi.fn(() => new Promise<never>((_, rej) => { rejectRoll = rej; })),
+        clear: vi.fn(() => rejectRoll?.(new Error("dice roll superseded"))),
+      };
+      createDiceTray.mockResolvedValueOnce(tray);
+      render(<DiceTray open onClose={vi.fn()} onApplyHeal={vi.fn()} db={db} reducedMotion={false} />);
+      await act(async () => { await Promise.resolve(); }); // let the engine load resolve
+      expect(createDiceTray).toHaveBeenCalled();
+      fireEvent.click(screen.getByRole("button", { name: "Add d20" }));
+      fireEvent.click(screen.getByRole("button", { name: /^throw/i }));
+      expect(tray.roll).toHaveBeenCalled();
+      await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
+      expect(rollHeadless).toHaveBeenCalledWith("1d20");
+      expect(tray.clear).toHaveBeenCalled(); // stuck throw swept
+      expect(document.querySelector(".dice-result__total")?.textContent).toBe("23"); // fallback shown
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   describe("contextual rolls (shared tray — death save / Hit Die)", () => {
