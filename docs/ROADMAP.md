@@ -52,20 +52,28 @@ TEST INFRA (visibility for everything after)
 **The rework traps to avoid:**
 - Building **#88 responsive** before **#84** decides the strategy → likely a rewrite.
 - Building **#92 / #91 effects** before **#87** defines the hook architecture → bespoke wiring we rip out.
-- More **dice features** before **#184/#108** are fixed → stacking on buggy composition.
-- Shipping UI without **e2e visibility (#170, #176)** → regressions found in prod (already happened: #137).
+- More **dice features** before **#108** is fixed → stacking on buggy composition (#184 is now fixed).
+- Shipping UI without **e2e visibility (#170 ✅, #176)** → flow regressions reach prod because the e2e
+  check isn't a merge gate yet (#176). _(Correction: an earlier draft cited #137 as a prod regression —
+  #137 is actually a merged control-refactor feature, not an incident; the risk is the missing gate, not that PR.)_
 
 ---
 
 ## Proposed phased order
 
-**Phase 0 — Foundations & quick wins (now).** Highest leverage, low risk, unblocks the rest.
-1. **#170** real dice-path e2e (most-mocked, riskiest path — and it *guards the dice bugs below*).
-2. **#184** Hit-Die discard bug; **#108** dice composition bug (with #170 watching).
+> **Status (updated mid-session) — issues are the source of truth; verify state before picking up:**
+> #170 and #184 are **DONE** (merged + closed). #108 is **partially done** — headless path fixed
+> (PR #194); the WebGL reconcile remainder is tracked in **#186**. #164's DESIGN.md contract was
+> reconciled (PR #195) but the **code retune + the open shade/band decision still remain**.
+> Remaining Phase 0: #176, #166/#167/#169, #164 (code), #163, #183, #43, #33.
+
+**Phase 0 — Foundations & quick wins.** Highest leverage, low risk, unblocks the rest.
+1. ✅ **#170** real dice-path e2e — DONE (headless-scoped; the WebGL reconcile e2e is #186).
+2. ✅ **#184** Hit-Die discard — DONE.  ◐ **#108** dice composition — headless DONE (#194), WebGL reconcile → #186.
 3. **#176** make the e2e check *required* on beta.
 4. **PWA version story** #166 + #167 + #169 (small, visible, "feels maintained").
-5. **#164** bloodied → red (visible, regenerates the README walkthrough); **#163** name discoverability.
-6. **#183** share link; **#43** CI speed; **#33** esbuild (with the vite-7 bump it needs).
+5. **#164** bloodied → red — DESIGN.md reconciled (#195); **code (`hpColor`/`tierFor`) + the open shade/band decision remain**. **#163** name discoverability.
+6. **#183** share link; **#43** CI speed; **#33** esbuild advisory — NOTE: the lockfile already resolves the safe **esbuild 0.25.12** (advisory affects ≤0.24.2), so this is likely just adding an explicit override + closing, **not** the "vite-7 bump" once assumed — verify.
 
 **Phase 1 — De-risk the big features.** Spikes + arch, so Phase 2 doesn't get rewritten.
 - **#84** responsive spike → then **#88**. **#86** + **#87** → then **#92** / **#91**.
