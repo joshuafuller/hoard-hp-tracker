@@ -1,12 +1,11 @@
 import type { HpState } from "../domain/hp";
+import { BLOODIED_AT, CRITICAL_AT } from "./hpColor";
 
 /** Health tiers, keyed by the `current/max` ratio. CSS colours each tier. */
 export type HpTier = "healthy" | "bloodied" | "critical" | "down";
 
-/** Ratio at or below which the bar is "bloodied" (5e half-HP convention). */
-const BLOODIED_AT = 0.5;
-/** Ratio at or below which the bar is "critical". */
-const CRITICAL_AT = 0.25;
+// Tier thresholds (BLOODIED_AT 0.5 / CRITICAL_AT 0.25) live in hpColor.ts and are
+// shared here so the colour ramp and the tier classification never drift (#164).
 
 /** Map a `current/max` ratio to its colour tier. */
 export function tierFor(current: number, max: number): HpTier {

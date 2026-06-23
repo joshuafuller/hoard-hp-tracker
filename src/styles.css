@@ -40,10 +40,14 @@
   --ink-500: #9a8f7a;
   --ink-700: #5a5142;
 
-  /* Tier accents — Molten Hoard is gold-forward: gold → deep amber → ruby + sapphire overshield. */
+  /* Tier accents — gold while healthy, then the rules-led danger reds (#164): bloodied (≤50%)
+     reads red, critical (≤25%) deepens. --hp-bloodied doubles as the canonical damage/danger
+     ruby. --hp-critical here is the *readable* critical accent (used for text/glow + the no-JS
+     orb fallback; 3.95:1 on obsidian); the WebGL orb fill goes a shade deeper (#8f1b13 via
+     hpColor.ts), which would fail WCAG as text. Sapphire overshield handles temp HP. */
   --hp-healthy: #e8b45a;
-  --hp-bloodied: #d98c3a;
-  --hp-critical: #d8453b;
+  --hp-bloodied: #d8453b;
+  --hp-critical: #d23b2d;
   --hp-down: #6b6354;
   --hp-temp: #5b8fd9;
 
@@ -282,7 +286,7 @@ body {
 }
 
 @keyframes hp-flash-damage {
-  0% { color: var(--hp-critical); text-shadow: 0 0 40px var(--hp-critical); transform: translateX(0); }
+  0% { color: var(--hp-bloodied); text-shadow: 0 0 40px var(--hp-bloodied); transform: translateX(0); }
   20% { transform: translateX(-6px); }
   40% { transform: translateX(5px); }
   60% { transform: translateX(-3px); }
@@ -1778,7 +1782,7 @@ body {
    "add" (gold — matches the gp dot and the chrome button) and "spend"
    (critical red — spending reads as a loss, same as damage). */
 .keypad__apply[data-kind="add"]   { background: color-mix(in oklab, var(--coin-gold) 80%, black); color: var(--obsidian-900); }
-.keypad__apply[data-kind="spend"] { background: color-mix(in oklab, var(--hp-critical) 75%, black); color: #fff; }
+.keypad__apply[data-kind="spend"] { background: color-mix(in oklab, var(--hp-bloodied) 75%, black); color: #fff; }
 
 /* ── Concentration toggle (#30) ─────────────────────────────────────────── */
 /* Sits in the chrome row alongside SoundToggle. A purple/violet tint separates
@@ -1873,7 +1877,7 @@ body {
 .coin-token[data-tone="damage"] { box-shadow:
   inset 0 0 0 2px rgba(255, 244, 206, 0.6), inset 0 3px 7px rgba(255, 248, 222, 0.6),
   inset 0 -9px 16px rgba(40, 24, 4, 0.5), inset 0 0 0 5px rgba(120, 80, 24, 0.22),
-  0 0 0 2px color-mix(in oklab, var(--hp-critical) 55%, transparent), 0 6px 16px rgba(0, 0, 0, 0.5); }
+  0 0 0 2px color-mix(in oklab, var(--hp-bloodied) 55%, transparent), 0 6px 16px rgba(0, 0, 0, 0.5); }
 .coin-token[data-tone="heal"] { box-shadow:
   inset 0 0 0 2px rgba(255, 244, 206, 0.6), inset 0 3px 7px rgba(255, 248, 222, 0.6),
   inset 0 -9px 16px rgba(40, 24, 4, 0.5), inset 0 0 0 5px rgba(120, 80, 24, 0.22),
