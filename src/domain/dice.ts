@@ -309,11 +309,11 @@ export function notationModifier(notation: string): number {
 export function physicalRecordApplies(notation: string): boolean {
   // Keep/drop needs the parser's semantics (physical dice carry no drop flags), so route
   // ANY keep/drop away from the physical path — incl. bare `k`/`d` (count defaults to 1),
-  // not just `kh`/`kl`/`dh`/`dl`. `d(?![\df])` matches a drop `d` (followed by end/!/+,
-  // not a digit and not the `F` of a Fudge die `dF`) without matching the die's own
-  // `d<sides>`. (A drop WITH a count, `d2`, is ambiguous with the die and stays on the
-  // physical path — tracked in #186.)
-  return notation.includes("!") && !/k|d(?![\df])|[<>]/i.test(notation);
+  // not just `kh`/`kl`/`dh`/`dl`. `d(?![\df%])` matches a drop `d` (followed by end/!/+,
+  // not a die-sides indicator — a digit, the `F` of a Fudge die, or the `%` of a
+  // percentile die) without matching the die's own `d<sides>`. (A drop WITH a count,
+  // `d2`, is ambiguous with the die and stays on the physical path — tracked in #186.)
+  return notation.includes("!") && !/k|d(?![\df%])|[<>]/i.test(notation);
 }
 
 /** The explosion round encoded in a physical die's rollId: integer ⇒ 1; `"X.n"` ⇒ n+1. */

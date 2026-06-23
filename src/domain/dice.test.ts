@@ -265,8 +265,9 @@ describe("normalizeNotation (#108 — explode/reroll must precede keep/drop)", (
 
 describe("physicalRecordApplies (engine routing)", () => {
   it("routes additive exploding rolls to the physical builder", () => {
-    // incl. Fudge `4dF!` — the `dF` die must NOT be mistaken for a drop `d` (#194)
-    for (const n of ["8d6!", "3d6!", "1d6!!", "4dF!", "1d6!p"]) expect(physicalRecordApplies(n)).toBe(true);
+    // incl. Fudge `4dF!` and percentile `1d%!` — those die `d`s must NOT be mistaken for
+    // a drop `d` (#194)
+    for (const n of ["8d6!", "3d6!", "1d6!!", "4dF!", "1d%!", "1d6!p"]) expect(physicalRecordApplies(n)).toBe(true);
   });
 
   it("keeps non-exploding and keep/drop rolls on the parser path", () => {
