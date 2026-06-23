@@ -9,6 +9,13 @@ Entries describe changes in player-meaningful terms, not raw commit subjects. On
 [release-please](https://github.com/googleapis/release-please) is adopted (#169), the
 sections below `Unreleased` will be generated automatically from Conventional Commits.
 
+## [0.0.5](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.4...v0.0.5) (2026-06-23)
+
+
+### Added
+
+* **haptics:** authentic tactile feel — shared module + felt heartbeat ([#245](https://github.com/joshuafuller/hoard-hp-tracker/issues/245)) ([#246](https://github.com/joshuafuller/hoard-hp-tracker/issues/246)) ([373788e](https://github.com/joshuafuller/hoard-hp-tracker/commit/373788e27efd2a80379940382da457fc74aba5ab))
+
 ## [0.0.4](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.3...v0.0.4) (2026-06-23)
 
 
