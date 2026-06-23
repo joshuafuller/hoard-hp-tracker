@@ -38,7 +38,7 @@ beforeEach(() => {
   fakeCtx.createOscillator.mockClear();
   vi.useFakeTimers();
 });
-afterEach(() => { stopHeartbeat(); vi.useRealTimers(); });
+afterEach(() => { stopHeartbeat(); vi.useRealTimers(); Reflect.deleteProperty(navigator as object, "vibrate"); });
 
 describe("heartbeatAudio (#243)", () => {
   it("beatIntervalMs = 60000/bpm", () => {
@@ -83,6 +83,20 @@ describe("heartbeatAudio (#243)", () => {
     const n = fakeCtx.createOscillator.mock.calls.length;
     vi.advanceTimersByTime(500);
     expect(fakeCtx.createOscillator.mock.calls.length).toBeGreaterThan(n);
+  });
+
+  it("fires a haptic lub-dub each beat, mute-gated — #245", () => {
+    const vib = vi.fn(() => true);
+    Object.defineProperty(navigator, "vibrate", { value: vib, configurable: true, writable: true });
+    startHeartbeat(60); // immediate beat
+    expect(vib).toHaveBeenCalled();
+    vib.mockClear();
+    vi.advanceTimersByTime(1000); // next beat
+    expect(vib).toHaveBeenCalledTimes(1);
+    vib.mockClear();
+    soundOn = false; // mute silences the buzz too
+    vi.advanceTimersByTime(2000);
+    expect(vib).not.toHaveBeenCalled();
   });
 
   it("stays silent until audio is unlocked by a gesture (no context created) — Codex #243", () => {

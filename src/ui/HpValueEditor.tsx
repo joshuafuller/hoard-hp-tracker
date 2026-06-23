@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Button, Stepper } from "./controls";
+import { haptic } from "../sound/haptics";
 
 export interface HpValueEditorProps {
   /** Human label, e.g. "Max HP" — titles the modal and names the controls. */
@@ -14,12 +15,6 @@ export interface HpValueEditorProps {
   onSet: (n: number) => void;
   /** Dismiss the editor. */
   onClose: () => void;
-}
-
-function haptic() {
-  if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
-    navigator.vibrate(10);
-  }
 }
 
 /**
@@ -118,11 +113,11 @@ export function HpValueEditor({
           className="hp-editor__pill"
           label={label}
           onDec={() => {
-            haptic();
+            haptic("tap");
             onDecrement();
           }}
           onInc={() => {
-            haptic();
+            haptic("tap");
             onIncrement();
           }}
         >

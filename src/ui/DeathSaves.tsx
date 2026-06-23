@@ -1,5 +1,6 @@
 import type { DyingStatus } from "../domain/deathSaves";
 import { Button } from "./controls";
+import { haptic } from "../sound/haptics";
 
 export interface DeathSavesProps {
   successes: number;
@@ -8,19 +9,6 @@ export interface DeathSavesProps {
   onSetSuccesses: (n: number) => void;
   onSetFailures: (n: number) => void;
   onRoll: () => void;
-}
-
-/** A short, staccato "rattle" so a death-save roll feels different from a tap. */
-function rollHaptic() {
-  if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
-    navigator.vibrate([14, 36, 14]);
-  }
-}
-
-function pipHaptic() {
-  if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
-    navigator.vibrate(8);
-  }
 }
 
 type Track = "success" | "failure";
@@ -54,7 +42,7 @@ function PipRow({ kind, filled, locked, onSet }: PipRowProps) {
               aria-pressed={isFilled}
               disabled={locked}
               onClick={() => {
-                pipHaptic();
+                haptic("pip");
                 onSet(i === filled ? i - 1 : i);
               }}
             />
@@ -107,7 +95,7 @@ export function DeathSaves({
         disabled={terminal}
         leading={<span className="death-saves__die" aria-hidden="true">d20</span>}
         onClick={() => {
-          rollHaptic();
+          haptic("rollResult");
           onRoll();
         }}
       >

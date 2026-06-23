@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "./controls";
+import { haptic } from "../sound/haptics";
 
 export interface RestControlsProps {
   /** Unspent Hit Dice — Short Rest is disabled when this hits 0. */
@@ -8,20 +9,6 @@ export interface RestControlsProps {
   onShortRest: () => void;
   /** Apply a full Long Rest recovery (HP, temp, death saves, Hit Dice). */
   onLongRest: () => void;
-}
-
-/** Fire a short haptic pulse where supported; a silent no-op otherwise. */
-function haptic() {
-  if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
-    navigator.vibrate(10);
-  }
-}
-
-/** A weightier double-pulse for the big Long Rest commit. */
-function commitHaptic() {
-  if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
-    navigator.vibrate([12, 30, 12]);
-  }
 }
 
 /**
@@ -62,7 +49,7 @@ export function RestControls({
         aria-label="Short Rest"
         disabled={hitDiceAvailable <= 0}
         onClick={() => {
-          haptic();
+          haptic("tap");
           onShortRest();
         }}
       >
@@ -80,7 +67,7 @@ export function RestControls({
             data-kind="confirm"
             aria-label="Confirm Long Rest"
             onClick={() => {
-              commitHaptic();
+              haptic("commit");
               setConfirming(false);
               onLongRest();
             }}
@@ -93,7 +80,7 @@ export function RestControls({
             data-kind="cancel"
             aria-label="Cancel Long Rest"
             onClick={() => {
-              haptic();
+              haptic("tap");
               setConfirming(false);
             }}
           >
@@ -109,7 +96,7 @@ export function RestControls({
           data-kind="long"
           aria-label="Long Rest"
           onClick={() => {
-            haptic();
+            haptic("tap");
             setConfirming(true);
           }}
         >
