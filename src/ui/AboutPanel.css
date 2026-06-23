@@ -116,6 +116,27 @@
   transform: scale(0.97);
 }
 
+/* Share Hoard (#183) — a secondary, outlined pill above the solid source link. */
+.about-panel__share {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0.7rem auto 0;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-pill, 999px);
+  font: 700 0.86rem/1 "DM Sans", system-ui, sans-serif;
+  color: var(--ink-200);
+  background: none;
+  border: 1px solid color-mix(in oklab, var(--coin-gold, #d9b85c) 32%, transparent);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-fast, 140ms) var(--ease-spring, ease), background var(--dur-fast, 140ms) ease;
+}
+.about-panel__share:hover { background: color-mix(in oklab, var(--coin-gold, #d9b85c) 10%, transparent); }
+.about-panel__share:active { transform: scale(0.97); }
+.about-panel__share:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 .about-panel__version {
   margin: 1.1rem 0 0;
   font-family: "JetBrains Mono", ui-monospace, monospace;
