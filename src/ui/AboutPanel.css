@@ -44,8 +44,8 @@
    uses place-items:center). Specificity matches the variant rule and AboutPanel.css
    loads after controls.css, so this wins. */
 .about-panel__close[data-variant="ghost"] {
-  width: 44px;
-  height: 44px;
+  width: var(--icon-btn); /* canonical 44px tap target (controls.css) */
+  height: var(--icon-btn);
 }
 
 /* ── Hero ─────────────────────────────────────────────────────────────────── */

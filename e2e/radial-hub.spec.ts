@@ -67,9 +67,9 @@ test.describe("radial hub (#172)", () => {
     // The shared ghost IconButton is 36px; the corner-tucked close must restore the
     // 44px minimum tap target so it isn't fiddly to hit (#238).
     const box = await close.boundingBox();
-    expect(box).not.toBeNull();
-    expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
-    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+    if (!box) throw new Error("close button has no bounding box");
+    expect(box.width).toBeGreaterThanOrEqual(44);
+    expect(box.height).toBeGreaterThanOrEqual(44);
   });
 
   test("the Sound toggle reflects and flips the muted state", async ({ page }) => {
