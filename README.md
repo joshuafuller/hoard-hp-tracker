@@ -88,6 +88,11 @@ bookkeeping a player does on their turn. What belongs in the app (and what delib
 governed by an explicit **Scope-Fit Test**. See the
 **[Product Requirements Document](docs/PRD.md)** for the vision, personas, and how scope grows.
 
+## Changelog
+
+Notable changes per version are tracked in **[`CHANGELOG.md`](CHANGELOG.md)**
+([Keep a Changelog](https://keepachangelog.com/) format, SemVer).
+
 ## License
 
 [AGPL-3.0](LICENSE). See [`NOTICE`](NOTICE). This is an independent, unofficial fan tool and ships no
