@@ -47,11 +47,6 @@ function setMuted(muted: boolean): void {
   writeMuted(muted);
 }
 
-/** Test helper: clear the in-memory override (pair with localStorage.clear()). */
-export function __resetSoundPreference(): void {
-  muteOverride = undefined;
-}
-
 /**
  * Plain getter the sound engine checks before synthesizing a tone. Returns the
  * *enabled* state (inverse of muted); prefers the live in-memory preference and

@@ -60,7 +60,7 @@ function oklabToSrgb([L, a, b]: Rgb): Rgb {
 }
 
 /** Blend two sRGB colours in OKLab. `t` 0 → a, 1 → b. */
-export function mixOklab(a: Rgb, b: Rgb, t: number): Rgb {
+function mixOklab(a: Rgb, b: Rgb, t: number): Rgb {
   const A = srgbToOklab(a), B = srgbToOklab(b);
   return oklabToSrgb([A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t]);
 }
