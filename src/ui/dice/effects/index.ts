@@ -5,6 +5,7 @@
  * change to DiceTray or the dice engine. See rollEffects.ts for the interface.
  */
 import { playSfx } from "../../../sound/sfx";
+import { critEffect } from "./critEffect";
 import type { RollEffect } from "./rollEffects";
 
 export { createEffectBus } from "./rollEffects";
@@ -18,4 +19,4 @@ const clatterEffect: RollEffect = {
 };
 
 /** Effects registered on the tray's bus. Append here to add one — no dice-core change. */
-export const defaultRollEffects: readonly RollEffect[] = [clatterEffect];
+export const defaultRollEffects: readonly RollEffect[] = [clatterEffect, critEffect];

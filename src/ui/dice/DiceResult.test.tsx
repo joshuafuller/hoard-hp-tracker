@@ -65,6 +65,21 @@ describe("DiceResult", () => {
     expect(screen.getByTestId("die-1")).toHaveAttribute("data-crit", "miss");
   });
 
+  it("does not crit-highlight a DROPPED nat 20/1 (advantage's discarded d20) — #237", () => {
+    const rec: RollRecord = {
+      notation: "2d20kh1",
+      total: 20,
+      result: [20],
+      dice: [
+        { sides: 20, value: 20, dropped: false }, // kept nat 20 → hit
+        { sides: 20, value: 1, dropped: true }, // dropped nat 1 → no crit (matches the sound gating)
+      ],
+    };
+    render(<DiceResult record={rec} />);
+    expect(screen.getByTestId("die-0")).toHaveAttribute("data-crit", "hit");
+    expect(screen.getByTestId("die-1")).not.toHaveAttribute("data-crit");
+  });
+
   it("does not crit-highlight 1s/20s on non-d20 dice", () => {
     const rec: RollRecord = {
       notation: "2d6",

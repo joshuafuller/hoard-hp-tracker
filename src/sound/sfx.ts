@@ -33,6 +33,8 @@ export const SFX_NAMES = [
   "coinDistill",
   "down",
   "revive",
+  "crit",
+  "fumble",
 ] as const;
 
 export type SfxName = (typeof SFX_NAMES)[number];
@@ -106,6 +108,16 @@ export const RECIPES: Record<SfxName, Voice[]> = {
   coinAdd: [],
   coinSpend: [],
   coinDistill: [{ type: "sine", freq: 1318.51, gain: 0.12, duration: 0.24, delay: 0.33 }],
+  // Nat-20 crit (#92): a bright, triumphant rising lift E5→B5→E6 — brighter and
+  // higher than `revive`, so a crit reads as celebratory at a glance.
+  crit: [
+    { type: "sine", freq: 659.25, gain: 0.16, duration: 0.12 },
+    { type: "sine", freq: 987.77, gain: 0.16, duration: 0.14, delay: 0.1 },
+    { type: "sine", freq: 1318.51, gain: 0.17, duration: 0.22, delay: 0.22 },
+  ],
+  // Nat-1 fumble (#92): a low descending sawtooth "womp" A3→A2 — ominous/comedic,
+  // distinct from the blunt `damage` thud by its longer downward glide.
+  fumble: [{ type: "sawtooth", freq: 220, endFreq: 110, gain: 0.16, duration: 0.3 }],
 };
 
 /** The lazily-created, shared AudioContext (null until the first real play). */
