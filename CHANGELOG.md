@@ -13,7 +13,7 @@ sections below `Unreleased` will be generated automatically from Conventional Co
 
 _Nothing yet — changes land here before the next version is cut._
 
-## [0.0.1] — 2026-06-23
+## [0.0.1] - 2026-06-23
 
 The honest pre-release: Hoard's first tracked version. A single player's offline,
 at-the-table utility belt — HP, coins, and dice — with no accounts and no servers.
