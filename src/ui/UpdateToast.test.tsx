@@ -1,9 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
-import { UpdateToast } from "./UpdateToast";
+import { UpdateToast, VERSION_KEY } from "./UpdateToast";
 
-const KEY = "hoard:version";
+const KEY = VERSION_KEY; // base-scoped (Copilot #206) — derive it, don't hard-code
 
 describe("UpdateToast", () => {
   beforeEach(() => localStorage.clear());
