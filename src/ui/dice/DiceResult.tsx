@@ -24,8 +24,17 @@ export function DiceResult({ record, onApplyHeal, heal = false }: DiceResultProp
         <div className="dice-result__notation">{record.notation}</div>
         <div className="dice-result__dice">
           {record.dice.map((d, i) => {
-            // Nat 1 / nat 20 on a d20 are gameplay-critical — outline ruby / emerald.
-            const crit = d.sides === 20 && d.value === 20 ? "hit" : d.sides === 20 && d.value === 1 ? "miss" : undefined;
+            // Nat 1 / nat 20 on a KEPT d20 are gameplay-critical — outline + flourish
+            // (ruby / emerald). Dropped dice (e.g. advantage's discarded d20) don't count,
+            // matching the onCrit sound cue's kept-only gating (#92, Codex/Copilot #237).
+            const crit =
+              d.dropped || d.sides !== 20
+                ? undefined
+                : d.value === 20
+                  ? "hit"
+                  : d.value === 1
+                    ? "miss"
+                    : undefined;
             // One "+" each time the explosion round INCREASES (so a normal die group
             // following an explosion, e.g. 1d6!+1d4, doesn't get a spurious "+").
             const added = i > 0 && (d.round ?? 1) > (record.dice[i - 1]?.round ?? 1);
