@@ -3,7 +3,7 @@ import "./App.css";
 import "./sound/sound.css";
 import "./ui/dice/dice.css";
 import { useEffect, useRef, useState } from "react";
-import { playSfx } from "./sound/sfx";
+import { playSfx, unlockAudio } from "./sound/sfx";
 import { haptic } from "./sound/haptics";
 import { useSoundEnabled } from "./sound/soundSettings";
 import { useHp } from "./store/useHp";
@@ -70,6 +70,23 @@ export function App() {
   useEffect(() => {
     if (panelRef.current) panelRef.current.scrollTop = 0;
   }, [dying]);
+
+  // First-gesture audio primer (#253): the visual heartbeat is pure CSS so it runs right
+  // after a reload, but the AUDIO heartbeat only *peeks* a running AudioContext (the
+  // autoplay-safe design from #243), so on mobile it stays silent until some cue happens
+  // to resume the context. Unlock on the first interaction (a gesture lets us create +
+  // resume it) so the heartbeat thumps + haptics fire without a sound-triggering action.
+  useEffect(() => {
+    const events = ["pointerdown", "keydown", "touchend"] as const;
+    const unlock = () => {
+      unlockAudio();
+      for (const ev of events) window.removeEventListener(ev, unlock);
+    };
+    for (const ev of events) window.addEventListener(ev, unlock, { passive: true });
+    return () => {
+      for (const ev of events) window.removeEventListener(ev, unlock);
+    };
+  }, []);
 
   // Dramatic status cues: a chime on stabilize, a knell on death. Gated until the
   // persisted record has hydrated, and the first hydrated status is taken as the
