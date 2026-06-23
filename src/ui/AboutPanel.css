@@ -37,6 +37,11 @@
   position: absolute;
   top: 0.7rem;
   right: 0.7rem;
+  /* The button is the FIRST child of the panel, so later in-flow content (the hero,
+     title, badges) paints ON TOP of this absolutely-positioned button and swallows
+     every tap — the real reason the ✕ "didn't work" (#249, the actual root cause that
+     #238's tap-target resize never addressed). Lift it above the panel's content. */
+  z-index: 2;
 }
 /* The shared ghost IconButton is 36px (--icon-btn-sm); for a primary dismiss
    affordance tucked in the corner that's below the 44px minimum tap target and easy
