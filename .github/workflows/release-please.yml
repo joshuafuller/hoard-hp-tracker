@@ -1,0 +1,31 @@
+name: release-please
+
+# Named releases driven by the Conventional Commits we already write (feat/fix/…).
+# On push to main, release-please opens/maintains a "release PR" that bumps
+# package.json + CHANGELOG.md. Merging that PR tags vX.Y.Z and cuts a GitHub
+# Release with notes — the one manual step, when you choose to ship a version.
+# Between releases, the always-on build identity (__BUILD__, #169) keeps every
+# build traceable.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# Never run two release-PR updates concurrently.
+concurrency:
+  group: release-please-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

@@ -1,8 +1,16 @@
+import { execSync } from "node:child_process";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { configDefaults, defineConfig } from "vitest/config";
 import { manifest } from "./src/pwa-manifest";
 import pkg from "./package.json";
+
+// Minimal ambient type for the one Node builtin we use at build time, so the
+// config stays free of @types/node (Copilot #203) — mirrors the local `process`
+// declare below.
+declare module "node:child_process" {
+  export function execSync(command: string, options: { encoding: "utf8" }): string;
+}
 
 // Base path: "/" for local dev + the self-hosted Docker build; a subpath (e.g.
 // "/hoard-hp-tracker/") for a GitHub Pages project page, set via HOARD_BASE at
@@ -24,11 +32,26 @@ const isBeta = /\/beta\/?$/.test(base);
 // keeping this config free of @types/node — Copilot #203). resolveJsonModule is on.
 const appVersion = pkg.version;
 
+// Build identity (#169): `git describe` (tag if any, else short SHA) + build date,
+// so every build is uniquely traceable even between named releases. The git command
+// is a fixed literal (no interpolation — no injection surface); falls back to the
+// package version when git is unavailable (e.g. Stryker's sandbox copy, tarball builds).
+function buildIdentity(): string {
+  const date = new Date().toISOString().slice(0, 10);
+  try {
+    const rev = execSync("git describe --tags --always --dirty", { encoding: "utf8" }).trim();
+    return `${rev} · ${date}`;
+  } catch {
+    return `v${appVersion} · ${date}`;
+  }
+}
+const appBuild = buildIdentity();
+
 export default defineConfig({
   base,
-  // Compile-time constant — referenced as the global `__APP_VERSION__` (typed in
-  // src/vite-env.d.ts).
-  define: { __APP_VERSION__: JSON.stringify(appVersion) },
+  // Compile-time constants — referenced as the globals `__APP_VERSION__` / `__BUILD__`
+  // (typed in src/vite-env.d.ts).
+  define: { __APP_VERSION__: JSON.stringify(appVersion), __BUILD__: JSON.stringify(appBuild) },
   plugins: [
     react(),
     VitePWA({

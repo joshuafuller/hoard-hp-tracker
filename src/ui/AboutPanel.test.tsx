@@ -30,6 +30,15 @@ describe("AboutPanel", () => {
     expect(screen.getByText(/^v\d+\.\d+\.\d+/)).toBeInTheDocument();
   });
 
+  it("shows a traceable build identity beneath the version (#169)", () => {
+    render(<AboutPanel onClose={vi.fn()} />);
+    // A build id (git describe/short-SHA + build date), injected at build via __BUILD__,
+    // so every build is uniquely traceable even between named releases.
+    const build = screen.getByTestId("about-build");
+    expect(build).toBeInTheDocument();
+    expect(build.textContent?.trim().length ?? 0).toBeGreaterThan(0);
+  });
+
   it("shares the app — copies the link and confirms when there's no native share sheet (#183)", async () => {
     Object.defineProperty(navigator, "share", { value: undefined, configurable: true });
     const writeText = vi.fn().mockResolvedValue(undefined);

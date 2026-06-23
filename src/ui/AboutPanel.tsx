@@ -114,6 +114,7 @@ export function AboutPanel({ onClose }: AboutPanelProps) {
         </a>
 
         <p className="about-panel__version">v{__APP_VERSION__}</p>
+        <p className="about-panel__build" data-testid="about-build">{__BUILD__}</p>
         <p className="about-panel__footer">AGPL-3.0 · ships no game content · built for the table</p>
       </div>
     </div>
