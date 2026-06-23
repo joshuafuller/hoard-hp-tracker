@@ -60,14 +60,18 @@ Dark-first. Hex values are the source of truth; mirror them as CSS custom proper
   - **Healthy (>50%):** smooth gold gradient — `#E8B45A` (just above half) → `#F4C66A` (full).
   - **Bloodied (≤50%):** **red `#D8453B`** — the danger threshold. (Was gold pre-#164; the gold-at-half
     "still fine" read was the bug.)
-  - **Critical (≤25%):** **deeper red `#8F1B13`** — a _distinct, darker_ band (we chose **two danger
-    bands**, Option A, over one continuous red: the discrete step mirrors the binary rules state and
-    reads at a glance). The escalation "how close to death" is carried further by the quickening
-    heartbeat pulse (#220).
+  - **Critical (≤25%):** a _distinct, darker_ band (we chose **two danger bands**, Option A, over one
+    continuous red: the discrete step mirrors the binary rules state and reads at a glance). Two values
+    by role: the **WebGL orb fill** goes deepest — **`#8F1B13`** (a large filled area, most alarming) —
+    while the **CSS accent/text** uses a lighter **`#D23B2D`** (3.95:1 on obsidian; `#8F1B13` as the
+    big HP numeral fails WCAG, so text must stay readable). The escalation "how close to death" is
+    carried further by the quickening heartbeat pulse (#220).
+  - **Damage/danger surfaces** (damage flash, coin "spend") use the **bloodied ruby `#D8453B`**, not the
+    critical tier — they shouldn't follow an HP-tier colour decision.
   - **Down (0):** grey `#6B6354`.
-  - Thresholds live in `hpColor` (continuous gold zone + discrete danger tiers) and `tierFor`
-    (`BLOODIED_AT = 0.5`, `CRITICAL_AT = 0.25`); the `--hp-bloodied`/`--hp-critical` tokens back the
-    no-JS `data-tier` fallback. Keep all three in lockstep.
+  - Thresholds are defined **once** in `hpColor.ts` (`BLOODIED_AT = 0.5`, `CRITICAL_AT = 0.25`) and
+    imported by `tierFor` (HpBar.tsx); the `--hp-bloodied`/`--hp-critical` tokens back the no-JS
+    `data-tier` fallback. Keep colour ramp, tier classification, and tokens in lockstep.
 - **"Candlelit" variant:** a slightly warmer/brighter dark (`bg #120F0A`, `gold #F0BE66`) for very
   dark rooms. Still dark. **Light mode** is explicitly out of the primary path.
 - **Contrast:** body/critical text must stay legible on volcanic black; watch small gold-on-black

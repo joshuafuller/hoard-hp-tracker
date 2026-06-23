@@ -12,7 +12,10 @@ const DOWN: Rgb = [0x6b / 255, 0x63 / 255, 0x54 / 255];
 const CHANNELS = [0, 1, 2] as const;
 const near = (a: Rgb, b: Rgb, p = 1) => CHANNELS.forEach((i) => expect(a[i]).toBeCloseTo(b[i], p));
 const dist = (a: Rgb, b: Rgb) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
-const lum = (c: Rgb) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+// WCAG relative luminance needs LINEAR-light channels, so linearise sRGB first
+// (applying the coefficients to raw sRGB would be wrong — Copilot #221).
+const toLin = (v: number) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+const lum = (c: Rgb) => 0.2126 * toLin(c[0]) + 0.7152 * toLin(c[1]) + 0.0722 * toLin(c[2]);
 // "Reads red" = closer to bloodied red than to healthy gold (gold also has a high red
 // channel, so a naive r>g>b test would call gold 'red' — compare to the anchors instead).
 const readsRed = (c: Rgb) => dist(c, BLOODIED) < dist(c, GOLD_HALF);

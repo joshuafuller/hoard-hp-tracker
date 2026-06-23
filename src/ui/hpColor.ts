@@ -19,8 +19,17 @@ const hex = (h: string): Rgb => [
 const GOLD_FULL = hex("#f4c66a"); // full HP            @ ratio 1.0 (bright molten gold)
 const GOLD_HALF = hex("#e8b45a"); // just above half    @ ratio →0.5⁺ (gold)
 const BLOODIED = hex("#d8453b"); //  bloodied  ≤50%     — the 5e danger threshold (red)
-const CRITICAL = hex("#8f1b13"); //  critical  ≤25%     — deeper, most-alarming red
+const CRITICAL = hex("#8f1b13"); //  critical  ≤25%     — deepest red (WebGL orb fill; CSS text
+//                                   uses a lighter readable critical — see styles.css/DESIGN.md)
 const DOWN = hex("#6b6354"); //      down      current ≤ 0 (grey)
+
+/**
+ * Tier thresholds (current/max), the single source of truth shared with `tierFor`
+ * (HpBar.tsx) so the orb colour and the tier classification never drift (#164).
+ * "Bloodied" = at or below half HP (5e convention); "critical" = at or below a quarter.
+ */
+export const BLOODIED_AT = 0.5;
+export const CRITICAL_AT = 0.25;
 
 // ── sRGB ↔ OKLab (Björn Ottosson) ──────────────────────────────────────────
 const toLinear = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
@@ -61,10 +70,10 @@ export function hpColor(current: number, max: number): Rgb {
   if (current <= 0 || max <= 0) return DOWN;
   const r = Math.min(1, current / max);
   // Healthy (>50%): smooth gold gradient across the top half.
-  if (r > 0.5) return mixOklab(GOLD_HALF, GOLD_FULL, (r - 0.5) / 0.5);
+  if (r > BLOODIED_AT) return mixOklab(GOLD_HALF, GOLD_FULL, (r - BLOODIED_AT) / (1 - BLOODIED_AT));
   // Bloodied (≤50%): crisp flip to red — the binary 5e danger threshold.
-  if (r > 0.25) return BLOODIED;
-  // Critical (≤25%): deeper, most-alarming red.
+  if (r > CRITICAL_AT) return BLOODIED;
+  // Critical (≤25%): deepest red.
   return CRITICAL;
 }
 
