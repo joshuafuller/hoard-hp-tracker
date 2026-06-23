@@ -2,11 +2,12 @@
 
 > **Issue:** #84 (time-boxed design spike). **Feeds:** #88 (responsive-layout implementation).
 > **Status:** docs-only — this PR adds this report and changes no source code.
-> **Method note:** No browser was available in this environment. The breakage inventory
-> below is **derived from reading the CSS** (`src/styles.css`, `src/App.css`,
-> `playwright.config.ts`, `src/pwa-manifest.ts`), not from screenshots. Every predicted
-> issue is tagged **[verify]** where an in-browser screenshot is needed to confirm before
-> the fix lands.
+> **Method note:** the §1 breakage inventory was **first derived from reading the CSS**
+> (`src/styles.css`, `src/App.css`, `playwright.config.ts`, `src/pwa-manifest.ts`) and is
+> now **verified against captured screenshots** (see §1.5, 2026-06-23). The `[verify]`
+> tags in §1 mark the original CSS-hypotheses; §1.5 records what the screenshots actually
+> show — including where reality differed (e.g. **≤320 came back clean**, correcting that
+> prediction).
 >
 > **Screenshot inventory — captured 2026-06-23** (see §1.5 + `screens/`). The 8-viewport
 > matrix is now attached, so #84's screenshot AC is satisfied; the verified observations
@@ -46,7 +47,7 @@ but make **no provision for short landscape height**.
 
 ---
 
-## 1. Breakage inventory (CSS-derived predictions) `[verify]`
+## 1. Breakage inventory (CSS-derived predictions — verified in §1.5)
 
 Ordered by viewport, smallest to largest. Each is a hypothesis from the cascade above.
 
