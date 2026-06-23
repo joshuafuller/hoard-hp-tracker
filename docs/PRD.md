@@ -96,7 +96,7 @@ A DM using one instance for a single "big bad" is a tolerated degenerate case, n
   character-sheet app, more game-aware than a calculator/notes/dice app. Lives in the gap
   between "general tool" and "heavyweight platform."
 - **System bet (5e-first, generalizable):** lean into D&D 5e rules now (death saves, CON-save
-  DCs, PP/GP/EP/SP/CP, Hit Dice) because that's where the rules-correctness "safety net" value
+  DCs, PP/GP/SP/CP, Hit Dice) because that's where the rules-correctness "safety net" value
   is sharpest — but keep each task's **domain core abstracted** so another system *could* be
   added later without a rewrite. Other systems are a non-goal **today**, not a closed door.
 - **Why now / why this shape:** the coin addition already demonstrated scope pressure. Without an
@@ -127,8 +127,10 @@ that share one visual language and one fast interaction surface.
 - **Undo** — revert the last HP change (fat-finger recovery).
 - **Concentration** — toggle + automatic CON-save prompt on damage (DC = `max(10, ⌊damage/2⌋)`);
   clears on death / long rest.
-- **Coins** — PP / GP / EP / SP / CP with auto-conversion on spend, auto-distill to fewest coins
+- **Coins** — PP / GP / SP / CP with auto-conversion on spend, auto-distill to fewest coins
   (with a before→after confirmation), behind an unobtrusive button — off the main HP screen.
+  _(Electrum/EP intentionally omitted — rare in play; keeps the purse to four denominations.
+  Reconciled to the shipped data model; maintainer decision, 2026-06-22.)_
 - **Character name** — optional identity by the orb.
 - **Feel** — haptics on supported devices, optional (mutable) sound.
 
@@ -183,7 +185,8 @@ do **not** model dice ourselves.
   **short-rest Hit Dice** roll through this same tray (one shared mechanic).
 - **Constraints carried from the spike:** lazy-load the engine on first open (Babylon is heavy);
   self-host + precache assets for offline (#45); record each roll as `{notation,total,result,dice[]}`.
-- Tracked in #73 (spec/AC) and #75 (WIP build).
+- **Shipped** (#73 spec/AC + #75 build, both closed); now hardening — explode+keep/drop composition
+  (#108, headless done #194 / WebGL reconcile #186) and real-path e2e (#161, #170 done).
 
 ---
 
@@ -242,7 +245,7 @@ optional character name, haptics + sound, offline PWA + Dexie persistence, Docke
 | #32 | E2E / visual-regression guard | (shipped/expanding) | 3 |
 
 ### 7.3 Candidate modules
-- **3D dice roller** (§5.3) — **committed & spiked** (#73 + #75); the next build.
+- **3D dice roller** (§5.3) — **shipped** (#73 + #75 closed); now hardening (#108 / #161 / #186).
 - Radial "purse" for secondary actions (#74) — consolidates rests/coins/dice/concentration.
 - Other player-side tasks that pass §8 (e.g. spell-slot / resource ticks, conditions-on-self) —
   each must clear the Scope-Fit Test before becoming an issue.
@@ -293,8 +296,10 @@ These are **deliberately not** Hoard, mostly because they fail Gate 1 (single-pl
 ### Architecture / dependencies
 - React 19 + Vite + TypeScript (strict), Vitest + fast-check, `vite-plugin-pwa` (Workbox), Dexie
   (IndexedDB). Pure domain core in `src/domain/`; presentational UI.
-- CI gates: lint · typecheck · test · build · Playwright layout guard · domain mutation testing ·
-  deploy. PRs target `beta` (→ `/beta/` Pages); `main` is protected and promoted via PR.
+- CI: **required to merge `main`** = `lint · typecheck · test · build` + `domain mutation testing`
+  (≥ 90%). The **Playwright e2e / layout guard (#32) runs on every PR but is _not yet_ a required
+  gate** (#176 will make it blocking); **deploy** runs post-merge. PRs target `beta` (→ `/beta/`
+  Pages); `main` is protected and promoted via PR. `beta` itself is currently unprotected.
 
 ### Risks & mitigations
 | Risk | Mitigation |

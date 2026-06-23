@@ -135,6 +135,30 @@ describe("DiceTray", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("commits a SETTLED Hit Die when closed via ✕ — never silently discards it (#184)", async () => {
+    const onHitDie = vi.fn();
+    const onClose = vi.fn();
+    open({ intent: { kind: "hit-die", sides: 8, conMod: 2 }, onHitDie, onClose });
+    // Throw the Hit Die — it settles (mock rec → result[0] = 18).
+    await userEvent.click(screen.getByRole("button", { name: /^throw/i }));
+    await screen.findByRole("button", { name: /apply 18/i });
+    // Closing via ✕ must APPLY the settled roll (spend + heal), not discard it: a silent
+    // discard loses the heal AND reopens the reroll exploit (toss a low roll, ✕, reroll).
+    await userEvent.click(screen.getByRole("button", { name: "Close dice" }));
+    expect(onHitDie).toHaveBeenCalledWith(18);
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("an UNSETTLED Hit Die just closes on ✕ — no die spent (#184)", async () => {
+    const onHitDie = vi.fn();
+    const onClose = vi.fn();
+    open({ intent: { kind: "hit-die", sides: 8, conMod: 2 }, onHitDie, onClose });
+    // Cancel before throwing — nothing was rolled, so no heal/spend.
+    await userEvent.click(screen.getByRole("button", { name: "Close dice" }));
+    expect(onHitDie).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it("lazy-loads the 3D engine on open when motion is allowed", async () => {
     render(<DiceTray open onClose={vi.fn()} onApplyHeal={vi.fn()} db={db} reducedMotion={false} />);
     await waitFor(() => expect(createDiceTray).toHaveBeenCalled());

@@ -261,9 +261,14 @@ export function DiceTray({
     engineRef.current?.clear();
   }, []);
   const handleClose = useCallback(() => {
+    // A SETTLED Hit Die commits via Apply only — closing it must APPLY (spend + heal),
+    // never silently discard: a discard loses the rolled heal AND reopens the reroll
+    // exploit (toss a low roll, ✕, reopen, reroll). Unsettled Hit Dice, death saves
+    // (already applied on settle), and ad-hoc rolls just close. (#184, guarding #130.)
+    if (intent?.kind === "hit-die" && hitDieRoll != null) onHitDie?.(hitDieRoll);
     clearDice();
     onClose();
-  }, [onClose, clearDice]);
+  }, [intent, hitDieRoll, onHitDie, clearDice, onClose]);
 
   // Contextual throw: roll the fixed notation under the intent's RollContext, then
   // route the settled die value back. Death save applies on settle; Hit Die defers

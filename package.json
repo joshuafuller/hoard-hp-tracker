@@ -15,6 +15,7 @@
     "typecheck": "tsc --noEmit",
     "typecheck:e2e": "tsc -p tsconfig.e2e.json --noEmit",
     "test": "vitest run",
+    "test:watch": "vitest",
     "e2e": "playwright test",
     "mutation": "stryker run"
   },
