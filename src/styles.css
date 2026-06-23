@@ -40,10 +40,11 @@
   --ink-500: #9a8f7a;
   --ink-700: #5a5142;
 
-  /* Tier accents — Molten Hoard is gold-forward: gold → deep amber → ruby + sapphire overshield. */
+  /* Tier accents — gold while healthy, then the rules-led danger reds (#164): bloodied (≤50%)
+     reads red, critical (≤25%) deepens. Sapphire overshield handles temp HP. */
   --hp-healthy: #e8b45a;
-  --hp-bloodied: #d98c3a;
-  --hp-critical: #d8453b;
+  --hp-bloodied: #d8453b;
+  --hp-critical: #8f1b13;
   --hp-down: #6b6354;
   --hp-temp: #5b8fd9;
 
