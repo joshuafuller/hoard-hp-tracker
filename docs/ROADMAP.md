@@ -20,12 +20,12 @@ Three classes of "do-it-first" work:
 
 | Epic | Issues | State |
 |------|--------|-------|
-| **A. Quality & Test Infrastructure** | #161 (→ #170–#176, **#186** reconcile test), #43 (CI speed), #33 (esbuild advisory) | active — highest leverage |
-| **B. Dice engine correctness** | #184 ✅ (Hit-Die discard, done), #108 (explode + keep/drop / penetrate / reroll composition, bug — fix in **PR #194**) | bugs — fix before more dice work |
-| **C. PWA & distribution** | #166 (show version), #167 (update toast), #169 (release-please + build id), #183 (share link) | small, high-visibility wins |
-| **D. Onboarding & discoverability** | #168 (in-app tour → #177–#181), #163 (name discoverability), #154 (install help) | #163/#154 fold into the tour |
+| **A. Quality & Test Infrastructure** | #161 (→ #171–#176, **#186** reconcile test), #43 ✅ (CI speed, done), #33 (esbuild advisory) | active — highest leverage |
+| **B. Dice engine correctness** | #184 ✅ (Hit-Die discard, done), #108 (explode + keep/drop ✅ via #194; **WebGL reconcile remainder → #186**) | bugs — fix before more dice work |
+| **C. PWA & distribution** | #166 ✅ (show version), #167 ✅ (update toast), #183 ✅ (share link), #169 (release-please + build id) + #208 (CHANGELOG) + #209 (in-app "What's new") | small, high-visibility wins |
+| **D. Onboarding & discoverability** | #168 (in-app tour → #177–#181), #163 ✅ (name discoverability, done), #154 (install help) | #154 folds into the tour (#180) |
 | **E. Visual & effects polish** | #164 (bloodied → red), #95 (temp HP), #87 (effects arch) → #92 (nat-1/20) + #91 (burning), #88 (responsive) | gated on spikes (#84/#86) + arch (#87) |
-| **Roll-log polish** | #189 (scrollbar overlaps totals, bug), #190 (sort dice so a roll is walkable) | small UI fixes — Phase 0 |
+| **Roll-log polish** | #189 ✅ (scrollbar overlaps totals), #190 ✅ (sort dice so a roll is walkable) | done |
 | **F. Sound** | #90 (remaining: death-save pips, dice settle/crit), #83 (real-device clatter tuning) | nearly done |
 | **G. Repo tidiness** | #193 (epic) → #191 (docs/ index + structure), #192 (remove Claude-era artifacts/assets) | after Phase 0 bugs |
 | **Design spikes** | #84 (responsive strategy), #86 (burning-dice feasibility) | unblock Epic E |
@@ -63,20 +63,22 @@ TEST INFRA (visibility for everything after)
 
 ## Proposed phased order
 
-> **Status (updated mid-session) — issues are the source of truth; verify state before picking up:**
-> #170 and #184 are **DONE** (merged + closed). #108 is **partially done** — headless path fixed
-> (PR #194); the WebGL reconcile remainder is tracked in **#186**. #164's DESIGN.md contract was
-> reconciled (PR #195) but the **code retune + the open shade/band decision still remain**.
-> Remaining Phase 0: #176, #166/#167/#169, #164 (code), #163, #183, #43, #33.
+> **Status (updated 2026-06-23) — issues are the source of truth; verify state before picking up:**
+> **DONE (merged + closed):** #170, #184, #166, #167, #183, #163, #189, #190, #43. #108 is
+> **partially done** — headless path fixed (PR #194); the WebGL reconcile remainder is tracked in
+> **#186**. #164's DESIGN.md contract was reconciled (PR #195) but the **code retune + the open
+> shade/band decision still remain** (parked for a design call — `needs-decision`/visual).
+> **Remaining Phase 0:** #176 (e2e required on **main** — beta retired), #169 + #208 (release/changelog),
+> #33 (esbuild), #186 + #108 (dice reconcile), e2e specs #171–#175, then tidiness #193/#191/#192.
 
 **Phase 0 — Foundations & quick wins.** Highest leverage, low risk, unblocks the rest.
 1. ✅ **#170** real dice-path e2e — DONE (headless-scoped; the WebGL reconcile e2e is #186).
 2. ✅ **#184** Hit-Die discard — DONE.  ◐ **#108** dice composition — headless DONE (#194), WebGL reconcile → #186.
-3. **#176** make the e2e check *required* on beta.
-4. **PWA version story** #166 + #167 + #169 (small, visible, "feels maintained").
-5. **#164** bloodied → red — DESIGN.md reconciled (#195); **code (`hpColor`/`tierFor`) + the open shade/band decision remain**. **#163** name discoverability.
-6. **#183** share link; **#43** CI speed; **#33** esbuild advisory — NOTE: the lockfile already resolves the safe **esbuild 0.25.12** (advisory affects ≤0.24.2), so this is likely just adding an explicit override + closing, **not** the "vite-7 bump" once assumed — verify.
-7. **Roll-log fixes** #189 (scrollbar overlaps totals — a bug, do early); #190 (sort dice so a roll is walkable).
+3. **#176** make the e2e check (`playwright layout guard`) *required* on **`main`** (beta retired).
+4. **PWA version story** — #166 ✅ + #167 ✅ done; remaining: **#169** (release-please) + **#208** (CHANGELOG) + **#209** (in-app "What's new").
+5. **#164** bloodied → red — DESIGN.md reconciled (#195); **code (`hpColor`/`tierFor`) + the open shade/band decision remain** (parked `needs-decision`, needs a visual). **#163** name discoverability ✅ done.
+6. **#183** share link ✅; **#43** CI speed ✅; **#33** esbuild advisory — **verified 2026-06-23: the bare pnpm override to ≥0.28.1 BREAKS the build** (esbuild 0.28 can't lower destructuring to vite 6's configured targets). Real fix is a **vite-6→7 bump** (or a deliberate build-target raise) — reweighted 1→3. Low real risk (dev-only, Deno-specific), so it can wait behind the bump.
+7. **Roll-log fixes** #189 ✅ + #190 ✅ — done.
 8. **e2e expansion** #171–#175 (Epic A child specs) + **#186** (WebGL reconcile test); then **repo tidiness** Epic G (#193 → #191/#192) — sequenced *after* the Phase 0 bugs so it doesn't collide with in-flight fixes.
 
 **Phase 1 — De-risk the big features.** Spikes + arch, so Phase 2 doesn't get rewritten.
@@ -102,7 +104,7 @@ hub, persistence, offline/PWA, the concentration prompt — all unit-mocked. →
   mode) and keep it open while building, so unit failures surface immediately as files change.
 - Add a documented `pnpm e2e:watch` (headed, `--ui`) loop so e2e runs *as you build* the feature, not
   just in CI. Surface failures in the PR, not prod.
-- **#176**: make the playwright check *required* on beta so a red e2e blocks merge.
+- **#176**: make the playwright check *required* on **`main`** so a red e2e blocks merge (beta retired).
 
 **Are we testing the right things?**
 - **Domain** (`src/domain/`): example + property (fast-check) + **mutation ≥90%** — strong; keep.
@@ -113,7 +115,7 @@ hub, persistence, offline/PWA, the concentration prompt — all unit-mocked. →
   tiers / hub (the capture pipeline already exists).
 
 **Measurable quality bar (proposed, do as part of Epic A):**
-- [ ] e2e **required** on beta (#176).
+- [ ] e2e **required** on `main` (#176).
 - [ ] Vitest **coverage threshold** in CI (start at current %, ratchet up).
 - [ ] A **pre-push** hook (lint + typecheck + unit) for fast local feedback before CI.
 - [ ] **CI speed** (#43) so the above stays fast enough to keep on.
