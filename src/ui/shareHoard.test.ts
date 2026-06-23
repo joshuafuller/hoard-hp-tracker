@@ -33,6 +33,16 @@ describe("shareHoard", () => {
     expect(writeText).not.toHaveBeenCalled();
   });
 
+  it("treats a non-Error AbortError (DOMException) as a cancel — still no copy (Copilot #207)", async () => {
+    // Some browsers reject share() with a DOMException, which is NOT `instanceof Error`.
+    const share = vi.fn().mockRejectedValue({ name: "AbortError" });
+    const writeText = vi.fn();
+    Object.defineProperty(navigator, "share", { value: share, configurable: true });
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    expect(await shareHoard()).toBe("shared");
+    expect(writeText).not.toHaveBeenCalled();
+  });
+
   it("reports unavailable when neither API exists", async () => {
     Object.defineProperty(navigator, "share", { value: undefined, configurable: true });
     Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true });

@@ -22,8 +22,10 @@ export async function shareHoard(): Promise<"shared" | "copied" | "unavailable">
       return "shared";
     } catch (e) {
       // The user dismissing the sheet is an AbortError — not a failure, and we must
-      // NOT then silently copy. Any other error falls through to the copy fallback.
-      if (e instanceof Error && e.name === "AbortError") return "shared";
+      // NOT then silently copy. Browsers reject with a DOMException (not always an
+      // `Error` instance), so match on `.name` alone (Copilot #207). Any other error
+      // falls through to the copy fallback.
+      if ((e as { name?: string } | null)?.name === "AbortError") return "shared";
     }
   }
   if (nav?.clipboard?.writeText) {

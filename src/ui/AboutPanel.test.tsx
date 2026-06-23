@@ -36,8 +36,10 @@ describe("AboutPanel", () => {
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
     render(<AboutPanel onClose={vi.fn()} />);
     await userEvent.click(screen.getByRole("button", { name: /share hoard/i }));
-    expect(writeText).toHaveBeenCalledWith(SHARE_URL);
+    // Await the confirmation first — it only appears after the awaited copy resolves,
+    // so asserting writeText before it could race (Copilot #207).
     expect(await screen.findByText(/link copied/i)).toBeInTheDocument();
+    expect(writeText).toHaveBeenCalledWith(SHARE_URL);
   });
 
   it("closes on the close button, the backdrop, and Escape", async () => {

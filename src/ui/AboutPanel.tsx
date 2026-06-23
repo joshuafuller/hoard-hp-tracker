@@ -37,10 +37,13 @@ export function AboutPanel({ onClose }: AboutPanelProps) {
 
   // Share the app — native sheet where available, else copy the link and confirm.
   const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(copiedTimer.current), []); // clear on unmount
   async function onShare() {
     if (await shareHoard() === "copied") {
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      clearTimeout(copiedTimer.current); // reset on rapid re-clicks (Copilot #207)
+      copiedTimer.current = setTimeout(() => setCopied(false), 2000);
     }
   }
 
