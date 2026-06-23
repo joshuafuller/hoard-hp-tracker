@@ -301,6 +301,9 @@
 .dice-history__notation { color: var(--ink-200); }
 .dice-history__total { color: var(--coin-gold); font-weight: 700; font-size: 0.95rem; min-width: 2ch; text-align: right; }
 .dice-history__meta { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; font-size: 0.68rem; color: var(--ink-500); }
+/* Dropped dice read dimmed (mirrors the result chip), so a sorted roll is walkable
+   to its total and keep/drop is obvious at a glance (#190). */
+.dice-history__die--dropped { opacity: 0.55; }
 .dice-history__time { color: var(--ink-700); white-space: nowrap; }
 .dice-history__empty { color: var(--ink-500); font-size: 0.85rem; text-align: center; padding: 1.5rem 0; }
 
