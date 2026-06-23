@@ -165,6 +165,18 @@ describe("rollHeadless", () => {
     expect(rec.dice).toHaveLength(4);
   });
 
+  it("animated path also parses the NORMALIZED notation so `4d6kh3!` explodes in WebGL (#108/#194)", () => {
+    // Capture what bindTray hands the physics engine: the parse of the reordered form
+    // (explode before keep), which carries an `explode` mod — the raw keep-before-explode
+    // form the vendored parser silently strips it from does not. The animated counterpart
+    // to the headless fix (the full physical reconcile is exercised in #186).
+    const captured: unknown[] = [];
+    const box: DiceBoxLike = { roll: (p) => { captured.push(p); }, add: () => {}, clear: () => {}, onRollComplete: () => {} };
+    bindTray(box).roll("4d6kh3!").catch(() => {});
+    expect(captured).toHaveLength(1);
+    expect(JSON.stringify(captured[0])).toContain('"type":"explode"');
+  });
+
   // #108 item 3 — headless explosion round-batching. The parser APPENDS explosion
   // dice (round N+1 has exactly as many dice as exploded in round N); assignRounds
   // tags them. Verified empirically across single / late / chained explosions.

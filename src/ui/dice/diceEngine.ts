@@ -217,7 +217,12 @@ export function bindTray(box: DiceBoxLike): DiceTray {
         const parser = new DiceParser() as RollParser;
         active = { resolve, reject, parser, notation, onProgress };
         try {
-          box.roll(parser.parseNotation(notation));
+          // Parse the NORMALIZED notation (explode/reroll before keep/drop) so the
+          // animated path explodes too — e.g. `4d6kh3!`. The parser STATE drives both
+          // the physics throw and `parseFinalResults`; display stays original because
+          // the record is built with `cur.notation`. recordFromPhysical only ever sees
+          // notations normalizeNotation leaves unchanged (it's gated out by kh/kl). (#108)
+          box.roll(parser.parseNotation(normalizeNotation(notation)));
         } catch (err) {
           active = null;
           reject(err instanceof Error ? err : new Error(String(err)));
