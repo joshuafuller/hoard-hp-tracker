@@ -8,7 +8,7 @@ describe("CharacterName", () => {
     const { container } = render(<CharacterName name="" onSetName={vi.fn()} />);
     expect(container.querySelector(".character-name__display")).toBeInTheDocument();
     // The empty slot now visibly invites naming (text + a cue), so a new user knows to tap.
-    const btn = screen.getByRole("button", { name: /add name/i });
+    const btn = screen.getByRole("button", { name: /name your character/i });
     expect(btn).toHaveTextContent(/name your character/i);
     expect(btn.querySelector("svg")).toBeTruthy(); // a subtle pencil cue
   });
@@ -16,7 +16,7 @@ describe("CharacterName", () => {
   it("renders the placeholder affordance when name is blank", () => {
     render(<CharacterName name="" onSetName={vi.fn()} />);
     // The placeholder is visible to assistive tech / visually (aria-label or placeholder).
-    const btn = screen.getByRole("button", { name: /add name/i });
+    const btn = screen.getByRole("button", { name: /name your character/i });
     expect(btn).toBeInTheDocument();
   });
 
@@ -35,7 +35,7 @@ describe("CharacterName", () => {
 
   it("tapping the placeholder enters edit mode with an empty input", async () => {
     render(<CharacterName name="" onSetName={vi.fn()} />);
-    await userEvent.click(screen.getByRole("button", { name: /add name/i }));
+    await userEvent.click(screen.getByRole("button", { name: /name your character/i }));
     const input = screen.getByRole("textbox");
     expect(input).toBeInTheDocument();
     expect(input).toHaveValue("");
@@ -44,7 +44,7 @@ describe("CharacterName", () => {
   it("committing a typed name calls onSetName with the value", async () => {
     const onSetName = vi.fn();
     render(<CharacterName name="" onSetName={onSetName} />);
-    await userEvent.click(screen.getByRole("button", { name: /add name/i }));
+    await userEvent.click(screen.getByRole("button", { name: /name your character/i }));
     await userEvent.type(screen.getByRole("textbox"), "Thorn");
     await userEvent.keyboard("{Enter}");
     expect(onSetName).toHaveBeenCalledWith("Thorn");
@@ -53,7 +53,7 @@ describe("CharacterName", () => {
   it("blurring the input commits the value", async () => {
     const onSetName = vi.fn();
     render(<CharacterName name="" onSetName={onSetName} />);
-    await userEvent.click(screen.getByRole("button", { name: /add name/i }));
+    await userEvent.click(screen.getByRole("button", { name: /name your character/i }));
     await userEvent.type(screen.getByRole("textbox"), "Luna");
     // Tab away to blur
     await userEvent.tab();
@@ -72,7 +72,7 @@ describe("CharacterName", () => {
 
   it("enforces a maxlength of 24 on the input element", async () => {
     render(<CharacterName name="" onSetName={vi.fn()} />);
-    await userEvent.click(screen.getByRole("button", { name: /add name/i }));
+    await userEvent.click(screen.getByRole("button", { name: /name your character/i }));
     const input = screen.getByRole("textbox");
     expect(input).toHaveAttribute("maxlength", "24");
   });

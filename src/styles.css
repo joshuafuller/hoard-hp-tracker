@@ -1340,9 +1340,6 @@ body {
   outline-offset: 2px;
 }
 
-/* Empty placeholder: visible but faint so it doesn't compete with the orb.
-   The button has no text (aria-label provides the accessible name); the ::after
-   pseudo draws a ghost pill so there is a tactile target to tap. */
 /* Empty state: a visible "Name your character" affordance (text + pencil cue) so a
    new player knows the slot is theirs to fill — not a blank gap (#163). Dim/italic
    so it recedes; it's replaced by the real name once set. */

@@ -81,7 +81,6 @@ export function CharacterName({ name, onSetName }: CharacterNameProps) {
         <button
           type="button"
           className="character-name__display character-name__display--empty"
-          aria-label="Add name"
           onClick={() => { setDraft(""); setEditing(true); }}
         >
           <svg className="character-name__pencil" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
