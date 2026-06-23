@@ -7,6 +7,7 @@
  */
 import { isSoundEnabled } from "./soundSettings";
 import { peekAudioContext } from "./sfx";
+import { haptic } from "./haptics";
 
 /** One bass thump: a low sine with a fast pitch-drop kick envelope. */
 export interface ThumpVoice {
@@ -59,7 +60,10 @@ let warnedOnce = false;
  *  unlocked by a user gesture yet (peekAudioContext returns null — never creates one).
  *  Wrapped defensively: a heartbeat must never crash the orb. */
 function fireBeat(): void {
-  if (!isSoundEnabled()) return; // mute self-gate, checked every beat
+  if (!isSoundEnabled()) return; // mute self-gate (sound AND buzz), checked every beat
+  // Felt lub-dub (#245) — fires independently of the audio context (haptics need no
+  // unlock); a no-op on iOS / unsupported. Mirrors the bass thump you hear.
+  haptic("heartbeat");
   try {
     const ctx = peekAudioContext();
     if (!ctx) return; // audio not yet unlocked by a gesture → stay silent
