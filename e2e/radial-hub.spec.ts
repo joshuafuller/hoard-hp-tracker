@@ -72,6 +72,18 @@ test.describe("radial hub (#172)", () => {
     expect(box.height).toBeGreaterThanOrEqual(44);
   });
 
+  test("the About ✕ actually receives the tap and closes the panel (#249)", async ({ page }) => {
+    await openHub(page);
+    await clickChip(page, "About");
+    const about = page.getByRole("dialog", { name: "About" });
+    await expect(about).toBeVisible();
+    // A REAL click (not dispatchEvent): Playwright's actionability check fails if the
+    // button is covered, so this guards the #249 regression where the panel's in-flow
+    // hero painted over the absolutely-positioned close button and swallowed taps.
+    await about.getByRole("button", { name: "Close" }).click();
+    await expect(about).toBeHidden();
+  });
+
   test("the Sound toggle reflects and flips the muted state", async ({ page }) => {
     await openHub(page);
     const sound = chip(page, /Sound|Muted/);
