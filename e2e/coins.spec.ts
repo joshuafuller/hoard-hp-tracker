@@ -15,7 +15,9 @@ async function openCoins(page: Page) {
   await page.waitForSelector(".hp-tracker", { state: "visible" });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.getByLabel("Actions").click();
-  await page.getByRole("button", { name: "Coins", exact: true }).dispatchEvent("click");
+  const coins = page.getByRole("button", { name: "Coins", exact: true });
+  await expect(coins).toBeVisible(); // guard: prove the chip is shown before dispatchEvent (Copilot #224)
+  await coins.dispatchEvent("click");
   await expect(page.getByRole("dialog", { name: "Coins" })).toBeVisible();
 }
 

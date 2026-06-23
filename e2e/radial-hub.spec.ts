@@ -21,6 +21,16 @@ async function openHub(page: Page) {
 const chip = (page: Page, name: string | RegExp) =>
   page.getByRole("button", { name, exact: typeof name === "string" });
 
+// dispatchEvent fires the handler regardless of actionability, so assert the chip is actually
+// VISIBLE first — an inert / aria-hidden / closed chip then fails the test instead of silently
+// passing (Copilot #224). Real .click() isn't usable here: the WebGL canvas intercepts the
+// pointer hit-test (see layout.spec.ts).
+async function clickChip(page: Page, name: string | RegExp) {
+  const c = chip(page, name);
+  await expect(c).toBeVisible();
+  await c.dispatchEvent("click");
+}
+
 test.describe("radial hub (#172)", () => {
   test("the sigil opens the radial menu", async ({ page }) => {
     await openHub(page);
@@ -31,19 +41,19 @@ test.describe("radial hub (#172)", () => {
 
   test("Coins opens the coin sheet", async ({ page }) => {
     await openHub(page);
-    await chip(page, "Coins").dispatchEvent("click");
+    await clickChip(page, "Coins");
     await expect(page.getByRole("dialog", { name: "Coins" })).toBeVisible();
   });
 
   test("Dice opens the tray", async ({ page }) => {
     await openHub(page);
-    await chip(page, "Dice").dispatchEvent("click");
+    await clickChip(page, "Dice");
     await expect(page.getByLabel("Add d20")).toBeVisible();
   });
 
   test("About opens the About panel with a source link", async ({ page }) => {
     await openHub(page);
-    await chip(page, "About").dispatchEvent("click");
+    await clickChip(page, "About");
     const about = page.getByRole("dialog", { name: "About" });
     await expect(about).toBeVisible();
     await expect(about.getByRole("link", { name: /view source on github/i })).toBeVisible();
@@ -53,6 +63,7 @@ test.describe("radial hub (#172)", () => {
     await openHub(page);
     const sound = chip(page, /Sound|Muted/);
     const before = await sound.getAttribute("aria-pressed");
+    await expect(sound).toBeVisible();
     await sound.dispatchEvent("click"); // closes the fan
     await page.getByLabel("Actions").click(); // reopen to read the flipped state
     const after = await chip(page, /Sound|Muted/).getAttribute("aria-pressed");
@@ -62,7 +73,7 @@ test.describe("radial hub (#172)", () => {
   test("the Concentration toggle reflects and flips", async ({ page }) => {
     await openHub(page);
     expect(await chip(page, "Concentration").getAttribute("aria-pressed")).toBe("false");
-    await chip(page, "Concentration").dispatchEvent("click");
+    await clickChip(page, "Concentration");
     await page.getByLabel("Actions").click();
     expect(await chip(page, "Concentration").getAttribute("aria-pressed")).toBe("true");
   });
