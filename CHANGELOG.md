@@ -9,6 +9,20 @@ Entries describe changes in player-meaningful terms, not raw commit subjects. On
 [release-please](https://github.com/googleapis/release-please) is adopted (#169), the
 sections below `Unreleased` will be generated automatically from Conventional Commits.
 
+## [0.0.4](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.3...v0.0.4) (2026-06-23)
+
+
+### Added
+
+* **dice:** nat-1/20 sound + visual flourish via the onCrit hook ([#92](https://github.com/joshuafuller/hoard-hp-tracker/issues/92)) ([#237](https://github.com/joshuafuller/hoard-hp-tracker/issues/237)) ([25c8659](https://github.com/joshuafuller/hoard-hp-tracker/commit/25c86597a79394d74b91e9dd59f93d728c84beb9))
+* **sound:** audible heartbeat — synth bass lub-dub synced to the orb pulse ([#243](https://github.com/joshuafuller/hoard-hp-tracker/issues/243)) ([#244](https://github.com/joshuafuller/hoard-hp-tracker/issues/244)) ([51ade00](https://github.com/joshuafuller/hoard-hp-tracker/commit/51ade00e9281a7300fe5acaea58c2faeca123590))
+
+
+### Fixed
+
+* **about:** 44px tap target for the close (✕) button ([#238](https://github.com/joshuafuller/hoard-hp-tracker/issues/238)) ([#242](https://github.com/joshuafuller/hoard-hp-tracker/issues/242)) ([4ad52f3](https://github.com/joshuafuller/hoard-hp-tracker/commit/4ad52f3fb4ad8642963b90afbf9ff861f338b9ef))
+* **hp:** heartbeat is a visible colour flush ON the orb, not a backdrop glow ([#239](https://github.com/joshuafuller/hoard-hp-tracker/issues/239)) ([#240](https://github.com/joshuafuller/hoard-hp-tracker/issues/240)) ([ea40056](https://github.com/joshuafuller/hoard-hp-tracker/commit/ea40056d04dfae34a1110a99b0a077107e06e7dc))
+
 ## [0.0.3](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.2...v0.0.3) (2026-06-23)
 
 
