@@ -68,6 +68,22 @@ jobs:
           path: node_modules
           key: node_modules-${{ runner.os }}-node${{ steps.node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm install --frozen-lockfile
+      # Restore the prior incremental mutation results so unchanged domain code is
+      # not re-mutated (Stryker `incremental` — see stryker.config.json). The key is
+      # scoped to the lockfile + stryker config: a dependency or config change yields
+      # a new prefix, so a stale report is NOT restored (it would let Stryker reuse
+      # mutant verdicts that a dep change could invalidate — Codex #200) — that run
+      # rebuilds the report from a full pass. `github.run_id` keeps the primary key
+      # unique so a fresh file is always saved; the rolling restore-key grabs the
+      # most recent prior file with the SAME deps+config (a PR restores its base's).
+      # The full score + break threshold are unaffected — only the runtime drops.
+      - name: Cache Stryker incremental
+        uses: actions/cache@v4
+        with:
+          path: reports/stryker-incremental.json
+          key: stryker-incremental-${{ hashFiles('pnpm-lock.yaml', 'stryker.config.json') }}-${{ github.run_id }}
+          restore-keys: |
+            stryker-incremental-${{ hashFiles('pnpm-lock.yaml', 'stryker.config.json') }}-
       # Fails the build if the domain mutation score drops below the configured
       # break threshold (see stryker.config.json).
       - run: pnpm mutation
