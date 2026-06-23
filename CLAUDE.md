@@ -2,6 +2,8 @@
 
 Project guidance for AI assistants working in this repo.
 
+**Docs map:** [`docs/README.md`](docs/README.md) indexes every document (purpose + living/reference/archived status).
+
 ## Design System
 Always read [`DESIGN.md`](DESIGN.md) before making any visual or UI decision.
 All font choices, colors, spacing, radii, motion, and aesthetic direction (**Molten Hoard**)
