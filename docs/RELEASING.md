@@ -29,6 +29,23 @@ We use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `f
 - Config lives in `release-please-config.json` + `.release-please-manifest.json` (current version
   is pinned there).
 
+### Security & the release-PR merge ritual
+
+The pipeline is **secret-free by design** — release-please runs on the built-in, ephemeral
+`GITHUB_TOKEN` (no PAT, nothing stored: `gh secret list` is empty). The only repo setting it needs
+is **Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests"**
+(set via `gh api --method PUT repos/<owner>/<repo>/actions/permissions/workflow -F default_workflow_permissions=read -F can_approve_pull_request_reviews=true` — `gh api` defaults to GET, so the explicit `--method PUT` is required, and the endpoint needs both fields).
+
+GitHub deliberately does **not** run CI on PRs created by `GITHUB_TOKEN` (anti-recursion), so the
+release PR shows **no checks** and branch protection blocks a normal merge. Resolve it by
+**admin-merging the release PR** (`gh pr merge <n> --merge --admin`): its contents are mechanical
+(version bump + `CHANGELOG.md`) and the code already passed CI on `main` before the release was cut,
+so the e2e/lint/mutation gates were already satisfied. This keeps the repo at **zero long-lived
+secrets** — the most secure option. (If admin-merging ever becomes a burden, switch the workflow to a
+**GitHub App** token via `actions/create-github-app-token` — still short-lived/ephemeral, and
+App-created PRs *do* trigger CI — at the cost of a one-time App create + install. A classic PAT is
+**not** recommended: it's a long-lived secret.)
+
 ### Commit format is enforced locally
 
 A **`commit-msg` git hook** (`.githooks/commit-msg` → `scripts/lint-commit-msg.mjs`) rejects commits
