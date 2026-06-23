@@ -6,7 +6,7 @@
  * so the mute button silences it instantly; it reuses the shared AudioContext.
  */
 import { isSoundEnabled } from "./soundSettings";
-import { getAudioContext } from "./sfx";
+import { peekAudioContext } from "./sfx";
 
 /** One bass thump: a low sine with a fast pitch-drop kick envelope. */
 export interface ThumpVoice {
@@ -19,7 +19,7 @@ export interface ThumpVoice {
 }
 
 /** The lub-dub: a louder low S1 ("lub") then a softer S2 ("dub") ~0.16s later. Kept
- *  under MAX_CUE_GAIN (0.22) so it thumps without startling. */
+ *  under MAX_CUE_GAIN so it thumps without startling (asserted in the test). */
 export const HEARTBEAT_VOICES: readonly ThumpVoice[] = [
   { freq: 62, endFreq: 38, gain: 0.2, duration: 0.16, delay: 0 }, // lub (S1)
   { freq: 50, endFreq: 30, gain: 0.13, duration: 0.13, delay: 0.16 }, // dub (S2)
@@ -51,17 +51,24 @@ function thump(ctx: AudioContext, v: ThumpVoice): void {
   osc.stop(t + v.duration);
 }
 
-/** Fire one lub-dub — silent when muted (per-beat gate) or where audio is unavailable.
- *  Wrapped defensively: a heartbeat must never crash the orb (a broken/partial audio
- *  environment just goes silent). */
+/** Whether we've already logged an audio failure — so a persistent fault warns once,
+ *  not on every beat (Copilot #243). */
+let warnedOnce = false;
+
+/** Fire one lub-dub. Silent when muted (per-beat gate), or when audio hasn't been
+ *  unlocked by a user gesture yet (peekAudioContext returns null — never creates one).
+ *  Wrapped defensively: a heartbeat must never crash the orb. */
 function fireBeat(): void {
   if (!isSoundEnabled()) return; // mute self-gate, checked every beat
   try {
-    const ctx = getAudioContext();
-    if (!ctx) return;
+    const ctx = peekAudioContext();
+    if (!ctx) return; // audio not yet unlocked by a gesture → stay silent
     for (const v of HEARTBEAT_VOICES) thump(ctx, v);
   } catch (err) {
-    console.warn("[hoard] heartbeat audio failed; silencing", err);
+    if (!warnedOnce) {
+      warnedOnce = true;
+      console.warn("[hoard] heartbeat audio failed; silencing", err);
+    }
   }
 }
 
@@ -79,7 +86,8 @@ export function updateHeartbeat(bpm: number): void {
     startHeartbeat(bpm);
     return;
   }
-  if (Math.round(bpm) === Math.round(currentBpm)) return; // no meaningful change
+  if (bpm === currentBpm) return; // unchanged — keep the beat going (no rounding: stay
+  //                                 in step with the visual, which uses the exact bpm)
   currentBpm = bpm;
   clearInterval(timer);
   timer = setInterval(fireBeat, beatIntervalMs(bpm));

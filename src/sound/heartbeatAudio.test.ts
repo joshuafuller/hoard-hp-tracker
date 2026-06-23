@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // --- mocks: a fake AudioContext + a togglable mute -------------------------
 let soundOn = true;
+let ctxUnlocked = true; // simulates a gesture having unlocked audio (peekAudioContext)
 let now = 0;
 const oscillators: Array<{ type: string; freq: number }> = [];
 
@@ -26,14 +27,14 @@ const fakeCtx = {
 vi.mock("./soundSettings", () => ({ isSoundEnabled: () => soundOn }));
 vi.mock("./sfx", async (orig) => {
   const actual = await (orig() as Promise<Record<string, unknown>>);
-  return { ...actual, getAudioContext: () => fakeCtx };
+  return { ...actual, peekAudioContext: () => (ctxUnlocked ? fakeCtx : null) };
 });
 
 import { beatIntervalMs, startHeartbeat, stopHeartbeat, updateHeartbeat, HEARTBEAT_VOICES } from "./heartbeatAudio";
 import { MAX_CUE_GAIN } from "./sfx";
 
 beforeEach(() => {
-  soundOn = true; now = 0; oscillators.length = 0;
+  soundOn = true; ctxUnlocked = true; now = 0; oscillators.length = 0;
   fakeCtx.createOscillator.mockClear();
   vi.useFakeTimers();
 });
@@ -78,10 +79,19 @@ describe("heartbeatAudio (#243)", () => {
 
   it("update changes the rate without stopping", () => {
     startHeartbeat(60);
-    stopHeartbeat.length; // noop ref
     updateHeartbeat(120); // now 500ms
     const n = fakeCtx.createOscillator.mock.calls.length;
     vi.advanceTimersByTime(500);
     expect(fakeCtx.createOscillator.mock.calls.length).toBeGreaterThan(n);
+  });
+
+  it("stays silent until audio is unlocked by a gesture (no context created) — Codex #243", () => {
+    ctxUnlocked = false; // peekAudioContext returns null (no gesture yet)
+    startHeartbeat(60);
+    vi.advanceTimersByTime(3000);
+    expect(fakeCtx.createOscillator).not.toHaveBeenCalled();
+    ctxUnlocked = true; // a gesture later unlocks audio — the running loop picks it up
+    vi.advanceTimersByTime(1000);
+    expect(fakeCtx.createOscillator).toHaveBeenCalled();
   });
 });

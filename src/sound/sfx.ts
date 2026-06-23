@@ -148,10 +148,12 @@ function ensureContext(): AudioContext | null {
   }
 }
 
-/** The shared AudioContext, so other synths (e.g. the looping heartbeat #243) reuse
- *  one context instead of spawning their own. Null where unsupported. */
-export function getAudioContext(): AudioContext | null {
-  return ensureContext();
+/** The shared context IF it already exists AND is running (unlocked by a prior
+ *  user-gesture `playSfx`), else null — WITHOUT creating or resuming one. The looping
+ *  heartbeat (#243) uses this so it never spins up an AudioContext before a gesture,
+ *  honouring the autoplay contract above (Codex #243). */
+export function peekAudioContext(): AudioContext | null {
+  return ctx && ctx.state === "running" ? ctx : null;
 }
 
 /** Schedule one oscillator voice on the context. */

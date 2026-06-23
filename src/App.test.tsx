@@ -9,9 +9,9 @@ import { HP_DB_NAME } from "./store/db";
 vi.mock("./sound/sfx", () => ({
   playSfx: vi.fn(),
   SFX_NAMES: [],
-  // The audible heartbeat (#243) reads the shared context; in this integration test
+  // The audible heartbeat (#243) peeks the shared context; in this integration test
   // there's no audio, so hand it a null context (silent, no throw).
-  getAudioContext: () => null,
+  peekAudioContext: () => null,
 }));
 
 // Integration: the composed app wires the Dexie store, the pure domain, and the
