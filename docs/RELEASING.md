@@ -47,8 +47,7 @@ to call it a real release.
 ## Deploy vs release
 
 - **Deploy** is continuous: every merge to `main` deploys the live PWA (GitHub Pages). Development is
-  **main-only** — PRs target `main` and no active `beta` branch is maintained. (The Pages deploy,
-  CI/E2E workflows, and the service-worker config still *conditionally* build a `/beta/` sub-app **if**
-  a `beta` branch exists — residual machinery that simply lies dormant while none does.)
+  **main-only** — PRs target `main`; deploy is production-only. The former `beta` → `/beta/` Pages
+  sub-app has been retired (#215).
 - **Release** is a named, tagged checkpoint cut by merging the release PR. Deploys happen far more
   often than releases; `__BUILD__` traces the in-between builds.
