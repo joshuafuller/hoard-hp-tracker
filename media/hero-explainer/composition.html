@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Fraunces"; src: url("assets/fonts/fraunces.woff2") format("woff2"); font-weight: 100 900; font-display: block; }
+      @font-face { font-family: "DM Sans"; src: url("assets/fonts/dm-sans.woff2") format("woff2"); font-weight: 100 900; font-display: block; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #0b0a08; }
+      body { font-family: "DM Sans", sans-serif; }
+
+      #bg { position: absolute; inset: 0;
+        background:
+          radial-gradient(70% 80% at 22% 50%, rgba(232,180,90,0.10), transparent 60%),
+          radial-gradient(60% 70% at 80% 110%, rgba(216,69,59,0.05), transparent 60%),
+          linear-gradient(150deg, #14110b 0%, #0b0a08 70%); }
+
+      /* phone (left) */
+      #body { position: absolute; left: 150px; top: 68px; width: 458px; height: 944px; border-radius: 56px;
+        background: linear-gradient(150deg, #2a2620 0%, #16130d 26%, #0c0a07 60%, #1c1812 100%);
+        box-shadow: 0 50px 110px rgba(0,0,0,0.65), 0 0 70px rgba(232,180,90,0.10), inset 0 0 0 2px rgba(244,236,221,0.10), inset 0 2px 1px rgba(255,255,255,0.12); }
+      #screen-bg { position: absolute; left: 170px; top: 88px; width: 418px; height: 904px; border-radius: 38px; background: #0b0a08; box-shadow: inset 0 0 0 2px rgba(0,0,0,0.8); }
+      #phone { position: absolute; left: 170px; top: 88px; width: 418px; height: 904px; border-radius: 38px; object-fit: cover; }
+      .btn { position: absolute; background: linear-gradient(90deg, #221e18, #100d09); border-radius: 3px; }
+      #pwr { left: 604px; top: 360px; width: 6px; height: 88px; }
+      #vup { left: 146px; top: 300px; width: 6px; height: 60px; }
+      #vdn { left: 146px; top: 376px; width: 6px; height: 88px; }
+
+      /* animated captions (right) — generous line-box so glyph descenders never clip */
+      .txt { position: absolute; left: 720px; top: 380px; width: 1090px; }
+      .txt h1 { font-family: "Fraunces", serif; font-weight: 600; font-size: 80px; line-height: 1.2; padding-bottom: 0.1em;
+        background: linear-gradient(180deg, #f4ecdd 0%, #e8b45a 82%, #c9892f 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .txt p { margin-top: 22px; font-size: 37px; line-height: 1.45; font-weight: 500; color: #c9bca0; max-width: 980px; }
+      .txt .kbd { color: #e8b45a; font-weight: 700; }
+
+      /* end card (centered) */
+      #end { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; }
+      #end .mark { font-family: "Fraunces", serif; font-weight: 600; font-size: 132px; line-height: 1.4; padding: 0.12em 0; letter-spacing: 6px;
+        background: linear-gradient(180deg, #f4ecdd, #e8b45a 82%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      #end .url { font-size: 40px; color: #e4dac6; font-weight: 600; }
+      #end .feat { font-size: 28px; color: #9a8f7a; letter-spacing: 2px; text-transform: uppercase; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="38" data-width="1920" data-height="1080">
+      <div id="bg" class="clip" data-start="0" data-duration="38" data-track-index="0"></div>
+
+      <div id="body" class="clip" data-start="0" data-duration="34.6" data-track-index="1"></div>
+      <div id="screen-bg" class="clip" data-start="0" data-duration="34.6" data-track-index="2"></div>
+      <video id="phone" class="clip" src="assets/walkthrough.mp4" data-start="0.5" data-duration="34" data-track-index="3" muted playsinline></video>
+      <div id="pwr" class="btn clip" data-start="0" data-duration="34.6" data-track-index="4"></div>
+      <div id="vup" class="btn clip" data-start="0" data-duration="34.6" data-track-index="5"></div>
+      <div id="vdn" class="btn clip" data-start="0" data-duration="34.6" data-track-index="6"></div>
+
+      <div id="t1" class="txt clip" data-start="0.6" data-duration="5.5" data-track-index="10"><h1>Drag it down</h1><p>Take a hit — drag the orb. The liquid follows your finger, <span class="kbd">no math</span>.</p></div>
+      <div id="t2" class="txt clip" data-start="6.4" data-duration="7.4" data-track-index="11"><h1>Or be exact</h1><p>Punch in the number. Heal, and it fills right back.</p></div>
+      <div id="t3" class="txt clip" data-start="14" data-duration="11.8" data-track-index="12"><h1>Coins, sorted</h1><p><span class="kbd">Distill</span> the purse to the fewest coins with a tap.</p></div>
+      <div id="t4" class="txt clip" data-start="26.5" data-duration="7.6" data-track-index="13"><h1>Dice, right there</h1><p>Throw with real <span class="kbd">physics</span> — apply straight to your HP.</p></div>
+
+      <div id="end" class="clip" data-start="34.6" data-duration="3.4" data-track-index="14">
+        <div class="mark">Hoard</div>
+        <div class="url">joshuafuller.github.io/hoard-hp-tracker</div>
+        <div class="feat">Offline · no account · free &amp; open source</div>
+      </div>
+
+      <audio id="a1" src="assets/audio/n1.wav" data-start="0.9" data-duration="3.6" data-track-index="20" data-volume="1"></audio>
+      <audio id="a2" src="assets/audio/n2.wav" data-start="6.6" data-duration="3.9" data-track-index="21" data-volume="1"></audio>
+      <audio id="a3" src="assets/audio/n3.wav" data-start="14.3" data-duration="3.2" data-track-index="22" data-volume="1"></audio>
+      <audio id="a4" src="assets/audio/n4.wav" data-start="28.5" data-duration="1.6" data-track-index="23" data-volume="1"></audio>
+      <audio id="a5" src="assets/audio/n5.wav" data-start="34.5" data-duration="3.3" data-track-index="24" data-volume="1"></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      tl.from(["#body", "#screen-bg", "#pwr", "#vup", "#vdn"], { opacity: 0, scale: 0.96, transformOrigin: "50% 50%", duration: 0.6, ease: "power3.out" }, 0);
+      tl.fromTo("#phone", { opacity: 0, scale: 0.96, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.6, ease: "power3.out" }, 0.5);
+
+      // exact beats (clip-time + 0.5 video offset): drag 2.2 · heal 6.4 · coins 14.0 · dice 26.5
+      const beats = [["#t1", 0.6, 5.7], ["#t2", 6.4, 13.3], ["#t3", 14, 25.4], ["#t4", 26.5, 33.7]];
+      for (const [id, start, exit] of beats) {
+        tl.from(id, { opacity: 0, x: -34, duration: 0.6, ease: "power3.out" }, start);
+        tl.from(id + " h1", { opacity: 0, y: 20, duration: 0.55, ease: "power3.out" }, start + 0.08);
+        tl.from(id + " p", { opacity: 0, y: 14, duration: 0.55, ease: "power3.out" }, start + 0.2);
+        tl.to(id, { opacity: 0, duration: 0.4, ease: "power2.in" }, exit);
+        tl.set(id, { opacity: 0 }, exit + 0.4);
+      }
+
+      const phone = ["#body", "#screen-bg", "#phone", "#pwr", "#vup", "#vdn"];
+      tl.to(phone, { opacity: 0, duration: 0.5, ease: "power2.in" }, 34.1);
+      tl.set(phone, { opacity: 0 }, 34.6);
+      tl.from("#end", { opacity: 0, duration: 0.6, ease: "power2.out" }, 34.7);
+      tl.from("#end .mark", { opacity: 0, y: 22, duration: 0.7, ease: "power3.out" }, 34.8);
+      tl.from("#end .url", { opacity: 0, y: 14, duration: 0.6, ease: "power3.out" }, 35.1);
+      tl.from("#end .feat", { opacity: 0, y: 12, duration: 0.6, ease: "power3.out" }, 35.35);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
