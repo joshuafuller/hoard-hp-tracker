@@ -273,22 +273,35 @@ export function playSfx(name: SfxName): void {
   if (!recipe) return;
   const context = ensureContext();
   if (!context) return;
-  try {
-    if (name === "roll") {
-      playClatter(context); // noise clatter, not an oscillator recipe
-      return;
+
+  const render = () => {
+    try {
+      if (name === "roll") {
+        playClatter(context); // noise clatter, not an oscillator recipe
+        return;
+      }
+      if (name === "coinAdd" || name === "coinSpend") {
+        playCoinTicks(context, name === "coinAdd" ? "add" : "spend");
+        return;
+      }
+      if (name === "coinDistill") {
+        playCoinCascade(context); // the tumbling ticks
+        for (const voice of recipe) playVoice(context, voice); // the settled ring (guarded)
+        return;
+      }
+      for (const voice of recipe) playVoice(context, voice);
+    } catch {
+      /* never let an audio glitch break an interaction */
     }
-    if (name === "coinAdd" || name === "coinSpend") {
-      playCoinTicks(context, name === "coinAdd" ? "add" : "spend");
-      return;
-    }
-    if (name === "coinDistill") {
-      playCoinCascade(context); // the tumbling ticks
-      for (const voice of recipe) playVoice(context, voice); // the settled ring (guarded)
-      return;
-    }
-    for (const voice of recipe) playVoice(context, voice);
-  } catch {
-    /* never let an audio glitch break an interaction */
+  };
+
+  // Mobile reload race (#248): a freshly-created context starts SUSPENDED and resume()
+  // is async — scheduling on the frozen clock drops the cue, so the first cue(s) after
+  // a reload go silent. Resume FIRST (within this gesture, which is what unlocks audio),
+  // then render in the callback. When already running, render synchronously (no latency).
+  if (context.state === "suspended") {
+    context.resume().then(render).catch(() => {});
+  } else {
+    render();
   }
 }
