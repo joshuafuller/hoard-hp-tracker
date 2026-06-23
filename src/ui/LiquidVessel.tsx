@@ -3,6 +3,7 @@ import type { HpState } from "../domain/hp";
 import { tierFor } from "./HpBar";
 import { glowCss, hpColor, rgbCss } from "./hpColor";
 import { heartbeatBpm } from "./liquid/heartbeat";
+import { stopHeartbeat, updateHeartbeat } from "../sound/heartbeatAudio";
 import { LiquidRenderer } from "./liquid/renderer";
 import { useGyro } from "./liquid/useGyro";
 import { useLiquidEngine } from "./liquid/useLiquidEngine";
@@ -61,6 +62,14 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
     "--accent-glow": glowCss(color),
     ...(heartbeat ? { "--heartbeat-period": `${(60 / bpm).toFixed(3)}s` } : {}),
   } as React.CSSProperties;
+  // Audible heartbeat (#243): drive the looping bass lub-dub from the same bpm as the
+  // visual so they quicken together — but independent of reduced-motion (sound is the
+  // motion-free alternative). Mute is handled per-beat inside the scheduler.
+  useEffect(() => {
+    if (bpm === null) stopHeartbeat();
+    else updateHeartbeat(bpm);
+  }, [bpm]);
+  useEffect(() => () => stopHeartbeat(), []); // silence on unmount
   const tempRatio = max > 0 ? Math.max(0, Math.min(1, temp / max)) : 0;
   useLiquidEngine({
     canvasRef,
