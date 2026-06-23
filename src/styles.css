@@ -849,6 +849,10 @@ body {
   inset: 0;
   z-index: 50;
   display: grid;
+  /* Bound the column to the viewport. Without this the auto column grows to the
+     number input's intrinsic content width, so on a very narrow screen (Pixel Fold
+     cover) the sheet sized past the viewport and rendered off the right edge (#210). */
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   padding: 1.5rem;
   background: color-mix(in oklab, var(--obsidian-900) 72%, transparent);

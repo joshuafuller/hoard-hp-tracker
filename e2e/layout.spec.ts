@@ -112,6 +112,26 @@ test.describe("mobile layout", () => {
     expect(dockBox!.y + dockBox!.height).toBeLessThanOrEqual(vh + 2);
   });
 
+  test("max-HP editor fits within a narrow viewport — no right-edge overflow (#210)", async ({ page }) => {
+    // Pixel Fold cover screen is very narrow; the editor's number input was blowing
+    // out the layout so the sheet rendered off the right edge (only the − showed).
+    await page.setViewportSize({ width: 360, height: 820 });
+    const vw = page.viewportSize()!.width;
+
+    await page.getByLabel("Edit maximum HP").click();
+    await page.waitForSelector(".hp-editor", { state: "visible" });
+
+    // Neither the sheet nor the ± pill may spill past either viewport edge.
+    for (const sel of [".hp-editor__sheet", ".hp-editor__pill"]) {
+      const box = await page.locator(sel).boundingBox();
+      expect(box, `${sel} must be laid out`).not.toBeNull();
+      expect(box!.x, `${sel} left edge on-screen`).toBeGreaterThanOrEqual(-2);
+      expect(box!.x + box!.width, `${sel} right edge on-screen`).toBeLessThanOrEqual(vw + 2);
+    }
+    // The increment button must be reachable too (the bug hid everything but −).
+    await expect(page.getByLabel("Increase Max HP")).toBeVisible();
+  });
+
   test("keypad opens with adequately-sized keys", async ({ page }) => {
     // Tapping the current-HP number opens the quick-entry keypad.
     await page.getByLabel("Edit current HP").click();
