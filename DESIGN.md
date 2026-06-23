@@ -69,6 +69,11 @@ Dark-first. Hex values are the source of truth; mirror them as CSS custom proper
   - **Damage/danger surfaces** (damage flash, coin "spend") use the **bloodied ruby `#D8453B`**, not the
     critical tier — they shouldn't follow an HP-tier colour decision.
   - **Down (0):** grey `#6B6354`.
+  - **Heartbeat pulse rate (#220):** in the danger zone the orb throbs a lub-dub whose rate **quickens
+    as HP falls** — **~60 bpm at the bloodied line (50%) → ~150 bpm approaching 0**, linear in the
+    danger-zone ratio: `bpm = 60 + (1 − ratio/0.5)·90` for `0 < ratio ≤ 0.5`. **No pulse** when healthy
+    (>50%) or down (≤0, flatline); **off** under `prefers-reduced-motion`. Source of truth:
+    `src/ui/liquid/heartbeat.ts` (`heartbeatBpm`); the period drives a transform/opacity-only keyframe.
   - Thresholds are defined **once** in `hpColor.ts` (`BLOODIED_AT = 0.5`, `CRITICAL_AT = 0.25`) and
     imported by `tierFor` (HpBar.tsx); the `--hp-bloodied`/`--hp-critical` tokens back the no-JS
     `data-tier` fallback. Keep colour ramp, tier classification, and tokens in lockstep.
