@@ -127,6 +127,49 @@ export function poolToNotation(pool: DiePool, modifier: number, mode: RollMode):
   return pool.map((g) => `${g.count}d${g.sides}`).join("+") + suffix;
 }
 
+/**
+ * Normalize a dice expression so explosion/reroll modifiers precede keep/drop
+ * clauses within each die term. The vendored parser silently DROPS an explosion
+ * when a keep/drop clause comes first — `4d6kh3!` never explodes — but accepts the
+ * reordered form `4d6!kh3` (empirically verified, #108). We only reorder a term when
+ * its modifiers tokenize cleanly into known explode/reroll + keep/drop tokens AND a
+ * keep/drop precedes an explode/reroll; otherwise the term is returned untouched, so
+ * we never corrupt notation we don't fully understand. Applied at the parse boundary
+ * only — the displayed expression stays exactly as the user typed it.
+ */
+type ModToken = { kind: "er" | "kd"; text: string };
+const MOD_PATTERNS: ReadonlyArray<readonly [RegExp, "er" | "kd"]> = [
+  [/^!!?p?(?:[<>=]+\d+|\d+)?/i, "er"], // explode / compound (!!) / penetrate (p) / on-N
+  [/^ro?(?:[<>=]+\d+|\d+)?/i, "er"], // reroll / reroll-once
+  [/^(?:kh|kl|dh|dl)\d*/i, "kd"], // keep/drop highest/lowest
+  [/^k\d+/i, "kd"], // keep N
+  [/^d\d+/i, "kd"], // drop lowest N
+];
+function tokenizeMods(mods: string): ModToken[] | null {
+  const tokens: ModToken[] = [];
+  let rest = mods;
+  while (rest.length) {
+    const hit = MOD_PATTERNS.map(([re, kind]) => [re.exec(rest), kind] as const).find(([m]) => m?.[0]);
+    if (!hit || !hit[0]) return null; // unknown token — bail, leave the term untouched
+    tokens.push({ kind: hit[1], text: hit[0][0] });
+    rest = rest.slice(hit[0][0].length);
+  }
+  return tokens;
+}
+export function normalizeNotation(notation: string): string {
+  return notation.replace(/(\d*d\d+)([a-z!{}<>=\d]*)/gi, (full: string, die: string, mods: string) => {
+    if (!mods) return full;
+    const tokens = tokenizeMods(mods);
+    if (!tokens) return full;
+    const firstKd = tokens.findIndex((t) => t.kind === "kd");
+    const lastEr = tokens.map((t) => t.kind).lastIndexOf("er");
+    if (firstKd === -1 || lastEr === -1 || firstKd > lastEr) return full; // already correct / nothing to do
+    const er = tokens.filter((t) => t.kind === "er").map((t) => t.text).join("");
+    const kd = tokens.filter((t) => t.kind === "kd").map((t) => t.text).join("");
+    return die + er + kd;
+  });
+}
+
 /** A die is dropped if the parser flags it `drop` or marks it `valid === false`. */
 function isDropped(entry: ParserRollEntry): boolean {
   return !!(entry.drop || entry.valid === false);

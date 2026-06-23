@@ -13,7 +13,7 @@
  */
 // @ts-expect-error — the parser ships no types
 import DiceParser from "@3d-dice/dice-parser-interface";
-import { isPlausibleRoll, recordFromPhysical, toRollRecord, physicalRecordApplies, type ParserResult, type RollRecord } from "../../domain/dice";
+import { isPlausibleRoll, recordFromPhysical, toRollRecord, physicalRecordApplies, normalizeNotation, type ParserResult, type RollRecord } from "../../domain/dice";
 
 /** Gold dice tuned to Molten Hoard; tray physics tuned in the spike. */
 const THEME_COLOR = "#e8b45a";
@@ -77,7 +77,9 @@ function randomFloatsFor(groups: DieGroup[]): number[] {
  */
 export function rollHeadless(notation: string, floats?: number[]): RollRecord {
   const parser = new DiceParser();
-  const groups = parser.parseNotation(notation) as DieGroup[];
+  // Parse the NORMALIZED form (explode/reroll before keep/drop) so e.g. `4d6kh3!`
+  // actually explodes; record the ORIGINAL notation for display (#108).
+  const groups = parser.parseNotation(normalizeNotation(notation)) as DieGroup[];
   parser.rollsAsFloats = floats ?? randomFloatsFor(groups);
   const result = parser.rollNotation(parser.parsedNotation);
   return toRollRecord(result, notation);

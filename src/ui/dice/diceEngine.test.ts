@@ -146,6 +146,24 @@ describe("rollHeadless", () => {
     }
   });
 
+  // #108 — explode + keep/drop composition. The vendored parser silently drops the
+  // `!` when a keep/drop clause precedes it (`4d6kh3!` never exploded); rollHeadless
+  // now parses the NORMALIZED form (`4d6!kh3`) so it explodes, while keeping the
+  // user's original text for display.
+  it("explodes `4d6kh3!` despite keep/drop preceding the ! (#108)", () => {
+    const f = (v: number) => (v - 1) / 6;
+    // Four sixes each explode (then four 1s stop the chains) → 8 dice, not 4.
+    const rec = rollHeadless("4d6kh3!", [f(6), f(6), f(6), f(6), f(1), f(1), f(1), f(1)]);
+    expect(rec.dice.length).toBeGreaterThan(4); // explosion fired (was stuck at 4 before)
+    expect(rec.notation).toBe("4d6kh3!"); // display keeps exactly what the user typed
+  });
+
+  it("does NOT explode the same pool without the ! — control (#108)", () => {
+    const f = (v: number) => (v - 1) / 6;
+    const rec = rollHeadless("4d6kh3", [f(6), f(6), f(6), f(6)]);
+    expect(rec.dice).toHaveLength(4);
+  });
+
   // #108 item 3 — headless explosion round-batching. The parser APPENDS explosion
   // dice (round N+1 has exactly as many dice as exploded in round N); assignRounds
   // tags them. Verified empirically across single / late / chained explosions.

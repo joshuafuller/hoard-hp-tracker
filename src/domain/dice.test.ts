@@ -7,6 +7,7 @@ import {
   advantageApplies,
   buildNotation,
   isPlausibleRoll,
+  normalizeNotation,
   notationHasDice,
   notationModifier,
   poolToNotation,
@@ -196,6 +197,39 @@ describe("notationModifier", () => {
     expect(notationModifier("+7")).toBe(7);
     expect(notationModifier("2d6+10-4")).toBe(6);
     expect(notationModifier("1d4-1-1")).toBe(-2);
+  });
+});
+
+describe("normalizeNotation (#108 — explode/reroll must precede keep/drop)", () => {
+  it("reorders keep/drop after an explosion so the parser actually explodes", () => {
+    expect(normalizeNotation("4d6kh3!")).toBe("4d6!kh3");
+    expect(normalizeNotation("4d6kl3!")).toBe("4d6!kl3");
+    expect(normalizeNotation("4d6kh3!+2")).toBe("4d6!kh3+2");
+    expect(normalizeNotation("5d8dl2!p")).toBe("5d8!pdl2");
+  });
+
+  it("leaves already-correct / modifier-free / non-keep+explode notations unchanged", () => {
+    expect(normalizeNotation("4d6!kh3")).toBe("4d6!kh3"); // already correct
+    expect(normalizeNotation("4d6!")).toBe("4d6!"); // explode only
+    expect(normalizeNotation("4d6kh3")).toBe("4d6kh3"); // keep only, no explode
+    expect(normalizeNotation("2d20kh1")).toBe("2d20kh1"); // advantage
+    expect(normalizeNotation("2d6+1d4")).toBe("2d6+1d4");
+    expect(normalizeNotation("4d6r1!")).toBe("4d6r1!"); // reroll then explode — both before any keep
+  });
+
+  it("leaves notation it can't fully tokenize untouched (never corrupts)", () => {
+    expect(normalizeNotation("4d6kh3xyz!")).toBe("4d6kh3xyz!"); // unknown token → bail on that term
+    expect(normalizeNotation("hello")).toBe("hello");
+    expect(normalizeNotation("")).toBe("");
+  });
+
+  it("is idempotent", () => {
+    fc.assert(
+      fc.property(fc.constantFrom("4d6kh3!", "4d6!kh3", "2d20kh1", "8d6!", "4d6r1!", "5d8dl2!p"), (n) => {
+        const once = normalizeNotation(n);
+        expect(normalizeNotation(once)).toBe(once);
+      }),
+    );
   });
 });
 
