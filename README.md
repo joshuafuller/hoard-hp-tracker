@@ -88,6 +88,9 @@ bookkeeping a player does on their turn. What belongs in the app (and what delib
 governed by an explicit **Scope-Fit Test**. See the
 **[Product Requirements Document](docs/PRD.md)** for the vision, personas, and how scope grows.
 
+Full documentation map: **[`docs/README.md`](docs/README.md)** — every doc with its purpose and
+living/reference/archived status.
+
 ## Changelog
 
 Notable changes per version are tracked in **[`CHANGELOG.md`](CHANGELOG.md)**
