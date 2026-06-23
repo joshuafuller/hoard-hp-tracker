@@ -113,4 +113,31 @@ test.describe("dice tray — roll → result → apply (reduced-motion / headles
     await openTray(page);
     await expect(page.locator(".dice-result")).toHaveCount(0);
   });
+
+  // #189 — the roll log's scrollbar must not overlap the right-aligned result totals.
+  test("roll log: the scrollbar never overlaps the result totals (#189)", async ({ page }) => {
+    await openTray(page);
+    await roll(page, "2d6");
+    await page.locator(".dice-result__total").first().waitFor({ state: "visible" });
+
+    // Open the roll log (it sits over the WebGL canvas — dispatch like the other dice taps).
+    await page.getByLabel("Roll log").dispatchEvent("click");
+    const list = page.locator(".dice-history__list");
+    await list.waitFor({ state: "visible" });
+
+    // Force the list to overflow so a scrollbar is present regardless of row count.
+    await page.addStyleTag({ content: ".dice-history__list { max-height: 32px !important; }" });
+
+    const listBox = (await list.boundingBox())!;
+    const totals = page.locator(".dice-history__total");
+    const count = await totals.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i++) {
+      const tb = (await totals.nth(i).boundingBox())!;
+      // The total's right edge must stay inside the list's right edge — clear of the
+      // scrollbar gutter (classic) / overlay thumb (inline-end padding). Pre-fix ~0px.
+      const clearance = listBox.x + listBox.width - (tb.x + tb.width);
+      expect(clearance, `total #${i} clears the scrollbar`).toBeGreaterThanOrEqual(8);
+    }
+  });
 });

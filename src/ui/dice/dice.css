@@ -286,7 +286,20 @@
   cursor: pointer;
   padding: 4px 12px;
 }
-.dice-history__list { list-style: none; margin: 0; padding: 0; max-height: 40vh; overflow-y: auto; }
+.dice-history__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 40vh;
+  overflow-y: auto;
+  /* Keep the scrollbar off the right-aligned result totals (#189). With classic
+     scrollbars (Win/Linux) `scrollbar-gutter: stable` reserves the gutter so the
+     thumb never overlaps content and the list doesn't shift when it appears; with
+     overlay scrollbars (the thumb draws OVER content) the gutter is zero-width, so
+     the inline-end padding gives the totals clearance from the thumb. */
+  scrollbar-gutter: stable;
+  padding-inline-end: 0.75rem;
+}
 .dice-history__item {
   display: flex;
   flex-direction: column;
