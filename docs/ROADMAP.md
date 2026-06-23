@@ -77,7 +77,7 @@ TEST INFRA (visibility for everything after)
 3. **#176** make the e2e check (`playwright layout guard`) *required* on **`main`** (beta retired).
 4. **PWA version story** — #166 ✅ + #167 ✅ done; remaining: **#169** (release-please) + **#208** (CHANGELOG) + **#209** (in-app "What's new").
 5. **#164** bloodied → red — DESIGN.md reconciled (#195); **code (`hpColor`/`tierFor`) + the open shade/band decision remain** (parked `needs-decision`, needs a visual). **#163** name discoverability ✅ done.
-6. **#183** share link ✅; **#43** CI speed ✅; **#33** esbuild advisory — NOTE: lockfile resolves **esbuild 0.25.12**, still inside the advisory range (`>=0.17.0 <0.28.1`); fix is an explicit pnpm override to ≥0.28.1 (verify vite 6.4.3 builds), **not** necessarily a vite-7 bump — verify.
+6. **#183** share link ✅; **#43** CI speed ✅; **#33** esbuild advisory — **verified 2026-06-23: the bare pnpm override to ≥0.28.1 BREAKS the build** (esbuild 0.28 can't lower destructuring to vite 6's configured targets). Real fix is a **vite-6→7 bump** (or a deliberate build-target raise) — reweighted 1→3. Low real risk (dev-only, Deno-specific), so it can wait behind the bump.
 7. **Roll-log fixes** #189 ✅ + #190 ✅ — done.
 8. **e2e expansion** #171–#175 (Epic A child specs) + **#186** (WebGL reconcile test); then **repo tidiness** Epic G (#193 → #191/#192) — sequenced *after* the Phase 0 bugs so it doesn't collide with in-flight fixes.
 
