@@ -265,7 +265,8 @@ describe("normalizeNotation (#108 — explode/reroll must precede keep/drop)", (
 
 describe("physicalRecordApplies (engine routing)", () => {
   it("routes additive exploding rolls to the physical builder", () => {
-    for (const n of ["8d6!", "3d6!", "1d6!!", "4dF!"]) expect(physicalRecordApplies(n)).toBe(true);
+    // incl. Fudge `4dF!` — the `dF` die must NOT be mistaken for a drop `d` (#194)
+    for (const n of ["8d6!", "3d6!", "1d6!!", "4dF!", "1d6!p"]) expect(physicalRecordApplies(n)).toBe(true);
   });
 
   it("keeps non-exploding and keep/drop rolls on the parser path", () => {
@@ -273,6 +274,9 @@ describe("physicalRecordApplies (engine routing)", () => {
     for (const n of ["8d6", "2d6+3", "2d20kh1", "1d20"]) expect(physicalRecordApplies(n)).toBe(false);
     // keep/drop/success WITH explode → parser (physical can't apply keep/drop semantics)
     for (const n of ["4d6kh3!", "2d20kl1!", "10d6>4!"]) expect(physicalRecordApplies(n)).toBe(false);
+    // bare keep/drop (count → 1) WITH explode must ALSO take the parser path (#194 — these
+    // previously routed to physical, which silently ignored the keep/drop).
+    for (const n of ["4d6k!", "4d6d!", "4d6dl!", "4d6kh10!"]) expect(physicalRecordApplies(n)).toBe(false);
   });
 });
 
