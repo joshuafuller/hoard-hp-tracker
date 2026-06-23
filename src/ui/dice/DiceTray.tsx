@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   addToPool,
   advantageApplies,
@@ -10,7 +10,8 @@ import {
 } from "../../domain/dice";
 import { type HpDb, type RollContext } from "../../store/db";
 import { useDiceHistory } from "../../store/useDiceHistory";
-import { playSfx } from "../../sound/sfx";
+import { isSoundEnabled } from "../../sound/soundSettings";
+import { createEffectBus, defaultRollEffects } from "./effects";
 import { createDiceTray, rollHeadless, type DiceTray as DiceTrayEngine } from "./diceEngine";
 import { DiceControls } from "./DiceControls";
 import { DiceResult } from "./DiceResult";
@@ -92,6 +93,10 @@ export function DiceTray({
 }: DiceTrayProps) {
   const history = useDiceHistory(db);
   const reduced = reducedMotion ?? prefersReducedMotion();
+  // Roll-effects bus (#87): registered effects fire on throw/settle/crit/clear. Stable
+  // for the tray's life. `effectEnv` snapshots the live mute + reduced-motion gates.
+  const effects = useMemo(() => createEffectBus(defaultRollEffects), []);
+  const effectEnv = useCallback(() => ({ muted: !isSoundEnabled(), reducedMotion: reduced }), [reduced]);
 
   const [pool, setPool] = useState<DiePool>([]);
   const [modifier, setModifier] = useState(0); // remembered across opens (tray stays mounted)
@@ -170,9 +175,9 @@ export function DiceTray({
       const seq = rollSeq.current; // this throw's generation; a close/clear bumps it
       setShowLog(false);
       setRolling(true);
-      // Feel: a synthesized dice-clatter cue (mute-aware) + a short haptic, matching
-      // the rest-control haptics. Reduced motion still gets the sound.
-      playSfx("roll");
+      // Feel: roll effects fire on throw (the clatter cue is a registered effect now,
+      // #87) + a short haptic, matching the rest-control haptics.
+      effects.throw(effectEnv());
       if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
         navigator.vibrate(12);
       }
@@ -226,6 +231,7 @@ export function DiceTray({
         // can't re-show or apply after the user already left this throw.
         if (rollSeq.current !== seq) return null;
         setRecord(rec);
+        effects.settle(rec, effectEnv()); // settle/crit effects (#87) — onCrit feeds #92
         // History is a best-effort side log: a failed write (quota / private mode)
         // must NOT block the roll's gameplay outcome (death-save pip / Hit Die apply).
         void history.record(rec, { context }).catch((err) =>
@@ -241,7 +247,7 @@ export function DiceTray({
         if (rollSeq.current === seq) setRolling(false);
       }
     },
-    [reduced, history],
+    [reduced, history, effects, effectEnv],
   );
 
   const rollNow = () => {
@@ -259,7 +265,8 @@ export function DiceTray({
     // may never settle, so don't leave the button stuck on "Throwing" until the timeout.
     setRolling(false);
     engineRef.current?.clear();
-  }, []);
+    effects.clear(effectEnv()); // onClear effects (#87) — feeds the burning-dice clear (#91)
+  }, [effects, effectEnv]);
   const handleClose = useCallback(() => {
     // A SETTLED Hit Die commits via Apply only — closing it must APPLY (spend + heal),
     // never silently discard: a discard loses the rolled heal AND reopens the reroll
