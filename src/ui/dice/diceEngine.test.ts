@@ -152,9 +152,10 @@ describe("rollHeadless", () => {
   // user's original text for display.
   it("explodes `4d6kh3!` despite keep/drop preceding the ! (#108)", () => {
     const f = (v: number) => (v - 1) / 6;
-    // Four sixes each explode (then four 1s stop the chains) → 8 dice, not 4.
+    // Four sixes each explode once (then four 1s stop the chains) → exactly 8 dice
+    // (was stuck at 4 before the fix — the `!` was dropped).
     const rec = rollHeadless("4d6kh3!", [f(6), f(6), f(6), f(6), f(1), f(1), f(1), f(1)]);
-    expect(rec.dice.length).toBeGreaterThan(4); // explosion fired (was stuck at 4 before)
+    expect(rec.dice).toHaveLength(8); // 4 initial + 4 explosion dice
     expect(rec.notation).toBe("4d6kh3!"); // display keeps exactly what the user typed
   });
 
