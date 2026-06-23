@@ -53,15 +53,16 @@ Dark-first. Hex values are the source of truth; mirror them as CSS custom proper
 - **Primary accent (gold):** `#E8B45A` (soft `#C9974A`) — identity, primary actions, the hoard.
 - **Semantic:** heal emerald `#4FB477`, damage ruby `#D8453B`, temp/ward sapphire `#5B8FD9`,
   warning = gold `#E8B45A`, info = sapphire `#5B8FD9`.
-- **HP tiers (orb fill):** healthy emerald → bloodied **red** → critical **deep ruby**, blended
-  gradually (not snapped — see closed issue #20).
-  - _Superseded by #164 (maintainer-approved):_ the mid tier (≤50% HP, "bloodied") now reads **red**,
-    **not** the original gold — players must read half-health as danger, not "still fine." The healthy
-    band stays emerald/gold; red begins at the half-HP line.
-  - _Open in #164 (not yet decided — do not implement a guess):_ the exact bloodied-red shade and
-    whether critical (≤25%) is a **distinct deeper red** (two danger bands) or a **single continuous
-    red** from 50% down. Resolve in #164 and update `hpColor`/`tierFor` (`BLOODIED_AT`/`CRITICAL_AT`)
-    **and this line together**, so code and contract never drift.
+- **HP tiers (orb fill) — current / implemented:** healthy emerald → bloodied **gold** → critical
+  ruby, blended gradually (not snapped — see closed issue #20). This is what `hpColor`/`tierFor` ship
+  today; build and review against it until #164 lands.
+  - _Approved change, **not yet implemented** (#164):_ the mid tier (≤50% HP, "bloodied") will move
+    from gold to **red** — players must read half-health as danger, not "still fine." Healthy stays
+    emerald/gold; red begins at the half-HP line. **Until #164 ships, the code _and_ this line stay
+    gold — they change together**, so the contract never leads the implementation.
+  - _Open in #164 (do not implement a guess):_ the exact bloodied-red shade, and whether critical
+    (≤25%) is a **distinct deeper red** (two danger bands) or a **single continuous red** from 50%
+    down. Resolve in #164, updating `hpColor`/`tierFor` (`BLOODIED_AT`/`CRITICAL_AT`) + this line together.
 - **"Candlelit" variant:** a slightly warmer/brighter dark (`bg #120F0A`, `gold #F0BE66`) for very
   dark rooms. Still dark. **Light mode** is explicitly out of the primary path.
 - **Contrast:** body/critical text must stay legible on volcanic black; watch small gold-on-black
