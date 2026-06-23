@@ -1300,6 +1300,10 @@ body {
   justify-content: center;
   height: 1.5rem; /* fixed height keeps the orb from shifting when name/blank swap */
   width: 100%;
+  /* Extra clearance below the device notch / Dynamic Island so the name never sits
+     under it (the shell already pads env(safe-area-inset-top); this adds breathing
+     room on top of it for the taller island). (#163) */
+  margin-top: clamp(0.3rem, 1.4vh, 0.85rem);
 }
 
 /* The shared display button — strips all native chrome. */
@@ -1336,26 +1340,30 @@ body {
   outline-offset: 2px;
 }
 
-/* Empty placeholder: visible but faint so it doesn't compete with the orb.
-   The button has no text (aria-label provides the accessible name); the ::after
-   pseudo draws a ghost pill so there is a tactile target to tap. */
+/* Empty state: a visible "Name your character" affordance (text + pencil cue) so a
+   new player knows the slot is theirs to fill — not a blank gap (#163). Dim/italic
+   so it recedes; it's replaced by the real name once set. */
 .character-name__display--empty {
-  width: 4.5rem;
-  height: 1.25rem;
-  border-radius: 99px;
-  background: color-mix(in oklab, var(--ink-700) 30%, transparent);
-  opacity: 0.45;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+  color: var(--ink-500);
+  font-size: 0.85rem;
+  font-style: italic;
+  letter-spacing: 0.01em;
+  opacity: 0.8;
 }
+.character-name__pencil { flex-shrink: 0; opacity: 0.85; }
 @media (hover: hover) {
   .character-name__display--empty:hover {
-    opacity: 0.75;
-    background: color-mix(in oklab, var(--ink-500) 25%, transparent);
+    opacity: 1;
+    color: var(--ink-300);
   }
 }
 .character-name__display--empty:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  opacity: 0.85;
+  opacity: 1;
 }
 
 /* Editing state: the fixed 1.5rem height is relaxed so the accent-bordered
