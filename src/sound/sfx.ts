@@ -148,6 +148,12 @@ function ensureContext(): AudioContext | null {
   }
 }
 
+/** The shared AudioContext, so other synths (e.g. the looping heartbeat #243) reuse
+ *  one context instead of spawning their own. Null where unsupported. */
+export function getAudioContext(): AudioContext | null {
+  return ensureContext();
+}
+
 /** Schedule one oscillator voice on the context. */
 function playVoice(context: AudioContext, voice: Voice): void {
   const start = context.currentTime + (voice.delay ?? 0);
