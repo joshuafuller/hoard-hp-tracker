@@ -9,6 +9,14 @@ Entries describe changes in player-meaningful terms, not raw commit subjects. On
 [release-please](https://github.com/googleapis/release-please) is adopted (#169), the
 sections below `Unreleased` will be generated automatically from Conventional Commits.
 
+## [0.0.6](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.5...v0.0.6) (2026-06-23)
+
+
+### Fixed
+
+* **about:** close ✕ was covered by the panel hero — lift it with z-index ([#249](https://github.com/joshuafuller/hoard-hp-tracker/issues/249)) ([#250](https://github.com/joshuafuller/hoard-hp-tracker/issues/250)) ([27d94df](https://github.com/joshuafuller/hoard-hp-tracker/commit/27d94df8abaaa8ea8e115d7dfb781de94e5ef0a2))
+* **sound:** resume the AudioContext before scheduling cues ([#248](https://github.com/joshuafuller/hoard-hp-tracker/issues/248)) ([#252](https://github.com/joshuafuller/hoard-hp-tracker/issues/252)) ([5d88825](https://github.com/joshuafuller/hoard-hp-tracker/commit/5d8882562bca01e80e6734bd32797a61cdd54ee1))
+
 ## [0.0.5](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.4...v0.0.5) (2026-06-23)
 
 
