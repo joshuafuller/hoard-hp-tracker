@@ -2,20 +2,19 @@
 
 > **Issue:** #84 (time-boxed design spike). **Feeds:** #88 (responsive-layout implementation).
 > **Status:** docs-only — this PR adds this report and changes no source code.
-> **Method note:** No browser was available in this environment. The breakage inventory
-> below is **derived from reading the CSS** (`src/styles.css`, `src/App.css`,
-> `playwright.config.ts`, `src/pwa-manifest.ts`), not from screenshots. Every predicted
-> issue is tagged **[verify]** where an in-browser screenshot is needed to confirm before
-> the fix lands.
+> **Method note:** the §1 breakage inventory was **first derived from reading the CSS**
+> (`src/styles.css`, `src/App.css`, `playwright.config.ts`, `src/pwa-manifest.ts`) and is
+> now **verified against captured screenshots** (see §1.5, 2026-06-23). The `[verify]`
+> tags in §1 mark the original CSS-hypotheses; §1.5 records what the screenshots actually
+> show — including where reality differed (e.g. **≤320 came back clean**, correcting that
+> prediction).
 >
-> **#84 is NOT fully satisfied by this report alone.** Issue #84's first acceptance
-> criterion requires a **screenshot inventory across the viewport matrix** (≤320 / 360 /
-> 390 / 430 / 768 / 1024 / landscape / ultrawide). That artifact **could not be produced
-> headless here and is still outstanding.** It is **deferred to #88**, where a browser is
-> available during implementation/QA — the reason being that the screenshots are most
-> useful captured against the *fixed* layout (before/after), and #88 already must run the
-> Playwright layout guard at every breakpoint. Until that inventory is captured and
-> attached, #84's screenshot AC remains open. See §7 AC seeds.
+> **Screenshot inventory — captured 2026-06-23** (see §1.5 + `screens/`). The 8-viewport
+> matrix is now attached, so #84's screenshot AC is satisfied; the verified observations
+> are folded into §1 below (notably: ≤320 renders **clean**, contradicting the cautious
+> CSS prediction; tablet/landscape/ultrawide confirm the centered-island / stretched-phone
+> issues that #88 must fix). Captures are against the **current** layout — #88 should
+> re-shoot before/after.
 
 ---
 
@@ -48,7 +47,7 @@ but make **no provision for short landscape height**.
 
 ---
 
-## 1. Breakage inventory (CSS-derived predictions) `[verify]`
+## 1. Breakage inventory (CSS-derived predictions — verified in §1.5)
 
 Ordered by viewport, smallest to largest. Each is a hypothesis from the cascade above.
 
@@ -102,6 +101,28 @@ Ordered by viewport, smallest to largest. Each is a hypothesis from the cascade 
 ### Ultrawide / desktop (≥1280, browser tab)
 - Card centered at 480px in a vast dark field. Functional, visually thin. Lowest priority; the product
   is a phone PWA, but the e2e guard and casual desktop opens should not look broken.
+
+---
+
+## 1.5 Screenshot inventory (captured 2026-06-23, current layout)
+
+Captured headless via Playwright against the production preview, reduced-motion, at the
+committed matrix. Files: [`screens/`](screens/). Verified vs the §1 predictions:
+
+| Viewport | File | Observed |
+|----------|------|----------|
+| 320×568 (small phone) | [320x568.png](screens/320x568.png) | **Clean** — orb, name, hit-dice, rests all fit; no overflow/clip. (§1's ≤320 breakage was over-cautious.) |
+| 360×640 | [360x640.png](screens/360x640.png) | Fine (guarded today). |
+| 390×844 (primary) | [390x844.png](screens/390x844.png) | Fine (guarded today). |
+| 430×932 (large phone) | [430x932.png](screens/430x932.png) | Fine; orb scales up, generous margins. |
+| 768×1024 (tablet portrait) | [768x1024-tablet.png](screens/768x1024-tablet.png) | **Stretched phone** — tall column with an awkward orb→hit-dice gap; confirms the "not a stretched phone" tablet need (#88: centered max-width card). |
+| 1024×768 (tablet landscape) | [1024x768-tablet-landscape.png](screens/1024x768-tablet-landscape.png) | Centered island; wide black margins. |
+| 844×390 (phone landscape) | [844x390-phone-landscape.png](screens/844x390-phone-landscape.png) | Content fits but a **centered island** wastes horizontal width; the name nudges the top edge. |
+| 1280×800 (ultrawide) | [1280x800-ultrawide.png](screens/1280x800-ultrawide.png) | **Phone-width column on an empty page** — acceptable by-design (desktop low-priority; centered+capped per §3). |
+
+Net: the **portrait phone path is solid today** (incl. ≤320); the real work is **tablet
+(stretched), landscape (wasted width), and the fill-vs-centered decision** — exactly what
+§2–§3 commit to and #88 implements.
 
 ---
 
