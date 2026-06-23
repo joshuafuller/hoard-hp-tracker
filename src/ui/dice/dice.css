@@ -163,16 +163,38 @@
 }
 .dice-result__chip[data-dropped="true"] { opacity: 0.55; }
 .dice-result__chip s { color: var(--ink-500); }
-/* nat 20 = critical hit (emerald), nat 1 = fumble (ruby) on a d20 */
+/* nat 20 = critical hit (emerald), nat 1 = fumble (ruby) on a d20. Beyond the resting
+   outline, a one-shot flourish on settle (#92): a celebratory swell on a hit, an ominous
+   shake on a miss. Pairs with the crit/fumble sound cue; disabled under reduced motion. */
 .dice-result__chip[data-crit="hit"] {
   border-color: #4fb477;
   color: #b9f0d2;
   box-shadow: 0 0 0 1px #4fb477, 0 0 9px color-mix(in oklab, #4fb477 55%, transparent);
+  animation: crit-hit-flourish 0.9s ease-out;
 }
 .dice-result__chip[data-crit="miss"] {
   border-color: var(--hp-critical);
   color: #f4b0a8;
   box-shadow: 0 0 0 1px var(--hp-critical), 0 0 9px color-mix(in oklab, var(--hp-critical) 55%, transparent);
+  animation: crit-miss-flourish 0.5s ease-out;
+}
+@keyframes crit-hit-flourish {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.18); box-shadow: 0 0 0 2px #4fb477, 0 0 16px color-mix(in oklab, #4fb477 80%, transparent); }
+  55% { transform: scale(1.04); }
+  75% { transform: scale(1.1); box-shadow: 0 0 0 2px #4fb477, 0 0 14px color-mix(in oklab, #4fb477 70%, transparent); }
+  100% { transform: scale(1); }
+}
+@keyframes crit-miss-flourish {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-3px) rotate(-2deg); }
+  30% { transform: translateX(3px) rotate(2deg); }
+  45% { transform: translateX(-2px); }
+  60% { transform: translateX(2px); }
+  80% { transform: translateX(-1px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dice-result__chip[data-crit] { animation: none; }
 }
 .dice-result__chipwrap { display: inline-flex; align-items: center; gap: 3px; }
 .dice-result__plus { color: var(--coin-gold); font-weight: 800; font-size: 0.8rem; }
