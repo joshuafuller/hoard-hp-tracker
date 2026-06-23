@@ -45,9 +45,17 @@ export function critDice(record: RollRecord): RolledDie[] {
  * engine. Each hook call is isolated so a misbehaving effect can't break a roll.
  */
 export function createEffectBus(effects: readonly RollEffect[]): EffectBus {
-  const run = (name: string, fn: () => void) => {
+  const run = (name: string, fn: () => unknown) => {
     try {
-      fn();
+      const result = fn();
+      // Hooks are typed `() => void`, but TS still allows an async hook (returning a
+      // Promise) whose rejection would bypass this try/catch and surface as an unhandled
+      // rejection — swallow that too so the "isolated" guarantee holds (Copilot #87).
+      if (result && typeof (result as { then?: unknown }).then === "function") {
+        void (result as Promise<unknown>).catch((err) =>
+          console.warn(`[hoard] roll effect "${name}" rejected; ignoring`, err),
+        );
+      }
     } catch (err) {
       console.warn(`[hoard] roll effect "${name}" threw; ignoring`, err);
     }

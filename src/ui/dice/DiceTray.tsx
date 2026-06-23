@@ -175,6 +175,10 @@ export function DiceTray({
       const seq = rollSeq.current; // this throw's generation; a close/clear bumps it
       setShowLog(false);
       setRolling(true);
+      // A throw sweeps the prior dice first, so fire onClear before the throw cues — a
+      // re-roll burn (#91) runs on the outgoing dice while they're still on the table
+      // (Codex #87). Harmless no-op on the first throw / with no onClear effects.
+      effects.clear(effectEnv());
       // Feel: roll effects fire on throw (the clatter cue is a registered effect now,
       // #87) + a short haptic, matching the rest-control haptics.
       effects.throw(effectEnv());
@@ -264,8 +268,10 @@ export function DiceTray({
     // Recover immediately if cleared mid-roll — sweeping the dice means engine.roll()
     // may never settle, so don't leave the button stuck on "Throwing" until the timeout.
     setRolling(false);
+    // onClear BEFORE the engine disposes the dice, so a burn (#91) can act on them
+    // while they're still on the table (Codex #87).
+    effects.clear(effectEnv());
     engineRef.current?.clear();
-    effects.clear(effectEnv()); // onClear effects (#87) — feeds the burning-dice clear (#91)
   }, [effects, effectEnv]);
   const handleClose = useCallback(() => {
     // A SETTLED Hit Die commits via Apply only — closing it must APPLY (spend + heal),

@@ -53,6 +53,15 @@ describe("createEffectBus (#87)", () => {
     expect(ok.onThrow).toHaveBeenCalled();
   });
 
+  it("isolates an ASYNC (rejected-promise) effect too — others still run, no surfaced rejection", async () => {
+    const asyncBoom: RollEffect = { name: "asyncBoom", onThrow: (() => Promise.reject(new Error("async x"))) as () => void };
+    const ok: RollEffect = { name: "ok", onThrow: vi.fn() };
+    const bus = createEffectBus([asyncBoom, ok]);
+    expect(() => bus.throw(env)).not.toThrow();
+    expect(ok.onThrow).toHaveBeenCalled();
+    await Promise.resolve(); // flush microtasks — the rejection is swallowed by the bus
+  });
+
   it("passes env through so effects can self-gate on mute / reduced-motion", () => {
     const e: RollEffect = { name: "e", onThrow: vi.fn() };
     const gated: EffectEnv = { muted: true, reducedMotion: true };
