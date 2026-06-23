@@ -1,8 +1,8 @@
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { configDefaults, defineConfig } from "vitest/config";
-import { readFileSync } from "node:fs";
 import { manifest } from "./src/pwa-manifest";
+import pkg from "./package.json";
 
 // Base path: "/" for local dev + the self-hosted Docker build; a subpath (e.g.
 // "/hoard-hp-tracker/") for a GitHub Pages project page, set via HOARD_BASE at
@@ -20,9 +20,9 @@ const base = process.env.HOARD_BASE ?? "/";
 const isBeta = /\/beta\/?$/.test(base);
 
 // App version, injected at build time so About can show it with no manual edit
-// (#166). package.json is the single source of truth; read at config-eval time so
-// it works for both `vite build` and the Vitest transform.
-const appVersion = (JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string }).version;
+// (#166). package.json is the single source of truth; imported directly (no node:fs,
+// keeping this config free of @types/node — Copilot #203). resolveJsonModule is on.
+const appVersion = pkg.version;
 
 export default defineConfig({
   base,
