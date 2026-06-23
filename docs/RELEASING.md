@@ -29,6 +29,16 @@ We use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `f
 - Config lives in `release-please-config.json` + `.release-please-manifest.json` (current version
   is pinned there).
 
+### Commit format is enforced locally
+
+A **`commit-msg` git hook** (`.githooks/commit-msg` → `scripts/lint-commit-msg.mjs`) rejects commits
+whose header isn't a valid Conventional Commit, so malformed messages never reach `main` and
+release-please always has clean input. It's wired automatically by the `prepare` npm script
+(`scripts/setup-hooks.mjs` — cross-platform, skips non-git checkouts, won't clobber a custom
+`core.hooksPath`) on `pnpm install` — no Husky/commitlint dependency. The
+validator is unit-tested (`scripts/lint-commit-msg.test.ts`). Git-generated merge/revert/fixup
+messages are allowed through.
+
 ### Bump rules (SemVer)
 
 While the app is **pre-1.0** (`0.y.z`), bumps stay conservative (config:

@@ -27,7 +27,11 @@ describe("AboutPanel", () => {
   it("shows the running, build-injected app version (#166)", () => {
     render(<AboutPanel onClose={vi.fn()} />);
     // A semver line like "v1.0.0", injected at build from package.json (no manual edit).
-    expect(screen.getByText(/^v\d+\.\d+\.\d+/)).toBeInTheDocument();
+    // Scope to the version line: the build-id line (#169) can also start with a v-prefix
+    // (e.g. `git describe` of a tag like v0.0.1-4-g…), so target the version paragraph only.
+    expect(
+      screen.getByText(/^v\d+\.\d+\.\d+/, { selector: ".about-panel__version" }),
+    ).toBeInTheDocument();
   });
 
   it("shows a traceable build identity beneath the version (#169)", () => {

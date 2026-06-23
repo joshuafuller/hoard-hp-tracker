@@ -1,0 +1,6 @@
+#!/bin/sh
+# Enforce Conventional Commits so every commit feeds release-please's automated
+# changelog + version bump (docs/RELEASING.md, #169). Logic lives in the Node
+# script (unit-tested in scripts/lint-commit-msg.test.ts); this is a thin wrapper.
+# Wired via `core.hooksPath=.githooks` (set by the `prepare` npm script on install).
+exec node "$(dirname "$0")/../scripts/lint-commit-msg.mjs" "$1"
