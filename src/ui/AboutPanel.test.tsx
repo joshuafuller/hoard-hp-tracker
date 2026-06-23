@@ -15,6 +15,12 @@ describe("AboutPanel", () => {
     expect(link.querySelector("svg")).toBeTruthy();
   });
 
+  it("shows the running, build-injected app version (#166)", () => {
+    render(<AboutPanel onClose={vi.fn()} />);
+    // A semver line like "v1.0.0", injected at build from package.json (no manual edit).
+    expect(screen.getByText(/^v\d+\.\d+\.\d+/)).toBeInTheDocument();
+  });
+
   it("closes on the close button, the backdrop, and Escape", async () => {
     const onClose = vi.fn();
     const { rerender } = render(<AboutPanel onClose={onClose} />);
