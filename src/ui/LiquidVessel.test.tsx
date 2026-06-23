@@ -163,3 +163,49 @@ describe("LiquidVessel drag-hint affordance (#94)", () => {
     expect(hint.getAttribute("aria-hidden")).toBe("true");
   });
 });
+
+describe("LiquidVessel heartbeat pulse (#220)", () => {
+  const heartbeat = (c: HTMLElement) => c.querySelector(".vessel__heartbeat");
+
+  it("pulses in the danger zone (≤50% HP)", () => {
+    const { container } = render(<LiquidVessel current={5} max={40} temp={0} />); // 12.5%
+    expect(heartbeat(container)).toBeTruthy();
+  });
+
+  it("does not pulse when healthy (>50%)", () => {
+    const { container } = render(<LiquidVessel current={30} max={40} temp={0} />); // 75%
+    expect(heartbeat(container)).toBeNull();
+  });
+
+  it("does not pulse at 0 HP — flatline", () => {
+    const { container } = render(<LiquidVessel current={0} max={40} temp={0} />);
+    expect(heartbeat(container)).toBeNull();
+  });
+
+  it("quickens (shorter beat period) as HP falls toward 0", () => {
+    const period = (current: number) => {
+      const { container } = render(<LiquidVessel current={current} max={40} temp={0} />);
+      const v = container.querySelector(".vessel") as HTMLElement;
+      return parseFloat(v.style.getPropertyValue("--heartbeat-period"));
+    };
+    expect(period(1)).toBeGreaterThan(0);
+    expect(period(1)).toBeLessThan(period(20)); // near 0 beats faster than just-bloodied
+  });
+
+  it("does not pulse under prefers-reduced-motion", () => {
+    const orig = window.matchMedia;
+    window.matchMedia = vi.fn().mockReturnValue({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+    }) as unknown as typeof window.matchMedia;
+    try {
+      const { container } = render(<LiquidVessel current={5} max={40} temp={0} />);
+      expect(heartbeat(container)).toBeNull();
+    } finally {
+      window.matchMedia = orig;
+    }
+  });
+});

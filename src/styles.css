@@ -1018,10 +1018,34 @@ body {
   50%  { transform: translate(11%, 8%) scale(1.18); }
   100% { transform: translate(-8%, -9%) scale(0.95); }
 }
+/* Heartbeat pulse (#220): a danger-zone glow that throbs in a lub-dub, quickening as HP
+   nears 0 (the beat period is set per-bpm in JS via --heartbeat-period). Only rendered
+   when bloodied/critical (not healthy, not at 0) and not reduced-motion — see LiquidVessel. */
+.vessel__heartbeat {
+  position: absolute;
+  inset: -30%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--accent-glow) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(0.9);
+  pointer-events: none;
+  animation: hp-heartbeat var(--heartbeat-period, 1s) ease-out infinite;
+}
+@keyframes hp-heartbeat {
+  0% { opacity: 0; transform: scale(0.9); }
+  6% { opacity: 0.7; transform: scale(1.06); } /* lub */
+  12% { opacity: 0.16; transform: scale(0.96); }
+  20% { opacity: 0.5; transform: scale(1.03); } /* dub */
+  30% { opacity: 0; transform: scale(0.9); }
+  100% { opacity: 0; transform: scale(0.9); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .vessel__aura,
   .vessel__aura::before,
   .vessel__aura::after { animation: none; }
+  .vessel__heartbeat { animation: none; opacity: 0; }
 }
 
 /* The circular glass orb that holds the fluid. The WebGL canvas (or the static

@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { HpState } from "../domain/hp";
 import { tierFor } from "./HpBar";
 import { glowCss, hpColor, rgbCss } from "./hpColor";
+import { heartbeatBpm } from "./liquid/heartbeat";
 import { LiquidRenderer } from "./liquid/renderer";
 import { useGyro } from "./liquid/useGyro";
 import { useLiquidEngine } from "./liquid/useLiquidEngine";
@@ -51,7 +52,15 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
   const color = hpColor(current, max);
   // Drive the CSS accent (numerals, aura, glow) from the same continuous colour
   // so the whole orb fades together instead of snapping at the tier thresholds.
-  const accentStyle = { "--accent": rgbCss(color), "--accent-glow": glowCss(color) } as React.CSSProperties;
+  // Heartbeat pulse (#220): in the danger zone the orb throbs, quickening as HP nears 0;
+  // none when healthy/down, and disabled under reduced motion.
+  const bpm = heartbeatBpm(current, max);
+  const heartbeat = bpm !== null && !reducedMotion;
+  const accentStyle = {
+    "--accent": rgbCss(color),
+    "--accent-glow": glowCss(color),
+    ...(heartbeat ? { "--heartbeat-period": `${(60 / bpm).toFixed(3)}s` } : {}),
+  } as React.CSSProperties;
   const tempRatio = max > 0 ? Math.max(0, Math.min(1, temp / max)) : 0;
   useLiquidEngine({
     canvasRef,
@@ -131,8 +140,9 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
   }
 
   return (
-    <div className="vessel" data-tier={tier} data-flash={flash ?? undefined} data-dragging={drag ? "" : undefined} style={accentStyle}>
+    <div className="vessel" data-tier={tier} data-flash={flash ?? undefined} data-dragging={drag ? "" : undefined} data-heartbeat={heartbeat ? "" : undefined} style={accentStyle}>
       <div className="vessel__aura" aria-hidden="true" />
+      {heartbeat && <div className="vessel__heartbeat" aria-hidden="true" />}
       <div
         className="vessel__orb"
         data-testid="hp-bar"
