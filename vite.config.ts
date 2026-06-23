@@ -2,6 +2,7 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { configDefaults, defineConfig } from "vitest/config";
 import { manifest } from "./src/pwa-manifest";
+import pkg from "./package.json";
 
 // Base path: "/" for local dev + the self-hosted Docker build; a subpath (e.g.
 // "/hoard-hp-tracker/") for a GitHub Pages project page, set via HOARD_BASE at
@@ -18,8 +19,16 @@ const base = process.env.HOARD_BASE ?? "/";
 // base ending in /beta or /beta/ (tolerant of a missing trailing slash).
 const isBeta = /\/beta\/?$/.test(base);
 
+// App version, injected at build time so About can show it with no manual edit
+// (#166). package.json is the single source of truth; imported directly (no node:fs,
+// keeping this config free of @types/node — Copilot #203). resolveJsonModule is on.
+const appVersion = pkg.version;
+
 export default defineConfig({
   base,
+  // Compile-time constant — referenced as the global `__APP_VERSION__` (typed in
+  // src/vite-env.d.ts).
+  define: { __APP_VERSION__: JSON.stringify(appVersion) },
   plugins: [
     react(),
     VitePWA({

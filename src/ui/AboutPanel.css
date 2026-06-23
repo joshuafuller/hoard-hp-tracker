@@ -116,8 +116,16 @@
   transform: scale(0.97);
 }
 
+.about-panel__version {
+  margin: 1.1rem 0 0;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-500);
+  font-variant-numeric: tabular-nums;
+}
 .about-panel__footer {
-  margin: 1rem 0 0;
+  margin: 0.35rem 0 0;
   font-size: 0.72rem;
   letter-spacing: 0.02em;
   opacity: 0.55;
