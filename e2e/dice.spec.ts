@@ -118,22 +118,32 @@ test.describe("dice tray — roll → result → apply (reduced-motion / headles
   test("roll log: the scrollbar never overlaps the result totals (#189)", async ({ page }) => {
     await openTray(page);
     await roll(page, "2d6");
-    await page.locator(".dice-result__total").first().waitFor({ state: "visible" });
+    await expect(page.locator(".dice-result__total").first()).toBeVisible();
 
-    // Open the roll log (it sits over the WebGL canvas — dispatch like the other dice taps).
-    await page.getByLabel("Roll log").dispatchEvent("click");
+    // Open the roll log. Assert the button is actually visible BEFORE the dispatch
+    // workaround — dispatchEvent only bypasses the WebGL-canvas hit-test, not the
+    // visible check, so a regression where it never appears still fails (Copilot #201).
+    const logBtn = page.getByLabel("Roll log");
+    await expect(logBtn).toBeVisible();
+    await logBtn.dispatchEvent("click");
     const list = page.locator(".dice-history__list");
-    await list.waitFor({ state: "visible" });
+    await expect(list).toBeVisible();
+
+    // `DiceTray` fires `history.record(...)` without awaiting, so the row can lag the
+    // log opening — wait for the total to render before measuring (else count() races
+    // to 0; Copilot #201).
+    const totals = page.locator(".dice-history__total");
+    await expect(totals.first()).toBeVisible();
 
     // Force the list to overflow so a scrollbar is present regardless of row count.
     await page.addStyleTag({ content: ".dice-history__list { max-height: 32px !important; }" });
 
-    const listBox = (await list.boundingBox())!;
-    const totals = page.locator(".dice-history__total");
+    const listBox = await list.boundingBox();
+    if (!listBox) throw new Error("roll-log list has no layout box");
     const count = await totals.count();
-    expect(count).toBeGreaterThan(0);
     for (let i = 0; i < count; i++) {
-      const tb = (await totals.nth(i).boundingBox())!;
+      const tb = await totals.nth(i).boundingBox();
+      if (!tb) throw new Error(`roll-log total #${i} has no layout box`);
       // The total's right edge must stay inside the list's right edge — clear of the
       // scrollbar gutter (classic) / overlay thumb (inline-end padding). Pre-fix ~0px.
       const clearance = listBox.x + listBox.width - (tb.x + tb.width);
