@@ -10,6 +10,7 @@ import type { HpLastChange } from "./store/useHp";
 import { useCoins } from "./store/useCoins";
 import { useSaveError, clearSaveError } from "./store/saveError";
 import { CharacterName } from "./ui/CharacterName";
+import { UpdateToast } from "./ui/UpdateToast";
 import { ConcentrationPrompt } from "./ui/ConcentrationPrompt";
 import { DeathSaves } from "./ui/DeathSaves";
 import { HitDicePanel } from "./ui/HitDicePanel";
@@ -121,6 +122,7 @@ export function App() {
           </button>
         </div>
       )}
+      <UpdateToast />
       <div className="hp-tracker__chrome">
         <RadialHub
           onCoins={() => { setKeypadOpen(false); setEditingMax(false); setCoinsOpen(true); }}

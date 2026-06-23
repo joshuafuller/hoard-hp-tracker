@@ -1,0 +1,47 @@
+/* "Updated to vX" toast (#167) — a brief, dismissible status pill at the bottom,
+   on the Molten Hoard palette. Springs in; reduced-motion shows it without motion. */
+.update-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 1.1rem);
+  transform: translateX(-50%);
+  z-index: 90;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: min(22rem, calc(100vw - 2rem));
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  border-radius: var(--radius-pill, 999px);
+  background: rgba(20, 17, 11, 0.92);
+  border: 1px solid color-mix(in oklab, var(--coin-gold) 30%, var(--obsidian-600));
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
+  color: var(--ink-200);
+  font-size: 0.85rem;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  animation: update-toast-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.update-toast__text { white-space: nowrap; }
+.update-toast__dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--ink-500);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.update-toast__dismiss:hover { color: var(--ink-200); background: rgba(255, 255, 255, 0.06); }
+.update-toast__dismiss:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+@keyframes update-toast-in {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .update-toast { animation: none; }
+}
