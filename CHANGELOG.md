@@ -9,6 +9,23 @@ Entries describe changes in player-meaningful terms, not raw commit subjects. On
 [release-please](https://github.com/googleapis/release-please) is adopted (#169), the
 sections below `Unreleased` will be generated automatically from Conventional Commits.
 
+## [0.0.3](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.2...v0.0.3) (2026-06-23)
+
+
+### Added
+
+* **dice:** pluggable roll-effects architecture ([#87](https://github.com/joshuafuller/hoard-hp-tracker/issues/87)) ([da6463f](https://github.com/joshuafuller/hoard-hp-tracker/commit/da6463fac93d90e8a58ccaf3011a1a11f367fb09))
+* **dice:** pluggable roll-effects architecture ([#87](https://github.com/joshuafuller/hoard-hp-tracker/issues/87)) ([19daef1](https://github.com/joshuafuller/hoard-hp-tracker/commit/19daef15a14bebca7b7b163881b1f5ee82265d86))
+* **hp:** heartbeat pulse on the orb that quickens as HP nears 0 ([#220](https://github.com/joshuafuller/hoard-hp-tracker/issues/220)) ([0b9b5c9](https://github.com/joshuafuller/hoard-hp-tracker/commit/0b9b5c984ef9727bb2f6a148a874141229f8f0e2))
+* **hp:** heartbeat pulse on the orb that quickens as HP nears 0 ([#220](https://github.com/joshuafuller/hoard-hp-tracker/issues/220)) ([9a396d3](https://github.com/joshuafuller/hoard-hp-tracker/commit/9a396d3132c93dc6b615d7c990688c4df995034a))
+
+
+### Fixed
+
+* **dice:** bus swallows async rejections; onClear before disposal + on re-roll ([#87](https://github.com/joshuafuller/hoard-hp-tracker/issues/87)) ([9784188](https://github.com/joshuafuller/hoard-hp-tracker/commit/9784188ac09062d3a340f9a88a287c695e27a5b8))
+* **hp:** orb-drag can apply 1 HP — count travel from the tap threshold ([#228](https://github.com/joshuafuller/hoard-hp-tracker/issues/228)) ([2ec06e7](https://github.com/joshuafuller/hoard-hp-tracker/commit/2ec06e777693de2354332b6b7df4633f733b3f74))
+* **hp:** orb-drag can apply 1 HP — count travel from the tap threshold ([#228](https://github.com/joshuafuller/hoard-hp-tracker/issues/228)) ([16a694f](https://github.com/joshuafuller/hoard-hp-tracker/commit/16a694fc016da737c5fd26afbe0aba11e476f0c3))
+
 ## [0.0.2](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.1...v0.0.2) (2026-06-23)
 
 
