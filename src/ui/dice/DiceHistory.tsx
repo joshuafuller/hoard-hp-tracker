@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type { DiceRollRecord, RollContext } from "../../store/db";
 import { relativeTime } from "./relativeTime";
 import { Glyph } from "../icons/Glyph";
@@ -19,9 +19,18 @@ const CONTEXT_LABEL: Record<RollContext, string> = {
   "hit-die": "Hit Die",
 };
 
-/** Compact per-die summary, dropped dice in parentheses (mirrors the result line). */
-function diceSummary(r: DiceRollRecord): string {
-  return r.dice.map((d) => (d.dropped ? `(${d.value})` : `${d.value}`)).join(" · ");
+/**
+ * Each roll's dice ordered so the reader can walk them to the total (#190): kept
+ * dice ascending (they sum to the total, less any flat modifier in the notation),
+ * then the dropped dice last — dimmed + parenthesised, so keep/drop notations like
+ * `4d6kh3` are obvious. `filter` returns fresh arrays, so `sort` never mutates the
+ * record.
+ */
+function orderedDice(r: DiceRollRecord): DiceRollRecord["dice"] {
+  const byValue = (a: { value: number }, b: { value: number }) => a.value - b.value;
+  const kept = r.dice.filter((d) => !d.dropped).sort(byValue);
+  const dropped = r.dice.filter((d) => d.dropped).sort(byValue);
+  return [...kept, ...dropped];
 }
 
 /** Wall-clock time of a roll, e.g. "7:34 PM" (locale-aware). */
@@ -68,7 +77,14 @@ export function DiceHistory({ rolls, onClear, onClose, now }: DiceHistoryProps) 
                   </div>
                   <div className="dice-history__meta">
                     <span className="dice-history__dice">
-                      {diceSummary(r)}
+                      {orderedDice(r).map((d, i) => (
+                        <Fragment key={i}>
+                          {i > 0 ? " · " : ""}
+                          <span className={d.dropped ? "dice-history__die dice-history__die--dropped" : "dice-history__die"}>
+                            {d.dropped ? `(${d.value})` : d.value}
+                          </span>
+                        </Fragment>
+                      ))}
                       {ctx ? ` · ${ctx}` : ""}
                     </span>
                     <span className="dice-history__time">

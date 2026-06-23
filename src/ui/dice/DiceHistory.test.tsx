@@ -57,4 +57,32 @@ describe("DiceHistory", () => {
     expect(screen.getByRole("button", { name: /close log/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^clear/i })).toBeNull();
   });
+
+  // #190 — order each roll's dice so a reader can walk them to the total: kept dice
+  // ascending, then dropped dice (visually marked) last.
+  it("sorts each roll's dice — kept ascending, dropped last — so it's walkable to the total (#190)", () => {
+    // 4d6kh3 landed 3,1,6,4 (the 1 dropped); kept ascending reads 3 · 4 · 6 = 13,
+    // NOT the roll order 3 · (1) · 6 · 4.
+    const roll: DiceRollRecord = {
+      id: 9,
+      at: 9,
+      context: "ad-hoc",
+      notation: "4d6kh3",
+      total: 13,
+      result: [3, 4, 6],
+      dice: [
+        { sides: 6, value: 3, dropped: false },
+        { sides: 6, value: 1, dropped: true },
+        { sides: 6, value: 6, dropped: false },
+        { sides: 6, value: 4, dropped: false },
+      ],
+    };
+    const { container } = render(<DiceHistory rolls={[roll]} onClear={vi.fn()} onClose={vi.fn()} />);
+    const summary = container.querySelector(".dice-history__dice");
+    expect(summary?.textContent?.replace(/\s+/g, " ").trim()).toBe("3 · 4 · 6 · (1)");
+    // the dropped die — and only it — is visually marked
+    const dropped = container.querySelectorAll(".dice-history__die--dropped");
+    expect(dropped).toHaveLength(1);
+    expect(dropped[0]?.textContent).toContain("1");
+  });
 });
