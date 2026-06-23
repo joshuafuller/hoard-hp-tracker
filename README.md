@@ -41,8 +41,6 @@ data stays on your device.** Open the app, **Add to Home Screen**, and it works 
 
 - **Just play it** — [open the app](https://joshuafuller.github.io/hoard-hp-tracker/), then **Add to
   Home Screen** on your phone for a fullscreen, offline app.
-- **Beta builds** — work-in-progress from the `beta` branch deploys to
-  **[/beta/](https://joshuafuller.github.io/hoard-hp-tracker/beta/)** (production above is never affected).
 
 It's free, open source, and ships **no game content** — an independent, unofficial fan tool.
 
