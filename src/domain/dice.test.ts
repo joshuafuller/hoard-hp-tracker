@@ -7,6 +7,7 @@ import {
   advantageApplies,
   buildNotation,
   isPlausibleRoll,
+  normalizeNotation,
   notationHasDice,
   notationModifier,
   poolToNotation,
@@ -199,9 +200,81 @@ describe("notationModifier", () => {
   });
 });
 
+describe("normalizeNotation (#108 — explode/reroll must precede keep/drop)", () => {
+  it("moves keep/drop after an explosion so the parser actually explodes", () => {
+    expect(normalizeNotation("4d6kh3!")).toBe("4d6!kh3");
+    expect(normalizeNotation("4d6kl3!")).toBe("4d6!kl3");
+    expect(normalizeNotation("4d6kh3!+2")).toBe("4d6!kh3+2"); // trailing arithmetic untouched
+    expect(normalizeNotation("5d8dl2!p")).toBe("5d8!pdl2"); // penetrating explosion + drop-low
+  });
+
+  it("handles two-digit sides and an omitted count (regex must keep \\d* and \\d+)", () => {
+    expect(normalizeNotation("4d20kh3!")).toBe("4d20!kh3"); // two-digit sides (kills \\d*d\\d)
+    expect(normalizeNotation("d6kh3!")).toBe("d6!kh3"); // no count (kills \\dd\\d+)
+    expect(normalizeNotation("10d100kl5!")).toBe("10d100!kl5"); // multi-digit count + sides
+  });
+
+  it("recognizes Fudge (dF) and percentile (d%) dice, not only numeric sides (#194)", () => {
+    expect(normalizeNotation("4dFkh1!")).toBe("4dF!kh1"); // Fudge die + keep + explode
+    expect(normalizeNotation("2d%kh1!")).toBe("2d%!kh1"); // percentile die
+    expect(normalizeNotation("1d%!")).toBe("1d%!"); // explode only → unchanged
+    expect(normalizeNotation("4dF!")).toBe("4dF!"); // Fudge, explode only → unchanged
+  });
+
+  it("preserves each modifier's exact text while only reordering the two groups", () => {
+    expect(normalizeNotation("4d6kh3r1")).toBe("4d6r1kh3"); // reroll moves before keep
+    expect(normalizeNotation("4d6kh3!!")).toBe("4d6!!kh3"); // compounding explosion
+    expect(normalizeNotation("4d6k!")).toBe("4d6!k"); // bare keep (k = keep 1) — Codex #194
+    expect(normalizeNotation("4d6d!")).toBe("4d6!d"); // bare drop (d = drop 1) — Codex #194
+    expect(normalizeNotation("4d6dh1!")).toBe("4d6!dh1"); // drop-highest
+  });
+
+  it("recognises explosion/reroll variants (on-N, comparison, penetrate, reroll-once)", () => {
+    expect(normalizeNotation("4d6kh3!5")).toBe("4d6!5kh3"); // explode on 5+
+    expect(normalizeNotation("4d6kh3!>=4")).toBe("4d6!>=4kh3"); // explode on a comparison
+    expect(normalizeNotation("4d6kh3ro")).toBe("4d6rokh3"); // reroll-once
+    expect(normalizeNotation("4d6kh3r<2")).toBe("4d6r<2kh3"); // reroll on a comparison
+  });
+
+  it("keeps multi-digit counts intact (regex must keep its `+` quantifiers)", () => {
+    expect(normalizeNotation("4d6kh10!")).toBe("4d6!kh10"); // multi-digit keep count
+    expect(normalizeNotation("4d6kh3!12")).toBe("4d6!12kh3"); // multi-digit explode-on-N
+    expect(normalizeNotation("4d6kh3!>=10")).toBe("4d6!>=10kh3"); // multi-digit explode condition
+    expect(normalizeNotation("4d6kh3r10")).toBe("4d6r10kh3"); // multi-digit reroll count
+    expect(normalizeNotation("4d6kh3r<=10")).toBe("4d6r<=10kh3"); // two-char comparison + multi-digit
+  });
+
+  it("leaves already-correct / modifier-free / non-keep+explode notations unchanged", () => {
+    expect(normalizeNotation("4d6!kh3")).toBe("4d6!kh3"); // already correct (idempotent)
+    expect(normalizeNotation("4d6!")).toBe("4d6!"); // explode only
+    expect(normalizeNotation("4d6kh3")).toBe("4d6kh3"); // keep only, no explode
+    expect(normalizeNotation("2d20kh1")).toBe("2d20kh1"); // advantage
+    expect(normalizeNotation("2d6+1d4")).toBe("2d6+1d4"); // two terms, neither needs reorder
+    expect(normalizeNotation("4d6r1!")).toBe("4d6r1!"); // reroll then explode — both before any keep
+  });
+
+  it("leaves notation it can't fully tokenize untouched (never corrupts)", () => {
+    expect(normalizeNotation("4d6kh3xyz!")).toBe("4d6kh3xyz!"); // unknown token → bail on that term
+    expect(normalizeNotation("4d6kh3z")).toBe("4d6kh3z"); // trailing junk after a keep → bail
+    expect(normalizeNotation("hello")).toBe("hello");
+    expect(normalizeNotation("")).toBe("");
+  });
+
+  it("is idempotent", () => {
+    fc.assert(
+      fc.property(fc.constantFrom("4d6kh3!", "4d6!kh3", "2d20kh1", "8d6!", "4d6r1!", "5d8dl2!p"), (n) => {
+        const once = normalizeNotation(n);
+        expect(normalizeNotation(once)).toBe(once);
+      }),
+    );
+  });
+});
+
 describe("physicalRecordApplies (engine routing)", () => {
   it("routes additive exploding rolls to the physical builder", () => {
-    for (const n of ["8d6!", "3d6!", "1d6!!", "4dF!"]) expect(physicalRecordApplies(n)).toBe(true);
+    // incl. Fudge `4dF!` and percentile `1d%!` — those die `d`s must NOT be mistaken for
+    // a drop `d` (#194)
+    for (const n of ["8d6!", "3d6!", "1d6!!", "4dF!", "1d%!", "1d6!p"]) expect(physicalRecordApplies(n)).toBe(true);
   });
 
   it("keeps non-exploding and keep/drop rolls on the parser path", () => {
@@ -209,6 +282,9 @@ describe("physicalRecordApplies (engine routing)", () => {
     for (const n of ["8d6", "2d6+3", "2d20kh1", "1d20"]) expect(physicalRecordApplies(n)).toBe(false);
     // keep/drop/success WITH explode → parser (physical can't apply keep/drop semantics)
     for (const n of ["4d6kh3!", "2d20kl1!", "10d6>4!"]) expect(physicalRecordApplies(n)).toBe(false);
+    // bare keep/drop (count → 1) WITH explode must ALSO take the parser path (#194 — these
+    // previously routed to physical, which silently ignored the keep/drop).
+    for (const n of ["4d6k!", "4d6d!", "4d6dl!", "4d6kh10!"]) expect(physicalRecordApplies(n)).toBe(false);
   });
 });
 

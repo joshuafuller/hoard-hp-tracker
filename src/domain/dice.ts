@@ -127,6 +127,61 @@ export function poolToNotation(pool: DiePool, modifier: number, mode: RollMode):
   return pool.map((g) => `${g.count}d${g.sides}`).join("+") + suffix;
 }
 
+/**
+ * Normalize a dice expression so explosion/reroll modifiers precede keep/drop
+ * clauses within each die term. The vendored parser silently DROPS an explosion
+ * when a keep/drop clause comes first — `4d6kh3!` never explodes — but accepts the
+ * reordered form `4d6!kh3` (empirically verified, #108). We only reorder a term when
+ * its modifiers tokenize cleanly into known explode/reroll + keep/drop tokens; the
+ * keep/drop is then moved after the explode/reroll. A term with any unrecognized token
+ * is returned untouched, so we never corrupt notation we don't fully understand.
+ * Applied at the parse boundary only — the displayed expression stays as the user typed.
+ */
+/** Each modifier pattern, paired with `isExplodeReroll` (true → explode/reroll, which
+ * must precede keep/drop; false → keep/drop). A boolean (not a string tag) so the value
+ * directly drives the bucket — no inert label to mutate. */
+const MOD_PATTERNS: ReadonlyArray<readonly [RegExp, boolean]> = [
+  [/^!!?p?(?:[<>=]+\d+|\d+)?/i, true], // explode / compound (!!) / penetrate (p) / on-N
+  [/^ro?(?:[<>=]+\d+|\d+)?/i, true], // reroll / reroll-once
+  [/^(?:kh|kl|dh|dl)\d*/i, false], // keep/drop highest/lowest (count optional → 1)
+  [/^k\d*/i, false], // keep N (bare `k` = keep 1)
+  [/^d\d*/i, false], // drop lowest N (bare `d` = drop 1)
+];
+/**
+ * Split a die term's modifier string into its explode/reroll text and its keep/drop
+ * text, preserving each group's internal order. Returns null if any token is
+ * unrecognized — the caller then leaves the term exactly as typed.
+ */
+function splitMods(mods: string): { er: string; kd: string } | null {
+  let er = "";
+  let kd = "";
+  let rest = mods;
+  while (rest.length > 0) {
+    const hit = MOD_PATTERNS.map(([re, isEr]) => [re.exec(rest), isEr] as const).find(([m]) => m?.[0]);
+    if (!hit || !hit[0]) return null; // unknown token — bail
+    const text = hit[0][0];
+    if (hit[1]) er += text;
+    else kd += text;
+    rest = rest.slice(text.length);
+  }
+  return { er, kd };
+}
+export function normalizeNotation(notation: string): string {
+  // Within each die term, emit explode/reroll modifiers BEFORE keep/drop — the order
+  // the parser accepts (it silently drops a `!` placed after `kh`/`kl`). Always-reorder
+  // is correct AND idempotent (re-ordering already-correct notation yields the same
+  // string), so no "already correct?" guard is needed. A term with any unrecognized
+  // token is left exactly as typed (splitMods → null). Display stays original; only the
+  // parse-boundary callers normalize. (#108)
+  // A die term is `<count?>d<sides>` where sides is digits, `F` (Fudge), or `%` (percentile)
+  // — all three must be recognized, else a Fudge/percentile keep/drop+explode (`4dFkh1!`,
+  // `2d%kh1!`) is left unreordered and the explosion is dropped (Codex #194).
+  return notation.replace(/(\d*d(?:\d+|[f%]))([a-z!{}<>=\d]*)/gi, (full: string, die: string, mods: string) => {
+    const split = splitMods(mods);
+    return split ? die + split.er + split.kd : full;
+  });
+}
+
 /** A die is dropped if the parser flags it `drop` or marks it `valid === false`. */
 function isDropped(entry: ParserRollEntry): boolean {
   return !!(entry.drop || entry.valid === false);
@@ -255,7 +310,13 @@ export function notationModifier(notation: string): number {
  * drop/valid flags), so those stay on the parser path even when they also explode.
  */
 export function physicalRecordApplies(notation: string): boolean {
-  return notation.includes("!") && !/k[hl]|d[hl]|[<>]/i.test(notation);
+  // Keep/drop needs the parser's semantics (physical dice carry no drop flags), so route
+  // ANY keep/drop away from the physical path — incl. bare `k`/`d` (count defaults to 1),
+  // not just `kh`/`kl`/`dh`/`dl`. `d(?![\df%])` matches a drop `d` (followed by end/!/+,
+  // not a die-sides indicator — a digit, the `F` of a Fudge die, or the `%` of a
+  // percentile die) without matching the die's own `d<sides>`. (A drop WITH a count,
+  // `d2`, is ambiguous with the die and stays on the physical path — tracked in #186.)
+  return notation.includes("!") && !/k|d(?![\df%])|[<>]/i.test(notation);
 }
 
 /** The explosion round encoded in a physical die's rollId: integer ⇒ 1; `"X.n"` ⇒ n+1. */

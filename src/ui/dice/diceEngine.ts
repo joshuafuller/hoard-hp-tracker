@@ -13,7 +13,7 @@
  */
 // @ts-expect-error — the parser ships no types
 import DiceParser from "@3d-dice/dice-parser-interface";
-import { isPlausibleRoll, recordFromPhysical, toRollRecord, physicalRecordApplies, type ParserResult, type RollRecord } from "../../domain/dice";
+import { isPlausibleRoll, recordFromPhysical, toRollRecord, physicalRecordApplies, normalizeNotation, type ParserResult, type RollRecord } from "../../domain/dice";
 
 /** Gold dice tuned to Molten Hoard; tray physics tuned in the spike. */
 const THEME_COLOR = "#e8b45a";
@@ -77,7 +77,9 @@ function randomFloatsFor(groups: DieGroup[]): number[] {
  */
 export function rollHeadless(notation: string, floats?: number[]): RollRecord {
   const parser = new DiceParser();
-  const groups = parser.parseNotation(notation) as DieGroup[];
+  // Parse the NORMALIZED form (explode/reroll before keep/drop) so e.g. `4d6kh3!`
+  // actually explodes; record the ORIGINAL notation for display (#108).
+  const groups = parser.parseNotation(normalizeNotation(notation)) as DieGroup[];
   parser.rollsAsFloats = floats ?? randomFloatsFor(groups);
   const result = parser.rollNotation(parser.parsedNotation);
   return toRollRecord(result, notation);
@@ -215,7 +217,12 @@ export function bindTray(box: DiceBoxLike): DiceTray {
         const parser = new DiceParser() as RollParser;
         active = { resolve, reject, parser, notation, onProgress };
         try {
-          box.roll(parser.parseNotation(notation));
+          // Parse the NORMALIZED notation (explode/reroll before keep/drop) so the
+          // animated path explodes too — e.g. `4d6kh3!`. The parser STATE drives both
+          // the physics throw and `parseFinalResults`; display stays original because
+          // the record is built with `cur.notation`. recordFromPhysical only ever sees
+          // notations normalizeNotation leaves unchanged (it's gated out by kh/kl). (#108)
+          box.roll(parser.parseNotation(normalizeNotation(notation)));
         } catch (err) {
           active = null;
           reject(err instanceof Error ? err : new Error(String(err)));
