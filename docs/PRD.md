@@ -269,8 +269,8 @@ once and will again."
    journey map), not "nice to have." Prefer features that fold into the existing console/feel.
 
 **Process:** a candidate that passes is captured as a GitHub issue with checkbox AC and a Fibonacci
-weight, then follows brainstorm → spec → plan → TDD → PR into `beta` → review → merge → promote to
-`main`. A candidate that fails is recorded in §9 or §11 with the reason.
+weight, then follows brainstorm → spec → plan → TDD → PR into `main` → review → merge (which deploys).
+A candidate that fails is recorded in §9 or §11 with the reason.
 
 ---
 
@@ -297,9 +297,9 @@ These are **deliberately not** Hoard, mostly because they fail Gate 1 (single-pl
 - React 19 + Vite + TypeScript (strict), Vitest + fast-check, `vite-plugin-pwa` (Workbox), Dexie
   (IndexedDB). Pure domain core in `src/domain/`; presentational UI.
 - CI: **required to merge `main`** = `lint · typecheck · test · build` + `domain mutation testing`
-  (≥ 90%). The **Playwright e2e / layout guard (#32) runs on every PR but is _not yet_ a required
-  gate** (#176 will make it blocking); **deploy** runs post-merge. PRs target `beta` (→ `/beta/`
-  Pages); `main` is protected and promoted via PR. `beta` itself is currently unprotected.
+  (≥ 90%) + the **Playwright `playwright layout guard`** e2e check (made a required gate in #176).
+  **Deploy** runs post-merge. The project is **main-only**: PRs target `main` (protected); the former
+  `beta` → `/beta/` Pages sub-app has been retired.
 
 ### Risks & mitigations
 | Risk | Mitigation |

@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { updateNotice } from "./updateNotice";
 import "./UpdateToast.css";
 
-// Scope the key to the deploy base so a same-origin sub-app (e.g. a `/beta/` build)
-// can't collide on the shared localStorage and fire a spurious "updated" toast
-// (Copilot #206). Exported so the test derives it the same way.
+// Scope the key to the deploy base so a same-origin sub-app deployed under a
+// different base path can't collide on the shared localStorage and fire a spurious
+// "updated" toast (Copilot #206). Exported so the test derives it the same way.
 export const VERSION_KEY = `hoard:version:${import.meta.env.BASE_URL}`;
 
 /**

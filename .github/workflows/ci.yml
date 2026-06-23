@@ -2,15 +2,15 @@ name: CI
 
 on:
   push:
-    branches: [main, beta]
+    branches: [main]
   pull_request:
-    branches: [main, beta]
+    branches: [main]
 
-# A PR opened from a same-repo branch that targets main/beta triggers both the
+# A PR opened from a same-repo branch that targets main triggers both the
 # `push` (on the source branch) and `pull_request` events, and rapid pushes
 # queue redundant runs. PR runs are grouped per PR number and superseded ones
 # are cancelled, so only the latest commit's checks hold a runner. Push runs
-# (main/beta) fall back to `github.run_id`, which is unique per run, so each
+# (main) fall back to `github.run_id`, which is unique per run, so each
 # push gets its own group and production CI is never cancelled or queued behind
 # an earlier push.
 concurrency:
