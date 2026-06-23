@@ -38,6 +38,15 @@
   top: 0.7rem;
   right: 0.7rem;
 }
+/* The shared ghost IconButton is 36px (--icon-btn-sm); for a primary dismiss
+   affordance tucked in the corner that's below the 44px minimum tap target and easy
+   to miss (#238). Restore a full 44px target — the glyph stays centred (the primitive
+   uses place-items:center). Specificity matches the variant rule and AboutPanel.css
+   loads after controls.css, so this wins. */
+.about-panel__close[data-variant="ghost"] {
+  width: 44px;
+  height: 44px;
+}
 
 /* ── Hero ─────────────────────────────────────────────────────────────────── */
 .about-panel__hero {
