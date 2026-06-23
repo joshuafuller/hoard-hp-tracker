@@ -9,6 +9,22 @@ Entries describe changes in player-meaningful terms, not raw commit subjects. On
 [release-please](https://github.com/googleapis/release-please) is adopted (#169), the
 sections below `Unreleased` will be generated automatically from Conventional Commits.
 
+## [0.0.2](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.1...v0.0.2) (2026-06-23)
+
+
+### Added
+
+* **hp:** bloodied reads red at the half line — rules-led danger tiers ([#164](https://github.com/joshuafuller/hoard-hp-tracker/issues/164)) ([7f583a1](https://github.com/joshuafuller/hoard-hp-tracker/commit/7f583a14ebea8026db2afadd876a95e35728baf9))
+* **hp:** bloodied reads red at the half line — rules-led danger tiers ([#164](https://github.com/joshuafuller/hoard-hp-tracker/issues/164)) ([764a0ed](https://github.com/joshuafuller/hoard-hp-tracker/commit/764a0ed1bd68253c3c150420746d04ddd0595956))
+* **release:** build identity (__BUILD__) + release-please automation ([#169](https://github.com/joshuafuller/hoard-hp-tracker/issues/169)) ([8f89587](https://github.com/joshuafuller/hoard-hp-tracker/commit/8f89587eb365a594c06628c1ce3b948fb14762d3))
+* **release:** build identity + release-please automation ([#169](https://github.com/joshuafuller/hoard-hp-tracker/issues/169)) ([498b0a5](https://github.com/joshuafuller/hoard-hp-tracker/commit/498b0a53aaf122685e7da753086ec530bbd66335))
+
+
+### Fixed
+
+* **commit:** cross-platform, non-clobbering hook wiring (Copilot+Codex [#219](https://github.com/joshuafuller/hoard-hp-tracker/issues/219)) ([74fd9f2](https://github.com/joshuafuller/hoard-hp-tracker/commit/74fd9f2654fc796e820b99fb4721b0cab2cdef69))
+* **hp:** readable critical accent + shared thresholds (bot review [#221](https://github.com/joshuafuller/hoard-hp-tracker/issues/221)) ([ed6ed30](https://github.com/joshuafuller/hoard-hp-tracker/commit/ed6ed3008cf007dce794ef3612187566ff117fc5))
+
 ## [Unreleased]
 
 _Nothing yet — changes land here before the next version is cut._
