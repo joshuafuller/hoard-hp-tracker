@@ -44,6 +44,9 @@ jobs:
           key: node_modules-${{ runner.os }}-node${{ steps.node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
+      # Dead-code gate (#193): fails on unused files / deps / binaries; unused
+      # exports/types are advisory warnings (see knip.json `rules`).
+      - run: pnpm knip
       - run: pnpm typecheck
       # Type-check the Playwright specs + config (excluded from the root
       # typecheck); no browser needed, so it lives here, not in the e2e job.

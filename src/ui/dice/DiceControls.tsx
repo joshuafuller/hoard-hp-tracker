@@ -3,7 +3,7 @@ import { Glyph } from "../icons/Glyph";
 import { Button, Chip, IconButton, Segment, Stepper, type SegmentOption } from "../controls";
 
 /** The die sizes offered as chips, in glance order. */
-export const DICE_SIDES = [4, 6, 8, 10, 12, 20, 100] as const;
+const DICE_SIDES = [4, 6, 8, 10, 12, 20, 100] as const;
 
 export interface DiceControlsProps {
   /** The built dice pool (tap order). */
