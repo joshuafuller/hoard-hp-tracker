@@ -142,7 +142,6 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
   return (
     <div className="vessel" data-tier={tier} data-flash={flash ?? undefined} data-dragging={drag ? "" : undefined} data-heartbeat={heartbeat ? "" : undefined} style={accentStyle}>
       <div className="vessel__aura" aria-hidden="true" />
-      {heartbeat && <div className="vessel__heartbeat" aria-hidden="true" />}
       <div
         className="vessel__orb"
         data-testid="hp-bar"
@@ -181,6 +180,10 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
         <div className="vessel__foil" aria-hidden="true" ref={foilRef} />
         <div className="vessel__rim" aria-hidden="true" />
         <div className="vessel__shine" aria-hidden="true" />
+        {/* Heartbeat (#220/#239): a colour flush ON the orb fill that throbs lub-dub,
+            quickening as HP nears 0. Inside the orb (clipped to the circle), over the
+            fill but under the readout numerals (a later sibling). */}
+        {heartbeat && <div className="vessel__heartbeat" aria-hidden="true" />}
         {/* First-run drag affordance: faint up (heal) / down (damage) chevrons that
             recede once the user drags. Decorative + inert so it never blocks the drag
             or the tap-to-keypad path; honours reduced motion (static, no pulse). */}

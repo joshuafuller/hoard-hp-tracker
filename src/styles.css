@@ -1018,27 +1018,32 @@ body {
   50%  { transform: translate(11%, 8%) scale(1.18); }
   100% { transform: translate(-8%, -9%) scale(0.95); }
 }
-/* Heartbeat pulse (#220): a danger-zone glow that throbs in a lub-dub, quickening as HP
-   nears 0 (the beat period is set per-bpm in JS via --heartbeat-period). Only rendered
-   when bloodied/critical (not healthy, not at 0) and not reduced-motion — see LiquidVessel. */
+/* Heartbeat pulse (#220 / #239): a COLOUR flush ON the orb fill — the orb visibly
+   throbs its tier colour, brighter on each lub-dub, quickening as HP nears 0 (the beat
+   period is set per-bpm in JS via --heartbeat-period). Lives INSIDE .vessel__orb so it's
+   clipped to the circle and sits over the fill; the readout numerals are a later sibling
+   so they stay readable. `screen` blend brightens the fill toward the accent so the throb
+   reads as colour, not a grey wash. Only rendered when bloodied/critical and not
+   reduced-motion — see LiquidVessel. A faint scale rides along as secondary motion. */
 .vessel__heartbeat {
   position: absolute;
-  inset: -30%;
-  z-index: -1;
+  inset: 0;
+  z-index: 1;
   border-radius: 50%;
-  background: radial-gradient(closest-side, var(--accent-glow) 0%, transparent 70%);
+  background: radial-gradient(closest-side, var(--accent) 0%, color-mix(in oklab, var(--accent) 40%, transparent) 55%, transparent 80%);
+  mix-blend-mode: screen;
   opacity: 0;
-  transform: scale(0.9);
   pointer-events: none;
+  will-change: opacity, transform;
   animation: hp-heartbeat var(--heartbeat-period, 1s) ease-out infinite;
 }
 @keyframes hp-heartbeat {
-  0% { opacity: 0; transform: scale(0.9); }
-  6% { opacity: 0.7; transform: scale(1.06); } /* lub */
-  12% { opacity: 0.16; transform: scale(0.96); }
-  20% { opacity: 0.5; transform: scale(1.03); } /* dub */
-  30% { opacity: 0; transform: scale(0.9); }
-  100% { opacity: 0; transform: scale(0.9); }
+  0% { opacity: 0; transform: scale(0.96); }
+  7% { opacity: 0.85; transform: scale(1.03); } /* lub — strong colour flush */
+  16% { opacity: 0.28; transform: scale(0.99); }
+  26% { opacity: 0.6; transform: scale(1.015); } /* dub */
+  38% { opacity: 0; transform: scale(0.96); }
+  100% { opacity: 0; transform: scale(0.96); }
 }
 
 @media (prefers-reduced-motion: reduce) {
