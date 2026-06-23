@@ -214,6 +214,13 @@ describe("normalizeNotation (#108 — explode/reroll must precede keep/drop)", (
     expect(normalizeNotation("10d100kl5!")).toBe("10d100!kl5"); // multi-digit count + sides
   });
 
+  it("recognizes Fudge (dF) and percentile (d%) dice, not only numeric sides (#194)", () => {
+    expect(normalizeNotation("4dFkh1!")).toBe("4dF!kh1"); // Fudge die + keep + explode
+    expect(normalizeNotation("2d%kh1!")).toBe("2d%!kh1"); // percentile die
+    expect(normalizeNotation("1d%!")).toBe("1d%!"); // explode only → unchanged
+    expect(normalizeNotation("4dF!")).toBe("4dF!"); // Fudge, explode only → unchanged
+  });
+
   it("preserves each modifier's exact text while only reordering the two groups", () => {
     expect(normalizeNotation("4d6kh3r1")).toBe("4d6r1kh3"); // reroll moves before keep
     expect(normalizeNotation("4d6kh3!!")).toBe("4d6!!kh3"); // compounding explosion

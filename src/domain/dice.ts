@@ -173,7 +173,10 @@ export function normalizeNotation(notation: string): string {
   // string), so no "already correct?" guard is needed. A term with any unrecognized
   // token is left exactly as typed (splitMods → null). Display stays original; only the
   // parse-boundary callers normalize. (#108)
-  return notation.replace(/(\d*d\d+)([a-z!{}<>=\d]*)/gi, (full: string, die: string, mods: string) => {
+  // A die term is `<count?>d<sides>` where sides is digits, `F` (Fudge), or `%` (percentile)
+  // — all three must be recognized, else a Fudge/percentile keep/drop+explode (`4dFkh1!`,
+  // `2d%kh1!`) is left unreordered and the explosion is dropped (Codex #194).
+  return notation.replace(/(\d*d(?:\d+|[f%]))([a-z!{}<>=\d]*)/gi, (full: string, die: string, mods: string) => {
     const split = splitMods(mods);
     return split ? die + split.er + split.kd : full;
   });
