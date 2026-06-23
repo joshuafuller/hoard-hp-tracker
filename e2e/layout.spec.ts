@@ -112,24 +112,29 @@ test.describe("mobile layout", () => {
     expect(dockBox!.y + dockBox!.height).toBeLessThanOrEqual(vh + 2);
   });
 
-  test("max-HP editor fits within a narrow viewport — no right-edge overflow (#210)", async ({ page }) => {
-    // Pixel Fold cover screen is very narrow; the editor's number input was blowing
-    // out the layout so the sheet rendered off the right edge (only the − showed).
-    await page.setViewportSize({ width: 360, height: 820 });
+  test("max-HP editor fits within the viewport — no right-edge overflow (#210)", async ({ page }) => {
+    // The editor's number input was blowing out the grid column so the sheet rendered
+    // off the right edge (only − showed) on narrow screens (Pixel Fold cover). Run at
+    // each project's own width (360 + 390) — the bug overflowed both — rather than
+    // hard-coding one (Copilot #211), so both projects genuinely exercise it.
     const vw = page.viewportSize()!.width;
 
     await page.getByLabel("Edit maximum HP").click();
     await page.waitForSelector(".hp-editor", { state: "visible" });
 
-    // Neither the sheet nor the ± pill may spill past either viewport edge.
-    for (const sel of [".hp-editor__sheet", ".hp-editor__pill"]) {
+    // The sheet, the ± pill, AND the increment button must each stay within the
+    // viewport — toBeVisible() alone wouldn't catch an on-screen-but-clipped + (Copilot).
+    const targets = [".hp-editor__sheet", ".hp-editor__pill"];
+    for (const sel of targets) {
       const box = await page.locator(sel).boundingBox();
       expect(box, `${sel} must be laid out`).not.toBeNull();
       expect(box!.x, `${sel} left edge on-screen`).toBeGreaterThanOrEqual(-2);
       expect(box!.x + box!.width, `${sel} right edge on-screen`).toBeLessThanOrEqual(vw + 2);
     }
-    // The increment button must be reachable too (the bug hid everything but −).
-    await expect(page.getByLabel("Increase Max HP")).toBeVisible();
+    const plus = await page.getByLabel("Increase Max HP").boundingBox();
+    expect(plus, "+ button must be laid out").not.toBeNull();
+    expect(plus!.x, "+ button not off the left").toBeGreaterThanOrEqual(-2);
+    expect(plus!.x + plus!.width, "+ button within the viewport").toBeLessThanOrEqual(vw + 2);
   });
 
   test("keypad opens with adequately-sized keys", async ({ page }) => {
