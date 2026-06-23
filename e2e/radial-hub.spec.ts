@@ -59,6 +59,19 @@ test.describe("radial hub (#172)", () => {
     await expect(about.getByRole("link", { name: /view source on github/i })).toBeVisible();
   });
 
+  test("the About close (✕) is at least a 44px tap target (#238)", async ({ page }) => {
+    await openHub(page);
+    await clickChip(page, "About");
+    const close = page.getByRole("dialog", { name: "About" }).getByRole("button", { name: "Close" });
+    await expect(close).toBeVisible();
+    // The shared ghost IconButton is 36px; the corner-tucked close must restore the
+    // 44px minimum tap target so it isn't fiddly to hit (#238).
+    const box = await close.boundingBox();
+    if (!box) throw new Error("close button has no bounding box");
+    expect(box.width).toBeGreaterThanOrEqual(44);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  });
+
   test("the Sound toggle reflects and flips the muted state", async ({ page }) => {
     await openHub(page);
     const sound = chip(page, /Sound|Muted/);
