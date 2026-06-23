@@ -1,5 +1,6 @@
 import type { CoinKind } from "../domain/coins";
 import { Stepper } from "./controls";
+import { haptic } from "../sound/haptics";
 
 export interface CoinRowProps {
   kind: CoinKind;
@@ -18,11 +19,6 @@ export interface CoinRowProps {
   onEdit: () => void;
 }
 
-/** Fire a short haptic pulse where supported; a silent no-op otherwise. */
-function haptic() {
-  if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") navigator.vibrate(10);
-}
-
 /**
  * One denomination row: a colour-coded coin, inline −/+ steppers for quick
  * single-coin nudges, and a tappable count that opens the keypad for larger
@@ -30,7 +26,7 @@ function haptic() {
  */
 export function CoinRow({ kind, label, unit, count, canSpend, onAdd, onSpend, onEdit }: CoinRowProps) {
   const tap = (fn: () => void) => () => {
-    haptic();
+    haptic("tap");
     fn();
   };
   return (

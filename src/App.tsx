@@ -4,6 +4,7 @@ import "./sound/sound.css";
 import "./ui/dice/dice.css";
 import { useEffect, useRef, useState } from "react";
 import { playSfx } from "./sound/sfx";
+import { haptic } from "./sound/haptics";
 import { useSoundEnabled } from "./sound/soundSettings";
 import { useHp } from "./store/useHp";
 import type { HpLastChange } from "./store/useHp";
@@ -151,8 +152,8 @@ export function App() {
           onEditCurrent={() => { setEditingMax(false); setCoinsOpen(false); setKeypadOpen(true); }}
           onEditMax={() => { setKeypadOpen(false); setCoinsOpen(false); setEditingMax(true); }}
           onEditTemp={() => { setEditingMax(false); setCoinsOpen(false); setKeypadOpen(true); }}
-          onDamage={(n) => { playSfx("damage"); return hp.damage(n); }}
-          onHeal={(n) => { playSfx("heal"); return hp.heal(n); }}
+          onDamage={(n) => { playSfx("damage"); haptic("damage"); return hp.damage(n); }}
+          onHeal={(n) => { playSfx("heal"); haptic("heal"); return hp.heal(n); }}
         />
       </div>
       {/* The swappable panel lives in its own fixed-height slot so the
@@ -199,8 +200,8 @@ export function App() {
           current={current}
           max={max}
           temp={temp}
-          onDamage={(n) => { playSfx("damage"); return hp.damage(n); }}
-          onHeal={(n) => { playSfx("heal"); return hp.heal(n); }}
+          onDamage={(n) => { playSfx("damage"); haptic("damage"); return hp.damage(n); }}
+          onHeal={(n) => { playSfx("heal"); haptic("heal"); return hp.heal(n); }}
           onSetCurrent={hp.setCurrent}   // no sfx — direct set is a secondary action
           onSetTemp={hp.setTempValue}    // no sfx — idem
           onClose={() => setKeypadOpen(false)}
@@ -238,9 +239,9 @@ export function App() {
         open={diceOpen}
         intent={diceIntent}
         onClose={() => { setDiceOpen(false); setDiceIntent(null); }}
-        onApplyHeal={(n) => { playSfx("heal"); setDiceOpen(false); return hp.heal(n); }}
+        onApplyHeal={(n) => { playSfx("heal"); haptic("heal"); setDiceOpen(false); return hp.heal(n); }}
         onDeathSave={(d20) => hp.rollDeathSave(d20)}
-        onHitDie={(roll) => { playSfx("heal"); hp.shortRest(roll); }}
+        onHitDie={(roll) => { playSfx("heal"); haptic("heal"); hp.shortRest(roll); }}
       />
 
       {hp.lastChange && (

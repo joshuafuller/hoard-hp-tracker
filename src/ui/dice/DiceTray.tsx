@@ -18,6 +18,7 @@ import { DiceResult } from "./DiceResult";
 import { DiceHistory } from "./DiceHistory";
 import { Glyph } from "../icons/Glyph";
 import { Button, IconButton } from "../controls";
+import { haptic } from "../../sound/haptics";
 
 /**
  * A contextual roll the app owns the rule for, routed through the shared tray:
@@ -182,9 +183,7 @@ export function DiceTray({
       // Feel: roll effects fire on throw (the clatter cue is a registered effect now,
       // #87) + a short haptic, matching the rest-control haptics.
       effects.throw(effectEnv());
-      if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
-        navigator.vibrate(12);
-      }
+      haptic("roll");
       try {
         let rec: RollRecord;
         if (reduced || !engineRef.current) {

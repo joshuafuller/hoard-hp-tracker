@@ -80,8 +80,11 @@ Every meaningful event. **Status:** `EXISTS` (recipe in `sfx.ts` today) · `GAP`
 to build in #90) · `RECONFIG` (a cue exists but should be re-tuned/split).
 
 Params use the same vocabulary as `sfx.ts`: waveform, frequency (or `a → b` glide), duration (s),
-peak gain (0–1), and the **paired haptic** (`navigator.vibrate` arg, matching existing patterns).
-Frequencies given as note names where they sit in the key center.
+peak gain (0–1), and the **paired haptic**. Haptics are centralized in `src/sound/haptics.ts`
+as one named pattern per event (see the `HAPTICS` map for the current set) — a guarded
+`navigator.vibrate` that is **gated on mute** (the mute button silences sound *and* tactile),
+**no-ops on iOS web** (Apple blocks it) and where unsupported, and is suppressed under reduced
+motion only for the continuous heartbeat. Frequencies given as note names where they sit in the key center.
 
 ### HP & life state
 
@@ -98,6 +101,7 @@ Frequencies given as note names where they sit in the key center.
 | **Death (final / 3 failures)** | Negative | EXISTS | sine `A2→~C2` knell · 0.6s · 0.20 | `vibrate([14,36,14])` | The longest, most present cue. Earned finality. |
 | **Revive / back from 0** | Positive | **GAP** | warm rising `C5→E5→G5` arpeggio · ~0.4s · 0.16 | `vibrate([12,30,12])` | Brighter, fuller than heal — a real lift. |
 | **Cross into bloodied tier** | Negative (soft) | **GAP** | very soft low swell `~A3` · 0.2s · 0.08 | none | Subtle; pairs with the visual tier blend (#20). Never startling. Suppress under reduced-motion. |
+| **Heartbeat (danger-zone pulse)** | Negative (tension) | EXISTS (#243/#245) | bass lub-dub: sine `62→38Hz` (S1) + `50→30Hz` (S2) ~0.16s apart · 0.16/0.13s · 0.2/0.13, **looped at `heartbeatBpm`** (~60bpm at half → ~150 near 0) | `vibrate([40,110,26])` (lub·gap·dub), looped per beat | The visual colour flush (#240), the bass audio (#243) and the felt buzz (#245) all pulse **together**, quickening as HP→0. Mute silences sound + buzz. iOS: the haptic no-ops (Apple blocks web `navigator.vibrate`). |
 
 ### Rests
 

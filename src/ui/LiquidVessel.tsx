@@ -3,7 +3,7 @@ import type { HpState } from "../domain/hp";
 import { tierFor } from "./HpBar";
 import { glowCss, hpColor, rgbCss } from "./hpColor";
 import { heartbeatBpm } from "./liquid/heartbeat";
-import { stopHeartbeat, updateHeartbeat } from "../sound/heartbeatAudio";
+import { setHeartbeatHaptics, stopHeartbeat, updateHeartbeat } from "../sound/heartbeatAudio";
 import { LiquidRenderer } from "./liquid/renderer";
 import { useGyro } from "./liquid/useGyro";
 import { useLiquidEngine } from "./liquid/useLiquidEngine";
@@ -69,6 +69,9 @@ export function LiquidVessel({ current, max, temp, onEditCurrent, onEditMax, onE
     if (bpm === null) stopHeartbeat();
     else updateHeartbeat(bpm);
   }, [bpm]);
+  // The continuous felt heartbeat respects reduced motion (the audio stays the
+  // motion-free channel); one-shot haptics are unaffected. (#245, Codex)
+  useEffect(() => setHeartbeatHaptics(!reducedMotion), [reducedMotion]);
   useEffect(() => () => stopHeartbeat(), []); // silence on unmount
   const tempRatio = max > 0 ? Math.max(0, Math.min(1, temp / max)) : 0;
   useLiquidEngine({
