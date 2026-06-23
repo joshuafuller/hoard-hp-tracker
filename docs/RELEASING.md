@@ -34,7 +34,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `f
 The pipeline is **secret-free by design** — release-please runs on the built-in, ephemeral
 `GITHUB_TOKEN` (no PAT, nothing stored: `gh secret list` is empty). The only repo setting it needs
 is **Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests"**
-(set via `gh api repos/<owner>/<repo>/actions/permissions/workflow -F can_approve_pull_request_reviews=true`).
+(set via `gh api --method PUT repos/<owner>/<repo>/actions/permissions/workflow -F default_workflow_permissions=read -F can_approve_pull_request_reviews=true` — `gh api` defaults to GET, so the explicit `--method PUT` is required, and the endpoint needs both fields).
 
 GitHub deliberately does **not** run CI on PRs created by `GITHUB_TOKEN` (anti-recursion), so the
 release PR shows **no checks** and branch protection blocks a normal merge. Resolve it by
