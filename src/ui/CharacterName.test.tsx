@@ -4,11 +4,13 @@ import { describe, expect, it, vi } from "vitest";
 import { CharacterName } from "./CharacterName";
 
 describe("CharacterName", () => {
-  it("renders nothing visible when name is empty (no text)", () => {
+  it("shows a visible 'name your character' affordance when empty — not a blank gap (#163)", () => {
     const { container } = render(<CharacterName name="" onSetName={vi.fn()} />);
-    // The component renders but shows only the placeholder — no actual name text.
     expect(container.querySelector(".character-name__display")).toBeInTheDocument();
-    expect(screen.queryByText(/\S/)).toBeNull();
+    // The empty slot now visibly invites naming (text + a cue), so a new user knows to tap.
+    const btn = screen.getByRole("button", { name: /add name/i });
+    expect(btn).toHaveTextContent(/name your character/i);
+    expect(btn.querySelector("svg")).toBeTruthy(); // a subtle pencil cue
   });
 
   it("renders the placeholder affordance when name is blank", () => {
