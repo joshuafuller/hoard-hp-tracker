@@ -12,7 +12,7 @@ let SFX_NAMES: typeof import("./sfx").SFX_NAMES;
  * A minimal fake AudioContext that records the nodes it spawns so tests can
  * assert whether playSfx actually synthesized a tone.
  */
-function installFakeAudioContext() {
+function installFakeAudioContext(opts: { startSuspended?: boolean } = {}) {
   const oscillators: FakeOscillator[] = [];
   const gains: FakeGain[] = [];
 
@@ -39,12 +39,11 @@ function installFakeAudioContext() {
   class FakeAudioContext {
     static instances: FakeAudioContext[] = [];
     currentTime = 0;
-    state: "running" | "suspended" = "running";
+    state: "running" | "suspended" = opts.startSuspended ? "suspended" : "running";
     destination = {};
-    resume = vi.fn(() => {
-      this.state = "running";
-      return Promise.resolve();
-    });
+    // Async resume (like a real browser): flips to running on a microtask, so a cue
+    // scheduled before it resolves would land on the still-suspended clock (#248).
+    resume = vi.fn(() => Promise.resolve().then(() => { this.state = "running"; }));
     constructor() {
       FakeAudioContext.instances.push(this);
     }
@@ -84,6 +83,16 @@ describe("playSfx", () => {
     expect(first).toBeDefined();
     expect(first!.start).toHaveBeenCalled();
     expect(first!.stop).toHaveBeenCalled();
+  });
+
+  it("defers the first cue until a SUSPENDED context resumes (mobile reload race) — #248", async () => {
+    const { oscillators } = installFakeAudioContext({ startSuspended: true });
+    playSfx("heal");
+    // Must NOT schedule on the frozen/suspended clock (that's the dropped-cue bug)…
+    expect(oscillators).toHaveLength(0);
+    await new Promise((r) => setTimeout(r, 0)); // flush the resume() microtasks
+    // …then render once the context has actually resumed.
+    expect(oscillators.length).toBeGreaterThan(0);
   });
 
   // Bandpass-noise cues (dice clatter + coin clinks) synthesize via BufferSource,
