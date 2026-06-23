@@ -401,6 +401,39 @@ describe("recordFromPhysical (physics-authoritative record)", () => {
     expect(recordFromPhysical(null, "1d6!+2").total).toBe(2);
     expect(recordFromPhysical({}, "1d6!").dice).toEqual([]);
   });
+
+  // ── #186: modifier-composition reconcile (the WebGL-only path the headless e2e skips) ──
+  it("reroll (4d6r1!): reconciles to the KEPT physical dice — the rerolled-away die never inflates the total (#186)", () => {
+    // dice-box reports only the faces the user sees (the rerolled 1 is replaced by its keeper)
+    // plus the explosion round; recordFromPhysical sums those, so it must match the headless
+    // parser's truth (20 for these dice) and never include a phantom rerolled-away die.
+    const results = group([
+      { rollId: 0, sides: 6, value: 2 },
+      { rollId: 1, sides: 6, value: 6 }, // explodes
+      { rollId: 2, sides: 6, value: 5 },
+      { rollId: 3, sides: 6, value: 4 },
+      { rollId: "1.1", sides: 6, value: 3 }, // the 6's explosion → round 2
+    ]);
+    const rec = recordFromPhysical(results, "4d6r1!");
+    expect(rec.total).toBe(20); // 2+6+5+4+3 — equals rollHeadless("4d6r1!") for the same dice
+    expect(rec.result).toEqual([2, 6, 5, 4, 3]);
+    expect(rec.dice.some((d) => d.value === 1)).toBe(false); // no rerolled-away die summed
+    expect(rec.dice.filter((d) => d.round === 2)).toHaveLength(1);
+  });
+
+  it("non-additive: the total never overshoots the physical dice — total === sum(result) + modifier (#186)", () => {
+    // The #97 regression was the parser re-roll desyncing and OVERSHOOTING the table. The
+    // physics-authoritative record must always equal exactly what the user sees, every round.
+    const results = group([
+      { rollId: 0, sides: 6, value: 6 }, // explodes
+      { rollId: "0.1", sides: 6, value: 6 }, // explodes again
+      { rollId: "0.2", sides: 6, value: 4 },
+    ]);
+    const rec = recordFromPhysical(results, "1d6!+2");
+    const sum = rec.result.reduce((a, b) => a + b, 0) + 2;
+    expect(rec.total).toBe(sum);
+    expect(rec.total).toBe(18); // 6+6+4+2, no overshoot
+  });
 });
 
 describe("toRollRecord (real parser)", () => {
