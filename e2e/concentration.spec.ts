@@ -11,18 +11,25 @@ async function load(page: Page) {
   await page.emulateMedia({ reducedMotion: "reduce" });
 }
 
-async function toggleConcentration(page: Page) {
+const concentrationChip = (page: Page) => page.getByRole("button", { name: "Concentration", exact: true });
+
+async function setConcentrationOn(page: Page) {
   await page.getByLabel("Actions").click();
-  await page.getByRole("button", { name: "Concentration", exact: true }).dispatchEvent("click");
+  const c = concentrationChip(page);
+  await expect(c).toBeVisible();
+  await c.dispatchEvent("click"); // closes the fan
+  // The toggle is an async Dexie write — confirm it ACTUATED before damaging, else the
+  // CON-save check may not see concentration on (Copilot/Codex #227). Retrying assertion.
+  await page.getByLabel("Actions").click();
+  await expect(concentrationChip(page)).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("Escape");
 }
 
-async function isConcentrating(page: Page) {
+// Retrying assertion (not a one-shot read): waits past the async toggle/Dexie write.
+async function expectConcentration(page: Page, on: boolean) {
   await page.getByLabel("Actions").click();
-  const pressed = await page
-    .getByRole("button", { name: "Concentration", exact: true })
-    .getAttribute("aria-pressed");
-  await page.keyboard.press("Escape"); // close the hub again
-  return pressed === "true";
+  await expect(concentrationChip(page)).toHaveAttribute("aria-pressed", on ? "true" : "false");
+  await page.keyboard.press("Escape");
 }
 
 async function takeDamage(page: Page) {
@@ -38,7 +45,7 @@ const drop = (page: Page) => page.getByLabel("Drop concentration");
 test.describe("concentration prompt (#175)", () => {
   test("taking damage while concentrating opens the CON-save prompt", async ({ page }) => {
     await load(page);
-    await toggleConcentration(page);
+    await setConcentrationOn(page);
     await takeDamage(page);
     await expect(keep(page)).toBeVisible();
     await expect(page.getByText(/CON save DC/i)).toBeVisible();
@@ -46,20 +53,20 @@ test.describe("concentration prompt (#175)", () => {
 
   test("Keep preserves concentration", async ({ page }) => {
     await load(page);
-    await toggleConcentration(page);
+    await setConcentrationOn(page);
     await takeDamage(page);
     await keep(page).click();
     await expect(keep(page)).toBeHidden(); // prompt dismissed
-    expect(await isConcentrating(page)).toBe(true);
+    await expectConcentration(page, true);
   });
 
   test("Drop ends concentration", async ({ page }) => {
     await load(page);
-    await toggleConcentration(page);
+    await setConcentrationOn(page);
     await takeDamage(page);
     await drop(page).click();
     await expect(drop(page)).toBeHidden();
-    expect(await isConcentrating(page)).toBe(false);
+    await expectConcentration(page, false);
   });
 
   test("no prompt is shown when concentration is disabled", async ({ page }) => {
