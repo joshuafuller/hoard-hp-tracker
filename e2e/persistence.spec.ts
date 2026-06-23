@@ -31,7 +31,9 @@ test.describe("persistence across reload (#173)", () => {
 
     await page.reload();
     await page.waitForSelector(".hp-tracker", { state: "visible" });
-    expect(await page.locator('[aria-label$="hit points"]').first().getAttribute("aria-label")).toBe(hp);
+    // Retrying assertion (not a one-shot read): the shell can paint seeded HP for a tick
+    // before Dexie hydrates, so wait until the restored value lands (Copilot/Codex #225).
+    await expect(page.locator('[aria-label$="hit points"]').first()).toHaveAttribute("aria-label", hp!);
   });
 
   test("coins are restored after a reload", async ({ page }) => {
@@ -49,15 +51,19 @@ test.describe("persistence across reload (#173)", () => {
 
   test("concentration is restored after a reload", async ({ page }) => {
     await load(page);
+    const concentration = () => page.getByRole("button", { name: "Concentration", exact: true });
     await page.getByLabel("Actions").click();
-    await page.getByRole("button", { name: "Concentration", exact: true }).dispatchEvent("click");
+    await concentration().dispatchEvent("click"); // toggle on (closes the fan)
+    // Verify the toggle actually took effect BEFORE reloading (not a no-op) — Copilot #225.
+    await page.getByLabel("Actions").click();
+    await expect(concentration()).toHaveAttribute("aria-pressed", "true");
+    await page.keyboard.press("Escape");
 
     await page.reload();
     await page.waitForSelector(".hp-tracker", { state: "visible" });
     await page.getByLabel("Actions").click();
-    expect(
-      await page.getByRole("button", { name: "Concentration", exact: true }).getAttribute("aria-pressed"),
-    ).toBe("true");
+    // Retrying assertion so we wait past Dexie hydration rather than reading seeded state.
+    await expect(concentration()).toHaveAttribute("aria-pressed", "true");
   });
 
   test("the character name is restored after a reload", async ({ page }) => {
