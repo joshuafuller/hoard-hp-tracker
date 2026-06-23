@@ -6,11 +6,14 @@
  */
 import type { RollEffect } from "./rollEffects";
 import { playSfx } from "../../../sound/sfx";
+import { haptic } from "../../../sound/haptics";
 
 export const critEffect: RollEffect = {
   name: "crit",
   onCrit: (die, env) => {
+    const nat20 = die.value === 20;
+    haptic(nat20 ? "crit" : "fumble"); // felt flourish (self-gates on mute)
     if (env.muted) return;
-    playSfx(die.value === 20 ? "crit" : "fumble");
+    playSfx(nat20 ? "crit" : "fumble");
   },
 };

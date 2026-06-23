@@ -33,6 +33,12 @@ export function beatIntervalMs(bpm: number): number {
 
 let timer: ReturnType<typeof setInterval> | null = null;
 let currentBpm = 0;
+/** Whether the FELT heartbeat is allowed — turned off under reduced motion, where the
+ *  audio stays as the motion-free channel (Codex #245). Set by LiquidVessel. */
+let hapticsAllowed = true;
+export function setHeartbeatHaptics(allowed: boolean): void {
+  hapticsAllowed = allowed;
+}
 
 /** Schedule one bass thump on the shared context. */
 function thump(ctx: AudioContext, v: ThumpVoice): void {
@@ -61,9 +67,9 @@ let warnedOnce = false;
  *  Wrapped defensively: a heartbeat must never crash the orb. */
 function fireBeat(): void {
   if (!isSoundEnabled()) return; // mute self-gate (sound AND buzz), checked every beat
-  // Felt lub-dub (#245) — fires independently of the audio context (haptics need no
-  // unlock); a no-op on iOS / unsupported. Mirrors the bass thump you hear.
-  haptic("heartbeat");
+  // Felt lub-dub (#245) — a no-op on iOS / unsupported, gated off under reduced motion
+  // (the audio stays the motion-free channel). haptic() also self-gates on mute.
+  if (hapticsAllowed) haptic("heartbeat");
   try {
     const ctx = peekAudioContext();
     if (!ctx) return; // audio not yet unlocked by a gesture → stay silent

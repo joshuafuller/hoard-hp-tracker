@@ -81,9 +81,10 @@ to build in #90) · `RECONFIG` (a cue exists but should be re-tuned/split).
 
 Params use the same vocabulary as `sfx.ts`: waveform, frequency (or `a → b` glide), duration (s),
 peak gain (0–1), and the **paired haptic**. Haptics are centralized in `src/sound/haptics.ts`
-as named patterns (`haptic("tap" | "pip" | "roll" | "rollResult" | "commit" | "heartbeat")`) — a
-guarded `navigator.vibrate` that **no-ops on iOS web** (Apple blocks it) and where unsupported.
-Frequencies given as note names where they sit in the key center.
+as one named pattern per event (see the `HAPTICS` map for the current set) — a guarded
+`navigator.vibrate` that is **gated on mute** (the mute button silences sound *and* tactile),
+**no-ops on iOS web** (Apple blocks it) and where unsupported, and is suppressed under reduced
+motion only for the continuous heartbeat. Frequencies given as note names where they sit in the key center.
 
 ### HP & life state
 
