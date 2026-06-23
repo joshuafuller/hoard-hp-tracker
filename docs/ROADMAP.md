@@ -20,12 +20,14 @@ Three classes of "do-it-first" work:
 
 | Epic | Issues | State |
 |------|--------|-------|
-| **A. Quality & Test Infrastructure** | #161 (→ #170–#176), #43 (CI speed), #33 (esbuild advisory) | active — highest leverage |
-| **B. Dice engine correctness** | #184 (Hit-Die discard, bug), #108 (explode + keep/drop / penetrate / reroll composition, bug) | bugs — fix before more dice work |
+| **A. Quality & Test Infrastructure** | #161 (→ #170–#176, **#186** reconcile test), #43 (CI speed), #33 (esbuild advisory) | active — highest leverage |
+| **B. Dice engine correctness** | #184 ✅ (Hit-Die discard, done), #108 (explode + keep/drop / penetrate / reroll composition, bug — fix in **PR #194**) | bugs — fix before more dice work |
 | **C. PWA & distribution** | #166 (show version), #167 (update toast), #169 (release-please + build id), #183 (share link) | small, high-visibility wins |
 | **D. Onboarding & discoverability** | #168 (in-app tour → #177–#181), #163 (name discoverability), #154 (install help) | #163/#154 fold into the tour |
 | **E. Visual & effects polish** | #164 (bloodied → red), #95 (temp HP), #87 (effects arch) → #92 (nat-1/20) + #91 (burning), #88 (responsive) | gated on spikes (#84/#86) + arch (#87) |
+| **Roll-log polish** | #189 (scrollbar overlaps totals, bug), #190 (sort dice so a roll is walkable) | small UI fixes — Phase 0 |
 | **F. Sound** | #90 (remaining: death-save pips, dice settle/crit), #83 (real-device clatter tuning) | nearly done |
+| **G. Repo tidiness** | #193 (epic) → #191 (docs/ index + structure), #192 (remove Claude-era artifacts/assets) | after Phase 0 bugs |
 | **Design spikes** | #84 (responsive strategy), #86 (burning-dice feasibility) | unblock Epic E |
 
 ---
@@ -74,6 +76,8 @@ TEST INFRA (visibility for everything after)
 4. **PWA version story** #166 + #167 + #169 (small, visible, "feels maintained").
 5. **#164** bloodied → red — DESIGN.md reconciled (#195); **code (`hpColor`/`tierFor`) + the open shade/band decision remain**. **#163** name discoverability.
 6. **#183** share link; **#43** CI speed; **#33** esbuild advisory — NOTE: the lockfile already resolves the safe **esbuild 0.25.12** (advisory affects ≤0.24.2), so this is likely just adding an explicit override + closing, **not** the "vite-7 bump" once assumed — verify.
+7. **Roll-log fixes** #189 (scrollbar overlaps totals — a bug, do early); #190 (sort dice so a roll is walkable).
+8. **e2e expansion** #171–#175 (Epic A child specs) + **#186** (WebGL reconcile test); then **repo tidiness** Epic G (#193 → #191/#192) — sequenced *after* the Phase 0 bugs so it doesn't collide with in-flight fixes.
 
 **Phase 1 — De-risk the big features.** Spikes + arch, so Phase 2 doesn't get rewritten.
 - **#84** responsive spike → then **#88**. **#86** + **#87** → then **#92** / **#91**.
