@@ -132,41 +132,50 @@ export function poolToNotation(pool: DiePool, modifier: number, mode: RollMode):
  * clauses within each die term. The vendored parser silently DROPS an explosion
  * when a keep/drop clause comes first — `4d6kh3!` never explodes — but accepts the
  * reordered form `4d6!kh3` (empirically verified, #108). We only reorder a term when
- * its modifiers tokenize cleanly into known explode/reroll + keep/drop tokens AND a
- * keep/drop precedes an explode/reroll; otherwise the term is returned untouched, so
- * we never corrupt notation we don't fully understand. Applied at the parse boundary
- * only — the displayed expression stays exactly as the user typed it.
+ * its modifiers tokenize cleanly into known explode/reroll + keep/drop tokens; the
+ * keep/drop is then moved after the explode/reroll. A term with any unrecognized token
+ * is returned untouched, so we never corrupt notation we don't fully understand.
+ * Applied at the parse boundary only — the displayed expression stays as the user typed.
  */
-type ModToken = { kind: "er" | "kd"; text: string };
-const MOD_PATTERNS: ReadonlyArray<readonly [RegExp, "er" | "kd"]> = [
-  [/^!!?p?(?:[<>=]+\d+|\d+)?/i, "er"], // explode / compound (!!) / penetrate (p) / on-N
-  [/^ro?(?:[<>=]+\d+|\d+)?/i, "er"], // reroll / reroll-once
-  [/^(?:kh|kl|dh|dl)\d*/i, "kd"], // keep/drop highest/lowest
-  [/^k\d+/i, "kd"], // keep N
-  [/^d\d+/i, "kd"], // drop lowest N
+/** Each modifier pattern, paired with `isExplodeReroll` (true → explode/reroll, which
+ * must precede keep/drop; false → keep/drop). A boolean (not a string tag) so the value
+ * directly drives the bucket — no inert label to mutate. */
+const MOD_PATTERNS: ReadonlyArray<readonly [RegExp, boolean]> = [
+  [/^!!?p?(?:[<>=]+\d+|\d+)?/i, true], // explode / compound (!!) / penetrate (p) / on-N
+  [/^ro?(?:[<>=]+\d+|\d+)?/i, true], // reroll / reroll-once
+  [/^(?:kh|kl|dh|dl)\d*/i, false], // keep/drop highest/lowest (count optional → 1)
+  [/^k\d*/i, false], // keep N (bare `k` = keep 1)
+  [/^d\d*/i, false], // drop lowest N (bare `d` = drop 1)
 ];
-function tokenizeMods(mods: string): ModToken[] | null {
-  const tokens: ModToken[] = [];
+/**
+ * Split a die term's modifier string into its explode/reroll text and its keep/drop
+ * text, preserving each group's internal order. Returns null if any token is
+ * unrecognized — the caller then leaves the term exactly as typed.
+ */
+function splitMods(mods: string): { er: string; kd: string } | null {
+  let er = "";
+  let kd = "";
   let rest = mods;
-  while (rest.length) {
-    const hit = MOD_PATTERNS.map(([re, kind]) => [re.exec(rest), kind] as const).find(([m]) => m?.[0]);
-    if (!hit || !hit[0]) return null; // unknown token — bail, leave the term untouched
-    tokens.push({ kind: hit[1], text: hit[0][0] });
-    rest = rest.slice(hit[0][0].length);
+  while (rest.length > 0) {
+    const hit = MOD_PATTERNS.map(([re, isEr]) => [re.exec(rest), isEr] as const).find(([m]) => m?.[0]);
+    if (!hit || !hit[0]) return null; // unknown token — bail
+    const text = hit[0][0];
+    if (hit[1]) er += text;
+    else kd += text;
+    rest = rest.slice(text.length);
   }
-  return tokens;
+  return { er, kd };
 }
 export function normalizeNotation(notation: string): string {
+  // Within each die term, emit explode/reroll modifiers BEFORE keep/drop — the order
+  // the parser accepts (it silently drops a `!` placed after `kh`/`kl`). Always-reorder
+  // is correct AND idempotent (re-ordering already-correct notation yields the same
+  // string), so no "already correct?" guard is needed. A term with any unrecognized
+  // token is left exactly as typed (splitMods → null). Display stays original; only the
+  // parse-boundary callers normalize. (#108)
   return notation.replace(/(\d*d\d+)([a-z!{}<>=\d]*)/gi, (full: string, die: string, mods: string) => {
-    if (!mods) return full;
-    const tokens = tokenizeMods(mods);
-    if (!tokens) return full;
-    const firstKd = tokens.findIndex((t) => t.kind === "kd");
-    const lastEr = tokens.map((t) => t.kind).lastIndexOf("er");
-    if (firstKd === -1 || lastEr === -1 || firstKd > lastEr) return full; // already correct / nothing to do
-    const er = tokens.filter((t) => t.kind === "er").map((t) => t.text).join("");
-    const kd = tokens.filter((t) => t.kind === "kd").map((t) => t.text).join("");
-    return die + er + kd;
+    const split = splitMods(mods);
+    return split ? die + split.er + split.kd : full;
   });
 }
 
