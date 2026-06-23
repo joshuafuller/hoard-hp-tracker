@@ -19,14 +19,6 @@ declare module "node:child_process" {
 declare const process: { env: Record<string, string | undefined> };
 const base = process.env.HOARD_BASE ?? "/";
 
-// The prod build is served at the site root and its service worker's scope
-// covers the whole site — including the /beta/ sub-app. Stop prod's SW from
-// serving its SPA fallback for /beta/ routes so the beta app loads from network
-// (and registers its own, more-specific SW). The beta build must NOT denylist
-// its own paths, so this only applies when we're not the beta build. Match a
-// base ending in /beta or /beta/ (tolerant of a missing trailing slash).
-const isBeta = /\/beta\/?$/.test(base);
-
 // App version, injected at build time so About can show it with no manual edit
 // (#166). package.json is the single source of truth; imported directly (no node:fs,
 // keeping this config free of @types/node — Copilot #203). resolveJsonModule is on.
@@ -64,7 +56,6 @@ export default defineConfig({
         // The BabylonJS world bundle is ~1.4MB — lift the precache ceiling above the
         // 2MiB default so the engine is never silently skipped from the offline cache.
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        ...(isBeta ? {} : { navigateFallbackDenylist: [/\/beta(\/|$)/] }),
       },
     }),
   ],

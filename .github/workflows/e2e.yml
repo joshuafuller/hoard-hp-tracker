@@ -2,12 +2,12 @@ name: E2E
 
 on:
   push:
-    branches: [main, beta]
+    branches: [main]
   pull_request:
-    branches: [main, beta]
+    branches: [main]
 
 # Mirror the CI workflow: PR runs are grouped per PR number and superseded ones
-# are cancelled; push runs (main/beta) fall back to the unique `github.run_id`
+# are cancelled; push runs (main) fall back to the unique `github.run_id`
 # so each push gets its own group and production E2E is never cancelled.
 concurrency:
   group: e2e-${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
