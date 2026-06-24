@@ -1,6 +1,6 @@
 {
   "name": "hoard-hp-tracker",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "private": true,
   "type": "module",
   "description": "A gorgeous, offline-capable fullscreen HP tracker PWA for tabletop games (AGPL-3.0).",

@@ -9,6 +9,13 @@ Entries describe changes in player-meaningful terms, not raw commit subjects. On
 [release-please](https://github.com/googleapis/release-please) is adopted (#169), the
 sections below `Unreleased` will be generated automatically from Conventional Commits.
 
+## [0.0.7](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.6...v0.0.7) (2026-06-24)
+
+
+### Fixed
+
+* **sound:** heartbeat silent after mobile reload — prime audio on first gesture ([#253](https://github.com/joshuafuller/hoard-hp-tracker/issues/253)) ([#254](https://github.com/joshuafuller/hoard-hp-tracker/issues/254)) ([efb6b7f](https://github.com/joshuafuller/hoard-hp-tracker/commit/efb6b7fb4a5c92f83dae183959f5c0634e280218))
+
 ## [0.0.6](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.5...v0.0.6) (2026-06-23)
 
 
