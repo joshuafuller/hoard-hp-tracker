@@ -9,6 +9,13 @@ Entries describe changes in player-meaningful terms, not raw commit subjects. On
 [release-please](https://github.com/googleapis/release-please) is adopted (#169), the
 sections below `Unreleased` will be generated automatically from Conventional Commits.
 
+## [0.0.9](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.8...v0.0.9) (2026-06-24)
+
+
+### Added
+
+* **tour:** guided-tour step engine ([#177](https://github.com/joshuafuller/hoard-hp-tracker/issues/177)) ([#257](https://github.com/joshuafuller/hoard-hp-tracker/issues/257)) ([9ba650f](https://github.com/joshuafuller/hoard-hp-tracker/commit/9ba650febf53a72c85c47c28ac188e971c34ea0e))
+
 ## [0.0.8](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.7...v0.0.8) (2026-06-24)
 
 
