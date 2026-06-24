@@ -37,6 +37,7 @@ export const SFX_NAMES = [
   "fumble",
   "deathSavePass",
   "deathSaveFail",
+  "tempGained",
 ] as const;
 
 export type SfxName = (typeof SFX_NAMES)[number];
@@ -124,6 +125,12 @@ export const RECIPES: Record<SfxName, Voice[]> = {
   // success; a low, damped negative tone (E3) on a failure. Short, never startling.
   deathSavePass: [{ type: "sine", freq: 659.25, gain: 0.12, duration: 0.12 }],
   deathSaveFail: [{ type: "sine", freq: 164.81, gain: 0.14, duration: 0.14 }],
+  // Temp HP gained (#90, sound-design.md): a soft two-note ward shimmer (G4 + D5) — a
+  // protective, positive flourish distinct from a heal's warmth.
+  tempGained: [
+    { type: "sine", freq: 392, gain: 0.1, duration: 0.18 },
+    { type: "sine", freq: 587.33, gain: 0.07, duration: 0.18 },
+  ],
 };
 
 /** The lazily-created, shared AudioContext (null until the first real play). */

@@ -114,6 +114,15 @@ describe("App (integration)", () => {
     expect(playSfx).not.toHaveBeenCalledWith("deathSaveFail");
   });
 
+  it("plays the ward shimmer when temp HP is gained (#90)", async () => {
+    render(<App />);
+    await screen.findByText("10");
+    await userEvent.click(screen.getByRole("button", { name: /edit current hp/i }));
+    await userEvent.click(screen.getByRole("button", { name: "5" }));
+    await userEvent.click(screen.getByRole("button", { name: /temp = 5/i }));
+    await waitFor(() => expect(playSfx).toHaveBeenCalledWith("tempGained"));
+  });
+
   it("does NOT chirp a pip when reopening already mid-save (hydration baseline, Copilot #271)", async () => {
     // Seed a downed character already holding 2 failures, then mount.
     const db = createHpDb();
