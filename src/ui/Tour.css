@@ -78,6 +78,8 @@
 .tour__skip:hover { color: var(--ink-300, #c9bca0); }
 .tour__navbtns { display: flex; gap: 0.5rem; }
 @media (prefers-reduced-motion: reduce) {
-  .tour__card { animation: none; }
+  /* Match the [data-pos="top"] specificity so the top-variant animation is disabled too. */
+  .tour__card,
+  .tour__card[data-pos="top"] { animation: none; }
   .tour__spotlight { transition: none; }
 }

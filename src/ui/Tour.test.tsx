@@ -35,16 +35,19 @@ describe("Tour engine (#177)", () => {
     expect(screen.getByTestId("tour-block")).toBeInTheDocument(); // blocks background taps (Codex)
   });
 
+  // Positions are derived from window.innerHeight so the "lower/upper half" intent holds
+  // regardless of the test viewport height (Copilot #285).
+  const rectAt = (top: number): DOMRect =>
+    ({ top, left: 10, width: 100, height: 40, bottom: top + 40, right: 110, x: 10, y: top, toJSON: () => ({}) }) as DOMRect;
+
   it("flips the card to the top when the spotlight target is in the lower half (no overlap)", () => {
-    const lowRect = { top: 700, left: 10, width: 100, height: 40, bottom: 740, right: 110, x: 10, y: 700, toJSON: () => ({}) } as DOMRect;
-    document.getElementById("orb")!.getBoundingClientRect = () => lowRect; // window.innerHeight is 768 in jsdom
+    document.getElementById("orb")!.getBoundingClientRect = () => rectAt(window.innerHeight * 0.8);
     render(<Tour steps={STEPS} seenKey={KEY} onClose={() => {}} />);
     expect(document.querySelector(".tour__card")?.getAttribute("data-pos")).toBe("top");
   });
 
   it("keeps the card at the bottom when the target is in the upper half", () => {
-    const highRect = { top: 40, left: 10, width: 100, height: 40, bottom: 80, right: 110, x: 10, y: 40, toJSON: () => ({}) } as DOMRect;
-    document.getElementById("orb")!.getBoundingClientRect = () => highRect;
+    document.getElementById("orb")!.getBoundingClientRect = () => rectAt(window.innerHeight * 0.1);
     render(<Tour steps={STEPS} seenKey={KEY} onClose={() => {}} />);
     expect(document.querySelector(".tour__card")?.getAttribute("data-pos")).toBe("bottom");
   });
