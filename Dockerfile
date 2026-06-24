@@ -8,6 +8,10 @@ RUN corepack enable
 WORKDIR /app
 # Manifests first for better layer caching.
 COPY package.json pnpm-lock.yaml ./
+# The `prepare` lifecycle script wires git hooks from scripts/; it self-skips when there's
+# no git work tree (the image has none — .git is dockerignored), but pnpm still needs the
+# file to exist or the install aborts, so copy scripts/ BEFORE install (#259).
+COPY scripts ./scripts
 RUN pnpm install --frozen-lockfile
 # Then sources + build (base "/" for self-hosting).
 COPY . .
