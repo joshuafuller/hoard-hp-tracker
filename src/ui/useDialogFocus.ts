@@ -1,7 +1,9 @@
 import { useEffect, type RefObject } from "react";
 
-/** Focusable descendants of a dialog, in DOM order. */
-const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
+/** Focusable descendants of a dialog, in DOM order. Excludes disabled controls and hidden
+ *  inputs, which can't take focus (a disabled first/last would break the wrap — Copilot #277). */
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
  * The standard modal-dialog focus contract (#262): trap Tab / Shift+Tab within `ref`'s
@@ -23,6 +25,15 @@ export function useDialogFocus(ref: RefObject<HTMLElement | null>): void {
       const first = f[0]!;
       const last = f[f.length - 1]!;
       const active = document.activeElement;
+      // Focus escaped to the page body (e.g. a focused control unmounted) — pull it back
+      // into the dialog (Codex #277). Guarded to `body` SPECIFICALLY so a parent dialog
+      // never yanks focus out of an open CHILD dialog (whose focus lives in its own
+      // subtree, never on body) — that's what keeps nested dialogs composing.
+      if (active === document.body) {
+        e.preventDefault();
+        first.focus();
+        return;
+      }
       // Only wrap when focus is at an edge of THIS dialog; otherwise let it move
       // normally (and let a child dialog's own trap handle its focus).
       if (e.shiftKey && active === first) {
