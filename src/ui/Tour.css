@@ -5,10 +5,15 @@
   z-index: 90; /* above all app chrome + sheets */
   pointer-events: none; /* the scrim / spotlight / card opt back in */
 }
+.tour__block {
+  position: fixed;
+  inset: 0;
+  pointer-events: auto; /* captures + blocks taps so they can't reach the app behind */
+}
 .tour__scrim,
 .tour__spotlight {
   position: fixed;
-  pointer-events: auto;
+  pointer-events: none; /* visual only — .tour__block handles clicks */
 }
 .tour__scrim {
   inset: 0;

@@ -27,11 +27,23 @@ afterEach(() => {
 });
 
 describe("Tour engine (#177)", () => {
-  it("shows the first step's caption + a spotlight over its target", () => {
+  it("shows the first step's caption, a spotlight over its target, + a click blocker", () => {
     render(<Tour steps={STEPS} seenKey={KEY} onClose={() => {}} />);
     expect(screen.getByRole("dialog", { name: /feature tour/i })).toBeInTheDocument();
     expect(screen.getByText("Your HP.")).toBeInTheDocument();
     expect(screen.getByTestId("tour-spotlight")).toBeInTheDocument();
+    expect(screen.getByTestId("tour-block")).toBeInTheDocument(); // blocks background taps (Codex)
+  });
+
+  it("restores focus to the launching element when it closes (Copilot a11y)", () => {
+    const launcher = document.createElement("button");
+    document.body.appendChild(launcher);
+    launcher.focus();
+    const { unmount } = render(<Tour steps={STEPS} seenKey={KEY} onClose={() => {}} />);
+    expect(document.activeElement).not.toBe(launcher); // focus moved into the card
+    unmount();
+    expect(document.activeElement).toBe(launcher); // …and back to the launcher on close
+    launcher.remove();
   });
 
   it("Next advances, Back retreats (no Back on the first step)", () => {

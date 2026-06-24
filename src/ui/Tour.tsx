@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "./controls";
 import { markTourSeen, type TourStep } from "./tour";
@@ -23,14 +23,16 @@ export function Tour({ steps, seenKey, onClose }: TourProps) {
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
   const step = steps[index];
   const isFirst = index === 0;
   const isLast = index === steps.length - 1;
 
-  const end = () => {
+  // Stable (deps: seenKey/onClose) so the keydown effect has no stale closure (Copilot).
+  const end = useCallback(() => {
     markTourSeen(seenKey);
     onClose();
-  };
+  }, [seenKey, onClose]);
   const next = () => (isLast ? end() : setIndex((i) => i + 1));
   const back = () => setIndex((i) => Math.max(0, i - 1));
 
@@ -41,20 +43,41 @@ export function Tour({ steps, seenKey, onClose }: TourProps) {
     setRect(el ? el.getBoundingClientRect() : null);
   }, [step]);
 
-  // Focus the card on each step; Escape skips (stopped before any app-level handler).
+  // Restore focus to the element that launched the tour when it closes (Copilot a11y).
+  useEffect(() => {
+    returnFocusRef.current = document.activeElement as HTMLElement | null;
+    return () => returnFocusRef.current?.focus?.();
+  }, []);
+
+  // Focus the card on each step; Escape skips; Tab is trapped inside the card so the
+  // dimmed background controls aren't keyboard-reachable while the tour is open (Codex).
   useEffect(() => {
     cardRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.stopPropagation();
         end();
+        return;
+      }
+      if (e.key === "Tab" && cardRef.current) {
+        const f = cardRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], [tabindex]:not([tabindex="-1"])',
+        );
+        if (f.length === 0) return;
+        const first = f[0]!;
+        const last = f[f.length - 1]!;
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-    // end/index are intentionally the deps; end closes over current state via setIndex updater.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index]);
+  }, [index, end]);
 
   if (!step) return null;
 
@@ -64,11 +87,15 @@ export function Tour({ steps, seenKey, onClose }: TourProps) {
 
   return createPortal(
     <div className="tour" role="dialog" aria-modal="true" aria-label="Feature tour">
-      {/* The spotlight's huge box-shadow IS the dim; a plain scrim covers the no-target case. */}
+      {/* Full-screen blocker so taps on the dimmed area DON'T reach the app behind — the
+          spotlight's box-shadow is paint only and wouldn't capture them (Codex). */}
+      <div className="tour__block" data-testid="tour-block" aria-hidden="true" />
+      {/* The spotlight's huge box-shadow IS the dim; a plain scrim covers the no-target
+          case. Both are visual only (pointer-events:none) — the blocker handles clicks. */}
       {rect ? (
-        <div className="tour__spotlight" data-testid="tour-spotlight" style={spotlight} onClick={end} />
+        <div className="tour__spotlight" data-testid="tour-spotlight" style={spotlight} aria-hidden="true" />
       ) : (
-        <div className="tour__scrim" onClick={end} />
+        <div className="tour__scrim" aria-hidden="true" />
       )}
       <div className="tour__card" ref={cardRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         {step.title && <h3 className="tour__title">{step.title}</h3>}
