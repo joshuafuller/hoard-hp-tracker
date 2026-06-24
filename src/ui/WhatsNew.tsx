@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { IconButton } from "./controls";
 import type { ChangelogEntry } from "./changelog";
+import { useDialogFocus } from "./useDialogFocus";
 import "./WhatsNew.css";
 
 interface WhatsNewProps {
@@ -35,6 +36,7 @@ function sectionKind(title: string): "added" | "fixed" | "changed" {
  */
 export function WhatsNew({ entries, onClose }: WhatsNewProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(dialogRef); // trap Tab + restore focus to the "What's new" trigger on close (#262)
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? entries : entries.slice(0, RECENT);
   const olderCount = entries.length - visible.length;
