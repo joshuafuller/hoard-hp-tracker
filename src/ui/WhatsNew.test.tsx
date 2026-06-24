@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { WhatsNew } from "./WhatsNew";
+import { CHANGELOG } from "./changelogData";
 import type { ChangelogEntry } from "./changelog";
 
 const ENTRIES: ChangelogEntry[] = [
@@ -49,5 +50,23 @@ describe("WhatsNew (#209, #266)", () => {
   it("shows an empty state when there are no entries", () => {
     render(<WhatsNew entries={[]} onClose={() => {}} />);
     expect(screen.getByText(/no release notes/i)).toBeInTheDocument();
+  });
+
+  it("renders the real bundled changelog with no React duplicate-key warnings (#261)", () => {
+    const realError = console.error.bind(console);
+    const keyWarnings: unknown[][] = [];
+    // Capture only duplicate-key warnings; forward any OTHER console.error to the real
+    // console so genuine errors still surface (Copilot #275). Restore in finally so an
+    // assertion failure can't leak the spy into later tests.
+    const spy = vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+      if (/same key|duplicate key/i.test(String(args[0]))) keyWarnings.push(args);
+      else realError(...(args as Parameters<typeof console.error>));
+    });
+    try {
+      render(<WhatsNew entries={CHANGELOG} onClose={() => {}} />);
+      expect(keyWarnings).toEqual([]);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

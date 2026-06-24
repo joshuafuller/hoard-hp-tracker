@@ -85,8 +85,10 @@ export function WhatsNew({ entries, onClose }: WhatsNewProps) {
                 <span className="whatsnew__v">v{entry.version}</span>
                 {entry.date && <span className="whatsnew__date">{entry.date}</span>}
               </h3>
-              {entry.sections.map((section) => (
-                <div className="whatsnew__section" key={section.title}>
+              {entry.sections.map((section, si) => (
+                // Key by index too: a release could legitimately carry two same-titled
+                // sections, and a title-only key would collide → React duplicate-key warning (#261).
+                <div className="whatsnew__section" key={`${section.title}-${si}`}>
                   <h4 className="whatsnew__section-title" data-kind={sectionKind(section.title)}>
                     <span className="whatsnew__sdot" aria-hidden="true" />
                     {section.title}
