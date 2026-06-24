@@ -40,6 +40,18 @@ describe("AboutPanel", () => {
     expect(screen.getByRole("dialog", { name: /what.s new/i })).toBeInTheDocument();
   });
 
+  it("offers a 'Take the tour' replay that fires onTakeTour (#181)", () => {
+    const onTakeTour = vi.fn();
+    render(<AboutPanel onClose={vi.fn()} onTakeTour={onTakeTour} />);
+    fireEvent.click(screen.getByRole("button", { name: /take the tour/i }));
+    expect(onTakeTour).toHaveBeenCalledTimes(1);
+  });
+
+  it("omits the tour button when no onTakeTour is given", () => {
+    render(<AboutPanel onClose={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: /take the tour/i })).toBeNull();
+  });
+
   it("closing What's new (backdrop / Escape) doesn't also close About (Codex #256)", () => {
     const onClose = vi.fn();
     render(<AboutPanel onClose={onClose} />);

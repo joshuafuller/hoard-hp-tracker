@@ -23,6 +23,9 @@ import { LiquidVessel } from "./ui/LiquidVessel";
 import { RadialHub } from "./ui/RadialHub";
 import { RestControls } from "./ui/RestControls";
 import { AboutPanel } from "./ui/AboutPanel";
+import { Tour } from "./ui/Tour";
+import { TOUR_KEY, TOUR_STEPS } from "./ui/tourSteps";
+import { hasSeenTour } from "./ui/tour";
 import { UndoPill } from "./ui/UndoPill";
 import { CoinSheet } from "./ui/CoinSheet";
 import { DiceTray, type DiceIntent } from "./ui/dice/DiceTray";
@@ -43,6 +46,7 @@ export function App() {
   const saveFailed = useSaveError();
   const [coinsOpen, setCoinsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
   const [soundEnabled, toggleSound] = useSoundEnabled();
   // Toggle-on cue only when ENABLING (playSfx self-gates on mute, so muting is
   // silent); the override updates synchronously so the cue actually sounds.
@@ -154,6 +158,16 @@ export function App() {
     if (hp.temp > prevTemp.current) playSfx("tempGained");
     prevTemp.current = hp.temp;
   }, [hp.hydrated, hp.temp]);
+
+  // First-run feature tour (#178/#181): auto-show ONCE the app has hydrated (so the
+  // controls it spotlights are on screen), unless the player has already seen/skipped it.
+  // The Tour writes the persisted 'seen' flag on close, so it won't re-show.
+  const tourChecked = useRef(false);
+  useEffect(() => {
+    if (!hp.hydrated || tourChecked.current) return;
+    tourChecked.current = true;
+    if (!hasSeenTour(TOUR_KEY)) setTourOpen(true);
+  }, [hp.hydrated]);
 
   const undoLabel = (lc: NonNullable<HpLastChange>) =>
     lc.kind === "damage" ? `Took ${lc.amount}`
@@ -285,7 +299,16 @@ export function App() {
         />
       )}
 
-      {aboutOpen && <AboutPanel onClose={() => setAboutOpen(false)} />}
+      {aboutOpen && (
+        <AboutPanel
+          onClose={() => setAboutOpen(false)}
+          onTakeTour={() => {
+            setAboutOpen(false);
+            setTourOpen(true);
+          }}
+        />
+      )}
+      {tourOpen && <Tour steps={TOUR_STEPS} seenKey={TOUR_KEY} onClose={() => setTourOpen(false)} />}
 
       {/* Always mounted so it's inert-when-closed (display:none) rather than
           remounting — keeps the lazy-loaded 3D engine warm between opens. */}
