@@ -60,6 +60,32 @@ describe("CharacterName", () => {
     expect(onSetName).toHaveBeenCalledWith("Luna");
   });
 
+  it("keeps showing a just-committed name even if the store hasn't echoed it back (iOS liveQuery lag)", async () => {
+    // Repro: on iOS Safari the IndexedDB liveQuery can lag/miss the write, so the `name`
+    // prop stays "" after a commit — which made the name appear to vanish. The committed
+    // value must stay visible optimistically until the store catches up.
+    const onSetName = vi.fn(); // parent does NOT update `name` (simulates the lagging echo)
+    render(<CharacterName name="" onSetName={onSetName} />);
+    await userEvent.click(screen.getByRole("button", { name: /name your character/i }));
+    await userEvent.type(screen.getByRole("textbox"), "Thorn");
+    await userEvent.keyboard("{Enter}");
+    expect(onSetName).toHaveBeenCalledWith("Thorn");
+    expect(screen.getByText("Thorn")).toBeInTheDocument(); // does NOT disappear
+    expect(screen.queryByRole("button", { name: /name your character/i })).toBeNull();
+  });
+
+  it("drops the optimistic name when the store reports a DIFFERENT name (external change, Codex/Copilot #288)", async () => {
+    const { rerender } = render(<CharacterName name="" onSetName={vi.fn()} />);
+    await userEvent.click(screen.getByRole("button", { name: /name your character/i }));
+    await userEvent.type(screen.getByRole("textbox"), "Thorn");
+    await userEvent.keyboard("{Enter}");
+    expect(screen.getByText("Thorn")).toBeInTheDocument(); // optimistic
+    // The store reports a different name (an undo, or another tab) → that wins.
+    rerender(<CharacterName name="Mara" onSetName={vi.fn()} />);
+    expect(screen.getByText("Mara")).toBeInTheDocument();
+    expect(screen.queryByText("Thorn")).toBeNull();
+  });
+
   it("pressing Escape dismisses the editor without calling onSetName", async () => {
     const onSetName = vi.fn();
     render(<CharacterName name="Kira" onSetName={onSetName} />);

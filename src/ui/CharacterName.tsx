@@ -15,12 +15,30 @@ export interface CharacterNameProps {
 export function CharacterName({ name, onSetName }: CharacterNameProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
+  // The just-committed name, shown OPTIMISTICALLY until the store echoes it back. On iOS
+  // Safari the Dexie liveQuery can lag/miss a same-tab write, so `name` stayed stale after a
+  // commit and the name appeared to vanish until a reload (which re-reads the DB). Keep
+  // showing what the user typed until the store catches up; a failed write still surfaces
+  // via the save-error banner, so this never hides real data loss.
+  const [pending, setPending] = useState<string | null>(null);
+  const shown = pending ?? name;
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync draft from outside while not actively editing (store wrote a new value).
+  // Drop the optimistic value the moment the store reports a NEW name — whether that's our
+  // own commit echoing back or an external change (undo, another tab). Any store update wins,
+  // so the prop becomes the source of truth again.
+  const prevName = useRef(name);
   useEffect(() => {
-    if (!editing) setDraft(name);
-  }, [name, editing]);
+    if (name !== prevName.current) {
+      prevName.current = name;
+      setPending(null);
+    }
+  }, [name]);
+
+  // Sync draft from the shown value while not actively editing.
+  useEffect(() => {
+    if (!editing) setDraft(shown);
+  }, [shown, editing]);
 
   // Focus + select on enter-edit.
   useEffect(() => {
@@ -31,12 +49,14 @@ export function CharacterName({ name, onSetName }: CharacterNameProps) {
   }, [editing]);
 
   function commit() {
-    onSetName(draft.trim());
+    const value = draft.trim();
+    setPending(value); // show it immediately, even if the store is slow to echo (iOS Safari)
+    onSetName(value);
     setEditing(false);
   }
 
   function cancel() {
-    setDraft(name);
+    setDraft(shown);
     setEditing(false);
   }
 
@@ -68,14 +88,14 @@ export function CharacterName({ name, onSetName }: CharacterNameProps) {
 
   return (
     <div className="character-name">
-      {name ? (
+      {shown ? (
         <button
           type="button"
           className="character-name__display character-name__display--set"
           aria-label="Edit name"
-          onClick={() => { setDraft(name); setEditing(true); }}
+          onClick={() => { setDraft(shown); setEditing(true); }}
         >
-          {name}
+          {shown}
         </button>
       ) : (
         <button
