@@ -188,3 +188,43 @@ describe("cue loudness guard (sound-design.md §4)", () => {
     expect(COIN_TICK_GAIN).toBeLessThanOrEqual(MAX_CUE_GAIN);
   });
 });
+
+describe("playSfx — prefers-reduced-motion (sound-design.md §5)", () => {
+  // A user wanting reduced motion gets a SIMPLER soundscape: flavor cues are stripped,
+  // essential multi-voice cues collapse to their core tone. Checked at play time.
+  const setReduce = (on: boolean) =>
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: on && /reduce/.test(q),
+      media: q,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+
+  it("silences a pure-flavor cue (crit) under reduced-motion", () => {
+    setReduce(true);
+    const { oscillators } = installFakeAudioContext();
+    playSfx("crit");
+    expect(oscillators).toHaveLength(0);
+  });
+
+  it("collapses an essential multi-voice cue (heal) to its single core tone", () => {
+    setReduce(true);
+    const { oscillators } = installFakeAudioContext();
+    playSfx("heal");
+    expect(oscillators).toHaveLength(1); // 2 voices → just the core
+  });
+
+  it("plays the full multi-voice cue when reduced-motion is off", () => {
+    setReduce(false);
+    const { oscillators } = installFakeAudioContext();
+    playSfx("heal");
+    expect(oscillators).toHaveLength(2);
+  });
+
+  it("still fires essential single-voice cues (damage) under reduced-motion", () => {
+    setReduce(true);
+    const { oscillators } = installFakeAudioContext();
+    playSfx("damage");
+    expect(oscillators).toHaveLength(1);
+  });
+});
