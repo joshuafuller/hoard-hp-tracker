@@ -1,8 +1,8 @@
 import "fake-indexeddb/auto";
 import Dexie from "dexie";
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createHpDb, type HpDb } from "./db";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createHpDb, type DiceRollRecord, type HpDb } from "./db";
 import { DICE_HISTORY_CAP, useDiceHistory } from "./useDiceHistory";
 import type { RollRecord } from "../domain/dice";
 
@@ -12,7 +12,10 @@ beforeEach(async () => {
   await Dexie.delete(DB_NAME);
   db = createHpDb(DB_NAME);
 });
-afterEach(() => db.close());
+afterEach(() => {
+  vi.restoreAllMocks();
+  db.close();
+});
 
 const rec = (over: Partial<RollRecord> = {}): RollRecord => ({
   notation: "1d20+5",
@@ -80,5 +83,41 @@ describe("useDiceHistory", () => {
     expect(result.current.rolls[0]!.notation).toBe(`roll-${DICE_HISTORY_CAP + 2}`);
     expect(result.current.rolls.some((r) => r.notation === "roll-1")).toBe(false);
     expect(result.current.rolls.some((r) => r.notation === "roll-2")).toBe(false);
+  });
+
+  // #263: the roll-history is a non-essential side log — a persistent write failure is
+  // logged once in the store and SWALLOWED (never rejects, never blocks the roll, never
+  // raises the shared save-error banner).
+  it("swallows a persistent record() failure — resolves, logs once, never throws (#263)", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(db, "transaction").mockRejectedValue(new Error("QuotaExceededError"));
+    const { result } = renderHook(() => useDiceHistory(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await expect(result.current.record(rec())).resolves.toBeUndefined();
+    expect(warn).toHaveBeenCalledTimes(1); // logged in ONE place, not per call site
+  });
+
+  it("swallows a persistent clear() failure too — resolves, never throws (#263)", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(db.rolls, "clear").mockRejectedValue(new Error("blocked"));
+    const { result } = renderHook(() => useDiceHistory(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    await expect(result.current.clear()).resolves.toBeUndefined();
+  });
+
+  it("retries a record() once after a transient failure, then persists (#263)", async () => {
+    const { result } = renderHook(() => useDiceHistory(db));
+    await waitFor(() => expect(result.current.hydrated).toBe(true));
+    const realAdd = db.rolls.add.bind(db.rolls);
+    let calls = 0;
+    vi.spyOn(db.rolls, "add").mockImplementation(((item: DiceRollRecord) => {
+      calls += 1;
+      return calls === 1 ? Promise.reject(new Error("transient")) : realAdd(item);
+    }) as typeof db.rolls.add);
+    await act(async () => {
+      await result.current.record(rec({ total: 7 }));
+    });
+    await waitFor(() => expect(result.current.rolls.some((r) => r.total === 7)).toBe(true));
+    expect(calls).toBe(2); // failed once inside the txn, reopen-retried, then succeeded
   });
 });

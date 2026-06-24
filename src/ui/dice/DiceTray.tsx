@@ -235,11 +235,10 @@ export function DiceTray({
         if (rollSeq.current !== seq) return null;
         setRecord(rec);
         effects.settle(rec, effectEnv()); // settle/crit effects (#87) — onCrit feeds #92
-        // History is a best-effort side log: a failed write (quota / private mode)
-        // must NOT block the roll's gameplay outcome (death-save pip / Hit Die apply).
-        void history.record(rec, { context }).catch((err) =>
-          console.error("[hoard] dice history write failed", err),
-        );
+        // History is a best-effort side log: the store reopen-retries then logs+swallows a
+        // persistent failure (#263), so a write error never blocks the roll's gameplay
+        // outcome (death-save pip / Hit Die apply) and never rejects here.
+        void history.record(rec, { context });
         return rec;
       } catch (err) {
         console.error("[hoard] dice roll failed", err);
