@@ -41,24 +41,24 @@ export function useCoins(db: HpDb = defaultDb): UseCoinsResult {
   const [lastDistill, setLastDistill] = useState<Coins | null>(null);
 
   const write = (fn: (c: Coins) => Coins) => async (): Promise<void> => {
-    const run = () =>
+    const run = (): Promise<boolean> =>
       db.transaction("rw", db.hp, async () => {
         const cur = await db.hp.get(HP_ID);
         // Safe no-op: the record is always seeded on first-run populate (see
         // createHpDb), so a missing record here means the store is mid-init, not
-        // lost. Guarding avoids writing a coins-only row with no HP fields.
-        if (!cur) return;
+        // lost. Guarding avoids writing a coins-only row with no HP fields. Returns
+        // false so we DON'T clear the banner when nothing was actually persisted (#274).
+        if (!cur) return false;
         await db.hp.put({ ...cur, ...fn(coinsOf(cur)) });
+        return true;
       });
     try {
-      await run();
-      clearSaveError(); // a successful write clears any prior save-error banner (#260, symmetric with useHp)
+      if (await run()) clearSaveError(); // clear the banner only when a write actually landed (#260/#274)
     } catch (err) {
       if (isReloading()) return;
       try {
         if (!db.isOpen()) await db.open();
-        await run();
-        clearSaveError(); // a successful reopen-retry clears it too (#260)
+        if (await run()) clearSaveError(); // a successful reopen-retry clears it too
       } catch (err2) {
         // Both attempts failed (quota, private mode, blocked upgrade). Log the
         // *retry* error (the relevant one) with the original as context, then
