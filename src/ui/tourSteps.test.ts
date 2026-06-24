@@ -16,11 +16,17 @@ describe("tour content (#178)", () => {
     expect(new Set(targets).size).toBe(targets.length);
   });
 
-  it("targets the real on-screen controls (orb, radial hub, rests)", () => {
+  it("targets the real on-screen controls (name, orb, radial hub, rests)", () => {
     const targets = TOUR_STEPS.map((s) => s.target);
+    expect(targets).toContain(".character-name"); // #179 — name-your-character step
     expect(targets).toContain(".vessel__orb");
     expect(targets).toContain('[aria-label="Actions"]');
     expect(targets).toContain(".rest-controls");
+  });
+
+  it("opens onboarding with the name step (#179 — name-field discoverability, #163)", () => {
+    expect(TOUR_STEPS[0]!.target).toBe(".character-name");
+    expect(TOUR_STEPS[0]!.caption.length).toBeLessThanOrEqual(120);
   });
 
   it("uses a stable seen key", () => {
