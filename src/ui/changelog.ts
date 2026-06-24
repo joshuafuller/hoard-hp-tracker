@@ -52,6 +52,14 @@ export function parseChangelog(md: string): ChangelogEntry[] {
       section = null;
       continue;
     }
+    // A top-level `## ` header that ISN'T a version line (e.g. `## Unreleased`, or any
+    // non-release H2) CLOSES the current entry, so its content doesn't leak into the
+    // previous version (Copilot #209).
+    if (/^##\s/.test(line)) {
+      entry = null;
+      section = null;
+      continue;
+    }
     if (!entry) continue; // skip the preamble before the first version
 
     const s = SECTION_RE.exec(line);

@@ -49,4 +49,20 @@ describe("parseChangelog (#209)", () => {
     expect(v5.sections[0]!.title).toBe("Features");
     expect(v5.sections[0]!.items[0]!.refs).toEqual(["#245"]);
   });
+
+  it("a non-version H2 (e.g. ## Unreleased) closes the entry — content doesn't leak (Copilot)", () => {
+    const md = [
+      "## [0.0.6](https://x/compare) (2026-06-23)",
+      "### Fixed",
+      "* a real fix",
+      "",
+      "## Unreleased",
+      "",
+      "### Features",
+      "* must NOT attach to 0.0.6",
+    ].join("\n");
+    const e = parseChangelog(md);
+    expect(e).toHaveLength(1); // only the versioned entry
+    expect(e[0]!.sections).toHaveLength(1); // just "Fixed"; the post-Unreleased section is dropped
+  });
 });

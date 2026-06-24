@@ -31,14 +31,28 @@ export function WhatsNew({ entries, onClose }: WhatsNewProps) {
     // Move focus into the dialog (the close button) on open, for keyboard + SR users.
     dialogRef.current?.querySelector<HTMLButtonElement>(".whatsnew__close")?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      // Stop Escape before it reaches About's own window-level handler — otherwise it
+      // closes this AND the About panel underneath (Codex #256). Same reason the
+      // backdrop click below stops propagation: a React PORTAL still bubbles events
+      // through the React tree (into About's backdrop), DOM relocation notwithstanding.
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+      }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
   return (
-    <div className="whatsnew-backdrop" data-testid="whatsnew-backdrop" onClick={onClose}>
+    <div
+      className="whatsnew-backdrop"
+      data-testid="whatsnew-backdrop"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClose();
+      }}
+    >
       <div
         className="whatsnew"
         role="dialog"
