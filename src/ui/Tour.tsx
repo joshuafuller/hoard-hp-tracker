@@ -84,6 +84,11 @@ export function Tour({ steps, seenKey, onClose }: TourProps) {
   const spotlight = rect
     ? { top: rect.top - 6, left: rect.left - 6, width: rect.width + 12, height: rect.height + 12 }
     : undefined;
+  // Put the caption card on the OPPOSITE half from the spotlight, so it never covers the
+  // control it's pointing at — e.g. the bottom rest controls would sit under a bottom-pinned
+  // card. When the target's centre is in the lower half, the card flips to the top.
+  const cardAtTop =
+    rect != null && typeof window !== "undefined" && rect.top + rect.height / 2 > window.innerHeight / 2;
 
   return createPortal(
     <div className="tour" role="dialog" aria-modal="true" aria-label="Feature tour">
@@ -97,7 +102,13 @@ export function Tour({ steps, seenKey, onClose }: TourProps) {
       ) : (
         <div className="tour__scrim" aria-hidden="true" />
       )}
-      <div className="tour__card" ref={cardRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
+      <div
+        className="tour__card"
+        data-pos={cardAtTop ? "top" : "bottom"}
+        ref={cardRef}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
         {step.title && <h3 className="tour__title">{step.title}</h3>}
         <p className="tour__caption" aria-live="polite">{step.caption}</p>
         <div className="tour__dots" aria-hidden="true">

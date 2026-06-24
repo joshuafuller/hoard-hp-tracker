@@ -44,8 +44,19 @@
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
   animation: tour-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+/* Flip to the top when the spotlight is in the lower half, so the card never covers the
+   control it points at (e.g. the bottom rest controls). */
+.tour__card[data-pos="top"] {
+  bottom: auto;
+  top: calc(env(safe-area-inset-top, 0px) + 1.4rem);
+  animation-name: tour-pop-top;
+}
 @keyframes tour-pop {
   from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+@keyframes tour-pop-top {
+  from { opacity: 0; transform: translate(-50%, -10px); }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 .tour__title { margin: 0 0 0.3rem; font: 800 1.05rem/1.1 "DM Sans", system-ui, sans-serif; color: var(--coin-gold, #d9b85c); }
