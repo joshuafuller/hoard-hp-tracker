@@ -60,6 +60,20 @@ describe("CharacterName", () => {
     expect(onSetName).toHaveBeenCalledWith("Luna");
   });
 
+  it("keeps showing a just-committed name even if the store hasn't echoed it back (iOS liveQuery lag)", async () => {
+    // Repro: on iOS Safari the IndexedDB liveQuery can lag/miss the write, so the `name`
+    // prop stays "" after a commit — which made the name appear to vanish. The committed
+    // value must stay visible optimistically until the store catches up.
+    const onSetName = vi.fn(); // parent does NOT update `name` (simulates the lagging echo)
+    render(<CharacterName name="" onSetName={onSetName} />);
+    await userEvent.click(screen.getByRole("button", { name: /name your character/i }));
+    await userEvent.type(screen.getByRole("textbox"), "Thorn");
+    await userEvent.keyboard("{Enter}");
+    expect(onSetName).toHaveBeenCalledWith("Thorn");
+    expect(screen.getByText("Thorn")).toBeInTheDocument(); // does NOT disappear
+    expect(screen.queryByRole("button", { name: /name your character/i })).toBeNull();
+  });
+
   it("pressing Escape dismisses the editor without calling onSetName", async () => {
     const onSetName = vi.fn();
     render(<CharacterName name="Kira" onSetName={onSetName} />);
