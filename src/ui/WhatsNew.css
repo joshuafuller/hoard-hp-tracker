@@ -1,0 +1,76 @@
+/* "What's new" changelog view (#209) — a scrollable Molten Hoard sheet above About. */
+.whatsnew-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80; /* above the About panel (70) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: radial-gradient(120% 90% at 50% 30%, rgba(8, 6, 2, 0.6), rgba(5, 3, 1, 0.82));
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  animation: about-fade 0.22s ease;
+}
+.whatsnew {
+  position: relative;
+  width: min(26rem, 100%);
+  max-height: 80vh; /* fallback for browsers without svh */
+  max-height: 80svh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.4rem 1.2rem 1rem;
+  border-radius: 22px;
+  color: var(--ink-100, #f4ecd8);
+  background: linear-gradient(180deg, var(--obsidian-800, #1c1810), var(--obsidian-900, #14110a));
+  border: 1.5px solid color-mix(in oklab, var(--coin-gold, #d9b85c) 30%, transparent);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 247, 224, 0.08);
+  animation: about-pop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.whatsnew__close {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  z-index: 2; /* above the scroll content (the #249 lesson — never let content eat the ✕) */
+}
+.whatsnew__title {
+  margin: 0 0 0.7rem;
+  font: 800 1.4rem/1 "DM Sans", system-ui, sans-serif;
+  background: linear-gradient(180deg, #f8ecc4, #d9b85c 55%, #b08f3e);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.whatsnew__scroll {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 0.3rem;
+}
+.whatsnew__release { margin-bottom: 1.1rem; }
+.whatsnew__version {
+  margin: 0 0 0.4rem;
+  font: 700 1rem/1 "DM Sans", system-ui, sans-serif;
+  color: var(--coin-gold, #d9b85c);
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.whatsnew__date { font-size: 0.7rem; color: var(--ink-500, #9a8f7a); font-weight: 400; }
+.whatsnew__section { margin: 0.4rem 0 0.6rem; }
+.whatsnew__section-title {
+  margin: 0 0 0.25rem;
+  font: 700 0.72rem/1 "DM Sans", system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-300, #c9bca0);
+}
+.whatsnew__items { margin: 0; padding-left: 1.1rem; }
+.whatsnew__item { margin: 0.22rem 0; font-size: 0.86rem; line-height: 1.42; }
+.whatsnew__item strong { color: #e8d6a8; }
+.whatsnew__refs { color: var(--ink-500, #9a8f7a); font-size: 0.76rem; }
+.whatsnew__empty { color: var(--ink-500, #9a8f7a); font-size: 0.86rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .whatsnew-backdrop,
+  .whatsnew { animation: none; }
+}

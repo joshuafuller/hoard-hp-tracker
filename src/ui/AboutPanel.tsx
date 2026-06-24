@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { IconButton } from "./controls";
 import { shareHoard } from "./shareHoard";
+import { WhatsNew } from "./WhatsNew";
+import { CHANGELOG } from "./changelogData";
 import "./AboutPanel.css";
 
 /** The canonical source-repo URL (the project lives on GitHub). */
@@ -34,6 +37,8 @@ export function AboutPanel({ onClose }: AboutPanelProps) {
     panelRef.current?.querySelector<HTMLElement>("a, button")?.focus();
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
 
   // Share the app — native sheet where available, else copy the link and confirm.
   const [copied, setCopied] = useState(false);
@@ -113,10 +118,24 @@ export function AboutPanel({ onClose }: AboutPanelProps) {
           View source on GitHub
         </a>
 
-        <p className="about-panel__version">v{__APP_VERSION__}</p>
+        <button
+          type="button"
+          className="about-panel__version about-panel__whatsnew"
+          onClick={() => setShowWhatsNew(true)}
+          aria-haspopup="dialog"
+        >
+          v{__APP_VERSION__} · What&rsquo;s new
+        </button>
         <p className="about-panel__build" data-testid="about-build">{__BUILD__}</p>
         <p className="about-panel__footer">AGPL-3.0 · ships no game content · built for the table</p>
       </div>
+      {/* Portal to body so the What's-new backdrop isn't nested in the About backdrop
+          (whose click closes About) — otherwise its clicks would bubble + double-close. */}
+      {showWhatsNew &&
+        createPortal(
+          <WhatsNew entries={CHANGELOG} onClose={() => setShowWhatsNew(false)} />,
+          document.body,
+        )}
     </div>
   );
 }

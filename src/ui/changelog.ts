@@ -1,0 +1,81 @@
+/**
+ * Parse the project CHANGELOG.md (release-please / Keep a Changelog format) into
+ * structured, player-readable entries for the in-app "What's new" view (#209). Pure +
+ * offline — it only transforms the bundled markdown string, never fetches.
+ *
+ * Recognised shape:
+ *   ## [0.0.6](compare-url) (2026-06-23)
+ *   ### Fixed
+ *   * **scope:** description ([#249](url)) ([#250](url)) ([sha](url))
+ */
+
+/** One changelog bullet: the human text, with any issue refs pulled out. */
+export interface ChangeItem {
+  /** The bullet text with the trailing `([#NN](url))`/commit links stripped. */
+  text: string;
+  /** Issue refs found in the bullet, e.g. `["#249", "#250"]` (commit shas excluded). */
+  refs: string[];
+}
+
+/** A titled group of bullets within a version (e.g. "Features", "Fixed"). */
+export interface ChangeSection {
+  title: string;
+  items: ChangeItem[];
+}
+
+/** One released version's notes. */
+export interface ChangelogEntry {
+  version: string;
+  /** Release date as written (e.g. "2026-06-23"), or "" if absent. */
+  date: string;
+  sections: ChangeSection[];
+}
+
+const VERSION_RE = /^##\s+\[([^\]]+)\]\([^)]*\)(?:\s*\(([^)]+)\))?/;
+const SECTION_RE = /^###\s+(.+?)\s*$/;
+const BULLET_RE = /^\*\s+(.+)$/;
+const REF_RE = /\[#(\d+)\]/g;
+// A trailing markdown link group like ` ([#249](url))` or ` ([abc123](url))`.
+const LINK_GROUP_RE = /\s*\(\[[^\]]+\]\([^)]*\)\)/g;
+
+/** Parse CHANGELOG.md markdown into version entries (newest first, as written). */
+export function parseChangelog(md: string): ChangelogEntry[] {
+  const entries: ChangelogEntry[] = [];
+  let entry: ChangelogEntry | null = null;
+  let section: ChangeSection | null = null;
+
+  for (const line of md.split("\n")) {
+    const v = VERSION_RE.exec(line);
+    if (v) {
+      entry = { version: v[1]!, date: v[2] ?? "", sections: [] };
+      entries.push(entry);
+      section = null;
+      continue;
+    }
+    // A top-level `## ` header that ISN'T a version line (e.g. `## Unreleased`, or any
+    // non-release H2) CLOSES the current entry, so its content doesn't leak into the
+    // previous version (Copilot #209).
+    if (/^##\s/.test(line)) {
+      entry = null;
+      section = null;
+      continue;
+    }
+    if (!entry) continue; // skip the preamble before the first version
+
+    const s = SECTION_RE.exec(line);
+    if (s) {
+      section = { title: s[1]!, items: [] };
+      entry.sections.push(section);
+      continue;
+    }
+
+    const b = BULLET_RE.exec(line);
+    if (b && section) {
+      const raw = b[1]!;
+      const refs = [...raw.matchAll(REF_RE)].map((m) => `#${m[1]}`);
+      const text = raw.replace(LINK_GROUP_RE, "").trim();
+      section.items.push({ text, refs });
+    }
+  }
+  return entries;
+}

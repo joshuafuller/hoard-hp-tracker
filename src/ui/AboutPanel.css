@@ -159,6 +159,22 @@
   color: var(--ink-500);
   font-variant-numeric: tabular-nums;
 }
+/* The version line is now a button (#209 — opens What's new). Strip the native button
+   chrome so it still reads as the quiet version text, with a tap affordance. */
+.about-panel__whatsnew {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  margin: 1.1rem auto 0;
+  background: none;
+  border: 0;
+  padding: 0.2rem 0.4rem;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-fast, 140ms) ease;
+}
+.about-panel__whatsnew:hover { color: color-mix(in oklab, var(--coin-gold, #d9b85c) 80%, var(--ink-500)); }
+.about-panel__whatsnew:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
 .about-panel__build {
   margin: 0.15rem 0 0;
   font-family: "JetBrains Mono", ui-monospace, monospace;

@@ -34,6 +34,32 @@ describe("AboutPanel", () => {
     ).toBeInTheDocument();
   });
 
+  it("opens the What's new changelog from the version line (#209)", () => {
+    render(<AboutPanel onClose={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /what.s new/i }));
+    expect(screen.getByRole("dialog", { name: /what.s new/i })).toBeInTheDocument();
+  });
+
+  it("closing What's new (backdrop / Escape) doesn't also close About (Codex #256)", () => {
+    const onClose = vi.fn();
+    render(<AboutPanel onClose={onClose} />);
+    const open = () => fireEvent.click(screen.getByRole("button", { name: /what.s new/i }));
+    const wn = () => screen.queryByRole("dialog", { name: /what.s new/i });
+
+    // Backdrop click closes What's new only (a React portal still bubbles to About).
+    open();
+    fireEvent.click(screen.getByTestId("whatsnew-backdrop"));
+    expect(wn()).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
+
+    // Escape closes What's new only (both dialogs listen globally).
+    open();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(wn()).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: /about/i })).toBeInTheDocument();
+  });
+
   it("shows a traceable build identity beneath the version (#169)", () => {
     render(<AboutPanel onClose={vi.fn()} />);
     // A build id (git describe/short-SHA + build date), injected at build via __BUILD__,
