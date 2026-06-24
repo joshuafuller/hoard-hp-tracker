@@ -74,6 +74,30 @@ describe("parseChangelog (#209)", () => {
     expect(e[0]!.sections).toHaveLength(1); // just "Fixed"; the post-Unreleased section is dropped
   });
 
+  it("skips old-style + Unreleased headings amid release-please ones without leaking (#261)", () => {
+    // CHOICE: only release-please linked headings (`## [x](url) (date)`) are parsed as
+    // releases. `## [Unreleased]` and old-style `## [0.0.1] - 2026-06-23` (no link) are
+    // SAFELY SKIPPED — they close the current entry so their sections never leak into the
+    // prior release. The bundled CHANGELOG is release-please-generated, so this loses nothing.
+    const md = [
+      "# Changelog",
+      "## [0.0.6](https://x/c) (2026-06-23)",
+      "### Fixed",
+      "* real fix",
+      "## [Unreleased]",
+      "### Added",
+      "* unreleased note — must NOT leak",
+      "## [0.0.1] - 2026-06-23", // old-style, no link
+      "### Changed",
+      "* old note — must NOT leak",
+    ].join("\n");
+    const e = parseChangelog(md);
+    expect(e).toHaveLength(1); // only the release-please entry is parsed
+    expect(e[0]!.version).toBe("0.0.6");
+    expect(e[0]!.sections.map((s) => s.title)).toEqual(["Fixed"]); // nothing leaked in
+    expect(e[0]!.sections[0]!.items[0]!.text).toBe("real fix");
+  });
+
   it("strips link-bearing parentheticals (even with surrounding prose) + inline links (Codex #266)", () => {
     const md = [
       "## [1.0.0](u) (2026-01-01)",
