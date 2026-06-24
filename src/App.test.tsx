@@ -300,4 +300,16 @@ describe("App (integration)", () => {
     render(<App />);
     expect(await screen.findByRole("dialog", { name: /feature tour/i })).toBeInTheDocument();
   });
+
+  it("replaying the tour from About returns to About when it closes (#181)", async () => {
+    render(<App />); // beforeEach marked the tour seen → no first-run tour
+    await userEvent.click(screen.getByRole("button", { name: "Actions" }));
+    await userEvent.click(screen.getByRole("button", { name: "About" }));
+    await userEvent.click(screen.getByRole("button", { name: /take the tour/i }));
+    expect(screen.getByRole("dialog", { name: /feature tour/i })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /about/i })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Skip" }));
+    expect(await screen.findByRole("dialog", { name: /about/i })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /feature tour/i })).toBeNull();
+  });
 });

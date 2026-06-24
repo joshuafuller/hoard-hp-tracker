@@ -47,6 +47,8 @@ export function App() {
   const [coinsOpen, setCoinsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
+  // True when the tour was launched from About (replay) — return there on close (#181).
+  const [tourFromAbout, setTourFromAbout] = useState(false);
   const [soundEnabled, toggleSound] = useSoundEnabled();
   // Toggle-on cue only when ENABLING (playSfx self-gates on mute, so muting is
   // silent); the override updates synchronously so the cue actually sounds.
@@ -304,11 +306,25 @@ export function App() {
           onClose={() => setAboutOpen(false)}
           onTakeTour={() => {
             setAboutOpen(false);
+            setTourFromAbout(true);
             setTourOpen(true);
           }}
         />
       )}
-      {tourOpen && <Tour steps={TOUR_STEPS} seenKey={TOUR_KEY} onClose={() => setTourOpen(false)} />}
+      {tourOpen && (
+        <Tour
+          steps={TOUR_STEPS}
+          seenKey={TOUR_KEY}
+          onClose={() => {
+            setTourOpen(false);
+            // Replayed from About → return there on close (#181, Copilot #269).
+            if (tourFromAbout) {
+              setTourFromAbout(false);
+              setAboutOpen(true);
+            }
+          }}
+        />
+      )}
 
       {/* Always mounted so it's inert-when-closed (display:none) rather than
           remounting — keeps the lazy-loaded 3D engine warm between opens. */}
