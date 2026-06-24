@@ -108,6 +108,36 @@
   }
 }
 
+/* Short landscape — a rotated phone (#88, spike §4): the portrait column (name → orb →
+   panel → footer) would overflow ~390px of height and clip a control, so reflow to TWO
+   columns — the orb on the left spanning full height, the name + panel + footer stacked
+   on the right. Gated to SHORT landscape so tall landscape tablets keep the portrait
+   composition. "Must-not-break", not polish — the guarantee is nothing clips. */
+@media (orientation: landscape) and (max-height: 540px) {
+  .hp-tracker__card {
+    max-width: none;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 1.1rem;
+    padding: clamp(0.3rem, 2svh, 0.7rem) clamp(0.6rem, 3vw, 1.2rem);
+  }
+  .hp-tracker__stage { grid-column: 1; grid-row: 1 / 4; } /* orb spans the full height, left */
+  .character-name { grid-column: 2; grid-row: 1; }
+  .hp-tracker__panel { grid-column: 2; grid-row: 2; }
+  .hp-tracker__footer { grid-column: 2; grid-row: 3; }
+  /* Explicit square: in the grid cell the base `height:100%` has no definite parent to
+     resolve against (it collapses to min-height), so size the orb directly off the smaller
+     of the left-column width budget and the short viewport height. */
+  .vessel {
+    width: min(46vw, 80svh);
+    height: min(46vw, 80svh);
+    max-width: none;
+    max-height: none;
+  }
+}
+
 /* Save-failure banner (#101) — ruby alert, dismissible, existing tokens only. */
 .save-error {
   position: absolute;
