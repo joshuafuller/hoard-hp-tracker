@@ -942,8 +942,12 @@ body {
   aspect-ratio: 1;
   height: 100%;
   width: auto;
-  max-height: min(76vw, 340px);
-  max-width: 76vw;
+  /* Phone fill (#88): the orb is driven by the width budget + stage height with NO hard
+     px ceiling on phones, so it grows with the device (fixes "orb doesn't fill" on large
+     phones — at 430px the old 76vw≈327px was the binding cap). Both terms bind so it stays
+     square + never pushes the footer off. Tablet (≥768) re-caps it below. */
+  max-width: 86vw;
+  max-height: min(86vw, 82svh);
   min-height: 4.5rem; /* shrink further on very short screens rather than clip the footer */
   display: grid;
   place-items: center;
@@ -954,6 +958,14 @@ body {
   /* per-tier accent + a glow recomputed from it (the lesson from before) */
   --accent: var(--hp-healthy);
   --accent-glow: color-mix(in oklab, var(--accent) 55%, transparent);
+}
+/* Tablet+ (#88, spike §3): the app becomes a centered game object on a desk, so the orb
+   takes a comfortable cap inside the re-framed card rather than filling the device. */
+@media (min-width: 768px) {
+  .vessel {
+    max-width: min(58svh, 480px);
+    max-height: min(58svh, 480px);
+  }
 }
 .vessel[data-tier="healthy"]  { --accent: var(--hp-healthy); }
 .vessel[data-tier="bloodied"] { --accent: var(--hp-bloodied); }
