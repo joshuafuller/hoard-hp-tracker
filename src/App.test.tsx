@@ -12,6 +12,8 @@ vi.mock("./sound/sfx", () => ({
   // The audible heartbeat (#243) peeks the shared context; in this integration test
   // there's no audio, so hand it a null context (silent, no throw).
   peekAudioContext: () => null,
+  // The first-gesture audio primer (#253) calls unlockAudio; no-op here.
+  unlockAudio: () => {},
 }));
 
 // Integration: the composed app wires the Dexie store, the pure domain, and the

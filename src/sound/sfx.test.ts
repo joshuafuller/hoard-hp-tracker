@@ -7,6 +7,8 @@ import { MUTE_STORAGE_KEY } from "./soundSettings";
 // import would bind once and leak the cached context across tests.
 let playSfx: typeof import("./sfx").playSfx;
 let SFX_NAMES: typeof import("./sfx").SFX_NAMES;
+let unlockAudio: typeof import("./sfx").unlockAudio;
+let peekAudioContext: typeof import("./sfx").peekAudioContext;
 
 /**
  * A minimal fake AudioContext that records the nodes it spawns so tests can
@@ -66,7 +68,7 @@ function installFakeAudioContext(opts: { startSuspended?: boolean } = {}) {
 beforeEach(async () => {
   vi.resetModules();
   localStorage.clear();
-  ({ playSfx, SFX_NAMES } = await import("./sfx"));
+  ({ playSfx, SFX_NAMES, unlockAudio, peekAudioContext } = await import("./sfx"));
 });
 
 afterEach(() => {
@@ -142,6 +144,14 @@ describe("playSfx", () => {
     playSfx("step");
     playSfx("roll");
     expect(FakeAudioContext.instances.length).toBe(1);
+  });
+
+  it("unlockAudio readies the shared context so the heartbeat can peek it (primer) — #253", async () => {
+    installFakeAudioContext({ startSuspended: true });
+    expect(peekAudioContext()).toBeNull(); // nothing running before a gesture
+    unlockAudio();
+    await new Promise((r) => setTimeout(r, 0)); // resume() resolves → state running
+    expect(peekAudioContext()).not.toBeNull(); // the heartbeat can now play
   });
 
   it("resumes a suspended AudioContext (autoplay recovery)", () => {
