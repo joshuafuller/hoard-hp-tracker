@@ -156,7 +156,8 @@ export function peekAudioContext(): AudioContext | null {
   return ctx && ctx.state === "running" ? ctx : null;
 }
 
-/** Eagerly create + resume the shared context. Call from a user GESTURE (e.g. a one-time
+/** Eagerly create the shared context and **kick off** its resume (the resume is async —
+ *  `state` flips to "running" a tick later). Call from a user GESTURE (e.g. a one-time
  *  first-interaction primer) so audio is unlocked before anything that only *peeks* the
  *  context needs it — notably the heartbeat (#253), which otherwise stays silent after a
  *  mobile reload until some other cue happens to resume the context. Safe no-op where
