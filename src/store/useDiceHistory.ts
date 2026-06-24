@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { db as defaultDb, type DiceRollRecord, type HpDb, type RollContext } from "./db";
+import { db as defaultDb, type DiceRollRecord, type HpDb, isReloading, type RollContext } from "./db";
 import type { RollRecord } from "../domain/dice";
 
 /** Keep only the most recent N rolls — bounds IndexedDB growth across a long session. */
@@ -17,28 +17,53 @@ export interface UseDiceHistoryResult {
 }
 
 /**
+ * Run a roll-history write with the same reopen-and-retry resilience as the HP/coin
+ * stores, but **silent best-effort** (#263): the history is a *non-essential side log* —
+ * the roll's outcome was already applied to HP, so a history-write failure must never
+ * block gameplay and must NOT raise the shared save-error banner (that signal is reserved
+ * for essential HP/coin data). A persistent failure is logged once, here, and swallowed —
+ * so it's handled in exactly one place rather than at every call site. Never rejects.
+ */
+async function bestEffort(db: HpDb, label: string, op: () => Promise<unknown>): Promise<void> {
+  try {
+    await op();
+  } catch (err) {
+    if (isReloading()) return; // a reload is imminent — don't fight a closing connection
+    try {
+      if (!db.isOpen()) await db.open();
+      await op();
+    } catch (err2) {
+      console.warn(`[hoard] dice-history ${label} failed (non-blocking side log)`, err2, err);
+    }
+  }
+}
+
+/**
  * Reactive dice roll-history over the `rolls` table. Ordering uses the
  * auto-incremented `id` (monotonic == chronological), so it never depends on the
  * wall clock. `record` trims to {@link DICE_HISTORY_CAP} inside its transaction.
+ * Writes are silent best-effort (see {@link bestEffort}) — the log never blocks a roll.
  */
 export function useDiceHistory(db: HpDb = defaultDb): UseDiceHistoryResult {
   const rolls = useLiveQuery(() => db.rolls.orderBy("id").reverse().toArray(), [db]);
 
   const record = (rec: RollRecord, opts?: { context?: RollContext; at?: number }) =>
-    db.transaction("rw", db.rolls, async () => {
-      await db.rolls.add({
-        ...rec,
-        context: opts?.context ?? "ad-hoc",
-        at: opts?.at ?? Date.now(),
-      });
-      const count = await db.rolls.count();
-      if (count > DICE_HISTORY_CAP) {
-        const oldest = await db.rolls.orderBy("id").limit(count - DICE_HISTORY_CAP).primaryKeys();
-        await db.rolls.bulkDelete(oldest);
-      }
-    });
+    bestEffort(db, "record", () =>
+      db.transaction("rw", db.rolls, async () => {
+        await db.rolls.add({
+          ...rec,
+          context: opts?.context ?? "ad-hoc",
+          at: opts?.at ?? Date.now(),
+        });
+        const count = await db.rolls.count();
+        if (count > DICE_HISTORY_CAP) {
+          const oldest = await db.rolls.orderBy("id").limit(count - DICE_HISTORY_CAP).primaryKeys();
+          await db.rolls.bulkDelete(oldest);
+        }
+      }),
+    );
 
-  const clear = () => db.rolls.clear();
+  const clear = () => bestEffort(db, "clear", () => db.rolls.clear());
 
   return { rolls: rolls ?? [], hydrated: rolls !== undefined, record, clear };
 }
