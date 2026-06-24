@@ -1,11 +1,10 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
-  "_comment": "Mutation testing over the pure rules domain — the correctness-critical core.",
+  "_comment": "Mutation testing over the pure rules domain — the correctness-critical core. `incremental` reuses prior results for unchanged mutants (only changed/affected domain code is re-tested; the full score + break threshold still hold); the incremental file is restored from CI cache, never committed (reports/ is gitignored).",
   "packageManager": "pnpm",
   "plugins": ["@stryker-mutator/vitest-runner"],
   "testRunner": "vitest",
   "coverageAnalysis": "perTest",
-  "_incremental": "Reuse prior results for unchanged mutants; only changed/affected domain code is re-tested. The full score (and the break threshold) still hold — the file is restored from CI cache, never committed (reports/ is gitignored).",
   "incremental": true,
   "incrementalFile": "reports/stryker-incremental.json",
   "mutate": ["src/domain/**/*.ts", "!src/domain/**/*.test.ts"],

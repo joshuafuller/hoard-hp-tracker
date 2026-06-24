@@ -4,6 +4,7 @@
   "project": ["src/**/*.{ts,tsx}", "scripts/**/*.mjs", "e2e/**/*.ts"],
   "ignoreDependencies": ["@3d-dice/dice-box"],
   "ignoreBinaries": ["ffmpeg"],
+  "ignoreExportsUsedInFile": true,
   "rules": {
     "files": "error",
     "dependencies": "error",
@@ -16,7 +17,6 @@
     "nsExports": "warn",
     "nsTypes": "warn",
     "duplicates": "warn",
-    "enumMembers": "warn",
-    "classMembers": "warn"
+    "enumMembers": "warn"
   }
 }
