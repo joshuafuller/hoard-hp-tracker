@@ -74,6 +74,18 @@ describe("CharacterName", () => {
     expect(screen.queryByRole("button", { name: /name your character/i })).toBeNull();
   });
 
+  it("drops the optimistic name when the store reports a DIFFERENT name (external change, Codex/Copilot #288)", async () => {
+    const { rerender } = render(<CharacterName name="" onSetName={vi.fn()} />);
+    await userEvent.click(screen.getByRole("button", { name: /name your character/i }));
+    await userEvent.type(screen.getByRole("textbox"), "Thorn");
+    await userEvent.keyboard("{Enter}");
+    expect(screen.getByText("Thorn")).toBeInTheDocument(); // optimistic
+    // The store reports a different name (an undo, or another tab) → that wins.
+    rerender(<CharacterName name="Mara" onSetName={vi.fn()} />);
+    expect(screen.getByText("Mara")).toBeInTheDocument();
+    expect(screen.queryByText("Thorn")).toBeNull();
+  });
+
   it("pressing Escape dismisses the editor without calling onSetName", async () => {
     const onSetName = vi.fn();
     render(<CharacterName name="Kira" onSetName={onSetName} />);

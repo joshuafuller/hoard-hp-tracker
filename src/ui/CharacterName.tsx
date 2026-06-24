@@ -24,11 +24,16 @@ export function CharacterName({ name, onSetName }: CharacterNameProps) {
   const shown = pending ?? name;
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Drop the optimistic value once the store catches up to it (or the name changes from
-  // elsewhere — e.g. an undo), so the prop is the source of truth again.
+  // Drop the optimistic value the moment the store reports a NEW name — whether that's our
+  // own commit echoing back or an external change (undo, another tab). Any store update wins,
+  // so the prop becomes the source of truth again.
+  const prevName = useRef(name);
   useEffect(() => {
-    if (pending !== null && name === pending) setPending(null);
-  }, [name, pending]);
+    if (name !== prevName.current) {
+      prevName.current = name;
+      setPending(null);
+    }
+  }, [name]);
 
   // Sync draft from the shown value while not actively editing.
   useEffect(() => {
