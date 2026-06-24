@@ -14,7 +14,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     target: ".character-name",
     title: "Name your character",
-    caption: "Tap your name up top to set who you're playing — it sticks across sessions.",
+    caption: "Your name sits up top — tap it any time to name who you're playing; it sticks across sessions.",
   },
   {
     target: ".vessel__orb",
