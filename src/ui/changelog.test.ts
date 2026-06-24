@@ -38,10 +38,18 @@ describe("parseChangelog (#209)", () => {
     expect(v6.sections[0]!.items).toHaveLength(2);
   });
 
-  it("strips the link clutter from the bullet text but keeps issue refs", () => {
+  it("splits the scope out and strips link clutter, keeping issue refs", () => {
     const item = entries[0]!.sections[0]!.items[0]!;
-    expect(item.text).toBe("**about:** close ✕ was covered by the panel hero — lift it with z-index");
+    expect(item.scope).toBe("about"); // leading **scope:** pulled out for a tag
+    expect(item.text).toBe("close ✕ was covered by the panel hero — lift it with z-index");
     expect(item.refs).toEqual(["#249", "#250"]); // commit sha excluded
+  });
+
+  it("leaves text scope-less when there's no **scope:** prefix", () => {
+    const e = parseChangelog("## [1.0.0](u) (2026-01-01)\n### Fixed\n* a plain note, no scope\n");
+    const item = e[0]!.sections[0]!.items[0]!;
+    expect(item.scope).toBeUndefined();
+    expect(item.text).toBe("a plain note, no scope");
   });
 
   it("parses a Features section on another version", () => {

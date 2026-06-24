@@ -9,9 +9,12 @@
  *   * **scope:** description ([#249](url)) ([#250](url)) ([sha](url))
  */
 
-/** One changelog bullet: the human text, with any issue refs pulled out. */
+/** One changelog bullet, split for a player-facing render. */
 export interface ChangeItem {
-  /** The bullet text with the trailing `([#NN](url))`/commit links stripped. */
+  /** The leading conventional-commit scope (e.g. "dice", "about"), if present — for a
+   *  subtle category tag rather than dev-speak in the prose. */
+  scope?: string;
+  /** The human description, with the `**scope:**` prefix and trailing links stripped. */
   text: string;
   /** Issue refs found in the bullet, e.g. `["#249", "#250"]` (commit shas excluded). */
   refs: string[];
@@ -37,6 +40,8 @@ const BULLET_RE = /^\*\s+(.+)$/;
 const REF_RE = /\[#(\d+)\]/g;
 // A trailing markdown link group like ` ([#249](url))` or ` ([abc123](url))`.
 const LINK_GROUP_RE = /\s*\(\[[^\]]+\]\([^)]*\)\)/g;
+// A leading conventional-commit scope: `**dice:** the rest…` → ["dice", "the rest…"].
+const SCOPE_RE = /^\*\*([^:*]+):\*\*\s*(.*)$/;
 
 /** Parse CHANGELOG.md markdown into version entries (newest first, as written). */
 export function parseChangelog(md: string): ChangelogEntry[] {
@@ -73,8 +78,13 @@ export function parseChangelog(md: string): ChangelogEntry[] {
     if (b && section) {
       const raw = b[1]!;
       const refs = [...raw.matchAll(REF_RE)].map((m) => `#${m[1]}`);
-      const text = raw.replace(LINK_GROUP_RE, "").trim();
-      section.items.push({ text, refs });
+      const stripped = raw.replace(LINK_GROUP_RE, "").trim();
+      // Pull a leading `**scope:**` out of the prose so the UI can show it as a tag.
+      const m = SCOPE_RE.exec(stripped);
+      const item: ChangeItem = m
+        ? { scope: m[1]!, text: m[2]!.trim(), refs }
+        : { text: stripped, refs };
+      section.items.push(item);
     }
   }
   return entries;
