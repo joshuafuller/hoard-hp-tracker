@@ -947,6 +947,7 @@ body {
      phones — at 430px the old 76vw≈327px was the binding cap). Both terms bind so it stays
      square + never pushes the footer off. Tablet (≥768) re-caps it below. */
   max-width: 86vw;
+  max-height: min(86vw, 82vh); /* fallback for browsers without svh */
   max-height: min(86vw, 82svh);
   min-height: 4.5rem; /* shrink further on very short screens rather than clip the footer */
   display: grid;
@@ -963,7 +964,9 @@ body {
    takes a comfortable cap inside the re-framed card rather than filling the device. */
 @media (min-width: 768px) {
   .vessel {
+    max-width: min(58vh, 480px); /* fallback for browsers without svh */
     max-width: min(58svh, 480px);
+    max-height: min(58vh, 480px);
     max-height: min(58svh, 480px);
   }
 }
