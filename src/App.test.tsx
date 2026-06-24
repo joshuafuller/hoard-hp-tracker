@@ -4,7 +4,7 @@ import Dexie from "dexie";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import { playSfx } from "./sound/sfx";
-import { HP_DB_NAME } from "./store/db";
+import { createHpDb, HP_DB_NAME, HP_ID } from "./store/db";
 
 vi.mock("./sound/sfx", () => ({
   playSfx: vi.fn(),
@@ -95,6 +95,37 @@ describe("App (integration)", () => {
     expect(playSfx).not.toHaveBeenCalledWith("death"); // down is distinct from final death
     await keypad("heal", 5); // 0 → 5: dying → alive
     await waitFor(() => expect(playSfx).toHaveBeenCalledWith("revive"));
+  });
+
+  it("plays the death-save pip cues on a new success/failure, but not on the terminal save (#90, Codex/Copilot #271)", async () => {
+    render(<App />);
+    await screen.findByText("10");
+    await keypad("damage", 10); // → 0 HP, death saves appear
+    await screen.findByLabelText(/death saving throws/i);
+    vi.mocked(playSfx).mockClear(); // ignore the down/transition cues
+    await userEvent.click(screen.getByRole("button", { name: /success 1/i }));
+    await waitFor(() => expect(playSfx).toHaveBeenCalledWith("deathSavePass"));
+    await userEvent.click(screen.getByRole("button", { name: /failure 1/i }));
+    await waitFor(() => expect(playSfx).toHaveBeenCalledWith("deathSaveFail"));
+    // The 3rd failure flips status → dead; the death cue owns it — NO pip double-fire.
+    vi.mocked(playSfx).mockClear();
+    await userEvent.click(screen.getByRole("button", { name: /failure 3/i }));
+    await waitFor(() => expect(playSfx).toHaveBeenCalledWith("death"));
+    expect(playSfx).not.toHaveBeenCalledWith("deathSaveFail");
+  });
+
+  it("does NOT chirp a pip when reopening already mid-save (hydration baseline, Copilot #271)", async () => {
+    // Seed a downed character already holding 2 failures, then mount.
+    const db = createHpDb();
+    await db.hp.put({
+      id: HP_ID, current: 0, max: 10, temp: 0, successes: 0, failures: 2,
+      hitDieSize: 8, hitDiceTotal: 1, hitDiceAvailable: 1, conMod: 0, name: "", concentrating: false,
+    });
+    db.close();
+    render(<App />);
+    await screen.findByLabelText(/death saving throws/i); // hydrated into the dying state
+    expect(playSfx).not.toHaveBeenCalledWith("deathSaveFail");
+    expect(playSfx).not.toHaveBeenCalledWith("deathSavePass");
   });
 
   it("edits Max HP through the pill modal", async () => {

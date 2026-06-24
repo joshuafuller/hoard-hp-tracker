@@ -35,6 +35,8 @@ export const SFX_NAMES = [
   "revive",
   "crit",
   "fumble",
+  "deathSavePass",
+  "deathSaveFail",
 ] as const;
 
 export type SfxName = (typeof SFX_NAMES)[number];
@@ -118,6 +120,10 @@ export const RECIPES: Record<SfxName, Voice[]> = {
   // Nat-1 fumble (#92): a low descending sawtooth "womp" A3→A2 — ominous/comedic,
   // distinct from the blunt `damage` thud by its longer downward glide.
   fumble: [{ type: "sawtooth", freq: 220, endFreq: 110, gain: 0.16, duration: 0.3 }],
+  // Death-save pips (#90, sound-design.md): a single clear positive ping (E5) on a
+  // success; a low, damped negative tone (E3) on a failure. Short, never startling.
+  deathSavePass: [{ type: "sine", freq: 659.25, gain: 0.12, duration: 0.12 }],
+  deathSaveFail: [{ type: "sine", freq: 164.81, gain: 0.14, duration: 0.14 }],
 };
 
 /** The lazily-created, shared AudioContext (null until the first real play). */

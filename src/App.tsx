@@ -117,6 +117,27 @@ export function App() {
     return () => clearTimeout(statusCueTimer.current); // cancel a still-pending staggered cue
   }, [hp.hydrated, hp.status]);
 
+  // Death-save pips (#90): a bright ping on a NEW success, a low damped tone on a new
+  // failure. Baselined on first hydration so reopening mid-save doesn't fire a cue.
+  const prevSaves = useRef({ s: 0, f: 0 });
+  const savesBaselined = useRef(false);
+  useEffect(() => {
+    if (!hp.hydrated) return;
+    if (!savesBaselined.current) {
+      prevSaves.current = { s: hp.successes, f: hp.failures };
+      savesBaselined.current = true;
+      return;
+    }
+    // Only chirp a pip while STILL making saves: on the 3rd success/failure the status
+    // flips to stable/dead in the same render, and the status watcher above owns that
+    // moment (stabilize/death) — so gate on `dying` to avoid a double-fire (Codex #271,
+    // sound-design.md "never double-fire").
+    if (hp.status === "dying") {
+      if (hp.successes > prevSaves.current.s) playSfx("deathSavePass");
+      else if (hp.failures > prevSaves.current.f) playSfx("deathSaveFail");
+    }
+    prevSaves.current = { s: hp.successes, f: hp.failures };
+  }, [hp.hydrated, hp.status, hp.successes, hp.failures]);
 
   const undoLabel = (lc: NonNullable<HpLastChange>) =>
     lc.kind === "damage" ? `Took ${lc.amount}`
