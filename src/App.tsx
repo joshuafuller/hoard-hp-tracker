@@ -128,10 +128,16 @@ export function App() {
       savesBaselined.current = true;
       return;
     }
-    if (hp.successes > prevSaves.current.s) playSfx("deathSavePass");
-    else if (hp.failures > prevSaves.current.f) playSfx("deathSaveFail");
+    // Only chirp a pip while STILL making saves: on the 3rd success/failure the status
+    // flips to stable/dead in the same render, and the status watcher above owns that
+    // moment (stabilize/death) — so gate on `dying` to avoid a double-fire (Codex #271,
+    // sound-design.md "never double-fire").
+    if (hp.status === "dying") {
+      if (hp.successes > prevSaves.current.s) playSfx("deathSavePass");
+      else if (hp.failures > prevSaves.current.f) playSfx("deathSaveFail");
+    }
     prevSaves.current = { s: hp.successes, f: hp.failures };
-  }, [hp.hydrated, hp.successes, hp.failures]);
+  }, [hp.hydrated, hp.status, hp.successes, hp.failures]);
 
   const undoLabel = (lc: NonNullable<HpLastChange>) =>
     lc.kind === "damage" ? `Took ${lc.amount}`
