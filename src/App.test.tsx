@@ -123,6 +123,18 @@ describe("App (integration)", () => {
     await waitFor(() => expect(playSfx).toHaveBeenCalledWith("tempGained"));
   });
 
+  it("does NOT chirp the ward shimmer when reopening with existing temp HP (hydration baseline, Copilot #273)", async () => {
+    const db = createHpDb();
+    await db.hp.put({
+      id: HP_ID, current: 10, max: 10, temp: 5, successes: 0, failures: 0,
+      hitDieSize: 8, hitDiceTotal: 1, hitDiceAvailable: 1, conMod: 0, name: "", concentrating: false,
+    });
+    db.close();
+    render(<App />);
+    await screen.findByText("10"); // hydrated (with the persisted +5 temp)
+    expect(playSfx).not.toHaveBeenCalledWith("tempGained");
+  });
+
   it("does NOT chirp a pip when reopening already mid-save (hydration baseline, Copilot #271)", async () => {
     // Seed a downed character already holding 2 failures, then mount.
     const db = createHpDb();
