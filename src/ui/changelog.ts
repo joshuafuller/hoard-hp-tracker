@@ -38,8 +38,12 @@ const VERSION_RE = /^##\s+\[([^\]]+)\]\([^)]*\)(?:\s*\(([^)]+)\))?/;
 const SECTION_RE = /^###\s+(.+?)\s*$/;
 const BULLET_RE = /^\*\s+(.+)$/;
 const REF_RE = /\[#(\d+)\]/g;
-// A trailing markdown link group like ` ([#249](url))` or ` ([abc123](url))`.
-const LINK_GROUP_RE = /\s*\(\[[^\]]+\]\([^)]*\)\)/g;
+// A parenthetical group that CONTAINS a markdown link — `([#249](url))`, `([sha](url))`,
+// or with surrounding prose like `(Copilot+Codex [#219](url))` / `(bot review [#221](url))`.
+// Removed wholesale (it's GitHub bookkeeping, not prose).
+const LINK_PAREN_RE = /\s*\([^()]*\[[^\]]+\]\([^)]*\)[^()]*\)/g;
+// Any remaining inline markdown link → keep just its label (`[label](url)` → `label`).
+const INLINE_LINK_RE = /\[([^\]]+)\]\([^)]*\)/g;
 // A leading conventional-commit scope: `**dice:** the rest…` → ["dice", "the rest…"].
 const SCOPE_RE = /^\*\*([^:*]+):\*\*\s*(.*)$/;
 
@@ -78,7 +82,11 @@ export function parseChangelog(md: string): ChangelogEntry[] {
     if (b && section) {
       const raw = b[1]!;
       const refs = [...raw.matchAll(REF_RE)].map((m) => `#${m[1]}`);
-      const stripped = raw.replace(LINK_GROUP_RE, "").trim();
+      const stripped = raw
+        .replace(LINK_PAREN_RE, "") // drop "(… [#NN](url) …)" bookkeeping groups
+        .replace(INLINE_LINK_RE, "$1") // any remaining markdown link → its label
+        .replace(/\s{2,}/g, " ")
+        .trim();
       // Pull a leading `**scope:**` out of the prose so the UI can show it as a tag.
       const m = SCOPE_RE.exec(stripped);
       const item: ChangeItem = m

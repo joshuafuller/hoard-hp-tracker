@@ -73,4 +73,18 @@ describe("parseChangelog (#209)", () => {
     expect(e).toHaveLength(1); // only the versioned entry
     expect(e[0]!.sections).toHaveLength(1); // just "Fixed"; the post-Unreleased section is dropped
   });
+
+  it("strips link-bearing parentheticals (even with surrounding prose) + inline links (Codex #266)", () => {
+    const md = [
+      "## [1.0.0](u) (2026-01-01)",
+      "### Fixed",
+      "* **ci:** deflaked the share test (Copilot+Codex [#219](https://x/219)) ([#221](https://x/221))",
+      "* see the [docs](https://x/docs) for more",
+    ].join("\n");
+    const items = parseChangelog(md)[0]!.sections[0]!.items;
+    expect(items[0]!.scope).toBe("ci");
+    expect(items[0]!.text).toBe("deflaked the share test"); // no raw markdown leaks
+    expect(items[0]!.refs).toEqual(["#219", "#221"]);
+    expect(items[1]!.text).toBe("see the docs for more"); // inline link → its label
+  });
 });
