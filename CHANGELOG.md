@@ -9,6 +9,13 @@ Entries describe changes in player-meaningful terms, not raw commit subjects. On
 [release-please](https://github.com/googleapis/release-please) is adopted (#169), the
 sections below `Unreleased` will be generated automatically from Conventional Commits.
 
+## [0.0.14](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.13...v0.0.14) (2026-06-24)
+
+
+### Fixed
+
+* **ios:** character name no longer vanishes after entering ([#288](https://github.com/joshuafuller/hoard-hp-tracker/issues/288)) ([#289](https://github.com/joshuafuller/hoard-hp-tracker/issues/289)) ([309f54a](https://github.com/joshuafuller/hoard-hp-tracker/commit/309f54acf28e0ceb1d62f35a55deef9172f2fb87))
+
 ## [0.0.13](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.12...v0.0.13) (2026-06-24)
 
 
