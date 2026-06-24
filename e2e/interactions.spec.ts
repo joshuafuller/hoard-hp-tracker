@@ -31,7 +31,7 @@
  * soft keyboard.
  */
 
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 
 /** The full tap budget for a core HP action: 1 to open the keypad + 2 to apply. */
 const INTERACTION_BUDGET = 3;

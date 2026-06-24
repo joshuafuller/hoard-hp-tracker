@@ -7,7 +7,7 @@
  * canvas otherwise intercepts Playwright's pointer hit-test — see layout.spec.ts).
  * When closed the fan is inert + aria-hidden, so role/label queries only match it open.
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 
 async function openHub(page: Page) {
   await page.goto("/");

@@ -4,7 +4,7 @@
  * reloads, and asserts the value is restored from the database — not in-memory
  * carryover. Runs on both mobile viewport projects.
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 
 async function load(page: Page) {
   await page.goto("/");

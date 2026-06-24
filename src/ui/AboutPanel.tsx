@@ -13,6 +13,8 @@ export const REPO_URL = "https://github.com/joshuafuller/hoard-hp-tracker";
 export interface AboutPanelProps {
   /** Dismiss the panel (close button, backdrop, or Escape). */
   onClose: () => void;
+  /** Replay the feature tour (#181) — closes About and starts the tour. Optional. */
+  onTakeTour?: () => void;
 }
 
 const FEATURES = ["Offline-first", "Installable PWA", "Open source"];
@@ -25,7 +27,7 @@ const FEATURES = ["Offline-first", "Installable PWA", "Open source"];
  * fully offline. Dismisses on the close button, a backdrop tap, or Escape; focus
  * moves into the dialog on open.
  */
-export function AboutPanel({ onClose }: AboutPanelProps) {
+export function AboutPanel({ onClose, onTakeTour }: AboutPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   useDialogFocus(panelRef); // trap Tab within the panel + restore focus to the trigger on close (#262)
 
@@ -106,6 +108,16 @@ export function AboutPanel({ onClose }: AboutPanelProps) {
           </svg>
           <span aria-live="polite">{copied ? "Link copied" : "Share Hoard"}</span>
         </button>
+
+        {onTakeTour && (
+          <button type="button" className="about-panel__share about-panel__tour" onClick={onTakeTour}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 2a8 8 0 00-8 8c0 5 8 12 8 12s8-7 8-12a8 8 0 00-8-8z" />
+              <circle cx="12" cy="10" r="2.5" />
+            </svg>
+            <span>Take the tour</span>
+          </button>
+        )}
 
         <a
           className="about-panel__link"

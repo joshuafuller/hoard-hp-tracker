@@ -10,7 +10,7 @@
  * test driving `onRollComplete`, tracked separately under #161. Don't read this green
  * as "the real physics path is covered."
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("dice tray — roll → result → apply (reduced-motion / headless path)", () => {
   test.beforeEach(async ({ page }) => {

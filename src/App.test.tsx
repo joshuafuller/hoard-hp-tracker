@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import { playSfx } from "./sound/sfx";
 import { createHpDb, HP_DB_NAME, HP_ID } from "./store/db";
+import { TOUR_KEY } from "./ui/tourSteps";
 
 vi.mock("./sound/sfx", () => ({
   playSfx: vi.fn(),
@@ -22,6 +23,7 @@ describe("App (integration)", () => {
   beforeEach(async () => {
     await Dexie.delete(HP_DB_NAME);
     vi.mocked(playSfx).mockClear(); // isolate per-test playSfx assertions (Copilot #158)
+    localStorage.setItem(TOUR_KEY, "true"); // suppress the first-run tour during integration tests
   });
 
   // The ± steppers were removed in favour of orb-drag; damage/heal now go
@@ -291,5 +293,23 @@ describe("App (integration)", () => {
     await userEvent.click(screen.getByRole("button", { name: /^add$/i }));
     // The unified keypad stays open; the Gold switcher button now reads 8 (seed 0 → 8).
     await waitFor(() => expect(screen.getByRole("button", { name: /gold — 8 gp/i })).toBeInTheDocument());
+  });
+
+  it("auto-shows the feature tour on first run, once hydrated (#178/#181)", async () => {
+    localStorage.removeItem(TOUR_KEY); // first run = not yet seen (overrides the beforeEach suppression)
+    render(<App />);
+    expect(await screen.findByRole("dialog", { name: /feature tour/i })).toBeInTheDocument();
+  });
+
+  it("replaying the tour from About returns to About when it closes (#181)", async () => {
+    render(<App />); // beforeEach marked the tour seen → no first-run tour
+    await userEvent.click(screen.getByRole("button", { name: "Actions" }));
+    await userEvent.click(screen.getByRole("button", { name: "About" }));
+    await userEvent.click(screen.getByRole("button", { name: /take the tour/i }));
+    expect(screen.getByRole("dialog", { name: /feature tour/i })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /about/i })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Skip" }));
+    expect(await screen.findByRole("dialog", { name: /about/i })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /feature tour/i })).toBeNull();
   });
 });

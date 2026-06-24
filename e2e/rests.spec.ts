@@ -3,7 +3,7 @@
  * long rest at the App level, but a real-browser e2e catches layout/overlay
  * regressions jsdom can't — e.g. the always-mounted dice tray covering the footer.
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 const current = (page: import("@playwright/test").Page) => page.locator(".vessel__current");
 

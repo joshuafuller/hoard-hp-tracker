@@ -3,7 +3,7 @@
  * CON-save prompt; Keep preserves concentration, Drop ends it; no prompt when
  * concentration is off. Runs on both mobile viewport projects.
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 
 async function load(page: Page) {
   await page.goto("/");
