@@ -9,6 +9,20 @@ Entries describe changes in player-meaningful terms, not raw commit subjects. On
 [release-please](https://github.com/googleapis/release-please) is adopted (#169), the
 sections below `Unreleased` will be generated automatically from Conventional Commits.
 
+## [0.0.10](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.9...v0.0.10) (2026-06-24)
+
+
+### Added
+
+* **sound:** death-save pip cues ([#90](https://github.com/joshuafuller/hoard-hp-tracker/issues/90) slice) ([#271](https://github.com/joshuafuller/hoard-hp-tracker/issues/271)) ([f1ad193](https://github.com/joshuafuller/hoard-hp-tracker/commit/f1ad19342aab65222fd00d3e6ab40e717eb189e0))
+
+
+### Fixed
+
+* **changelog:** mixed-heading parsing + hardened render key ([#261](https://github.com/joshuafuller/hoard-hp-tracker/issues/261)) ([#275](https://github.com/joshuafuller/hoard-hp-tracker/issues/275)) ([db392c5](https://github.com/joshuafuller/hoard-hp-tracker/commit/db392c557d573c4e2645b45eb17c2c019bc7f9d6))
+* **coins:** clear save-error banner after a successful coin write ([#260](https://github.com/joshuafuller/hoard-hp-tracker/issues/260)) ([#274](https://github.com/joshuafuller/hoard-hp-tracker/issues/274)) ([d6c3683](https://github.com/joshuafuller/hoard-hp-tracker/commit/d6c3683728225bcf6e433e3c0833c7711289d109))
+* **dice:** resilient, silent best-effort roll-history persistence ([#263](https://github.com/joshuafuller/hoard-hp-tracker/issues/263)) ([#276](https://github.com/joshuafuller/hoard-hp-tracker/issues/276)) ([b5e9c5d](https://github.com/joshuafuller/hoard-hp-tracker/commit/b5e9c5d1b8629c9926d96113febfcce412e057b9))
+
 ## [0.0.9](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.8...v0.0.9) (2026-06-24)
 
 
