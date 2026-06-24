@@ -9,6 +9,13 @@ Entries describe changes in player-meaningful terms, not raw commit subjects. On
 [release-please](https://github.com/googleapis/release-please) is adopted (#169), the
 sections below `Unreleased` will be generated automatically from Conventional Commits.
 
+## [0.0.8](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.7...v0.0.8) (2026-06-24)
+
+
+### Added
+
+* **about:** in-app 'What's new' changelog from the version line ([#209](https://github.com/joshuafuller/hoard-hp-tracker/issues/209)) ([#256](https://github.com/joshuafuller/hoard-hp-tracker/issues/256)) ([b9c0b93](https://github.com/joshuafuller/hoard-hp-tracker/commit/b9c0b934441a58a189c81bb42fc75463b766f529))
+
 ## [0.0.7](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.6...v0.0.7) (2026-06-24)
 
 
