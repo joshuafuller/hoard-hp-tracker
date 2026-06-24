@@ -53,10 +53,20 @@ describe("WhatsNew (#209, #266)", () => {
   });
 
   it("renders the real bundled changelog with no React duplicate-key warnings (#261)", () => {
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-    render(<WhatsNew entries={CHANGELOG} onClose={() => {}} />);
-    const keyWarnings = spy.mock.calls.filter((c) => /same key|duplicate key/i.test(String(c[0])));
-    expect(keyWarnings).toEqual([]);
-    spy.mockRestore();
+    const realError = console.error.bind(console);
+    const keyWarnings: unknown[][] = [];
+    // Capture only duplicate-key warnings; forward any OTHER console.error to the real
+    // console so genuine errors still surface (Copilot #275). Restore in finally so an
+    // assertion failure can't leak the spy into later tests.
+    const spy = vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+      if (/same key|duplicate key/i.test(String(args[0]))) keyWarnings.push(args);
+      else realError(...(args as Parameters<typeof console.error>));
+    });
+    try {
+      render(<WhatsNew entries={CHANGELOG} onClose={() => {}} />);
+      expect(keyWarnings).toEqual([]);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
