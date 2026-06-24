@@ -87,6 +87,13 @@ describe("coins", () => {
       expect(totalCp(after)).toBe(totalCp(before) - 50);
     });
 
+    it("spends the ENTIRE purse exactly, emptying it (#265 — exact-funds boundary)", () => {
+      // totalCp(c) === want * CP_VALUE[kind] must SUCCEED, not be rejected as "insufficient"
+      // (a `<=` guard would wrongly reject spending your whole purse).
+      expect(spendCoin(C(0, 1, 0, 0), "sp", 10)).toEqual(C(0, 0, 0, 0)); // 1 gp == 10 sp
+      expect(spendCoin(C(1, 0, 0, 0), "gp", 10)).toEqual(C(0, 0, 0, 0)); // 1 pp == 10 gp
+    });
+
     it("leaves the purse unchanged when funds are insufficient (never negative)", () => {
       expect(spendCoin(C(0, 3, 0, 0), "gp", 10)).toEqual(C(0, 3, 0, 0));
       expect(spendCoin(C(0, 0, 0, 0), "cp", 1)).toEqual(C(0, 0, 0, 0));
