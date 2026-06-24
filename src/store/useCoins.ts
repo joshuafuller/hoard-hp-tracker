@@ -11,7 +11,7 @@ import {
   totalGp,
 } from "../domain/coins";
 import { db as defaultDb, HP_ID, type HpDb, type HpRecord, isReloading } from "./db";
-import { reportSaveError } from "./saveError";
+import { clearSaveError, reportSaveError } from "./saveError";
 
 export interface UseCoinsResult extends Coins {
   hydrated: boolean;
@@ -52,11 +52,13 @@ export function useCoins(db: HpDb = defaultDb): UseCoinsResult {
       });
     try {
       await run();
+      clearSaveError(); // a successful write clears any prior save-error banner (#260, symmetric with useHp)
     } catch (err) {
       if (isReloading()) return;
       try {
         if (!db.isOpen()) await db.open();
         await run();
+        clearSaveError(); // a successful reopen-retry clears it too (#260)
       } catch (err2) {
         // Both attempts failed (quota, private mode, blocked upgrade). Log the
         // *retry* error (the relevant one) with the original as context, then

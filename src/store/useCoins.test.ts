@@ -111,4 +111,25 @@ describe("useCoins", () => {
     expect(result.current.saveFailed).toBe(true);
     clearSaveError();
   });
+
+  it("clears the save-error signal after a later successful coin write (#260)", async () => {
+    clearSaveError();
+    const { result } = renderHook(() => ({ coins: useCoins(db), saveFailed: useSaveError() }));
+    await waitFor(() => expect(result.current.coins.hydrated).toBe(true));
+
+    // A transient failure raises the shared banner.
+    const putSpy = vi.spyOn(db.hp, "put").mockRejectedValue(new Error("QuotaExceededError"));
+    await act(async () => {
+      await result.current.coins.add("gp", 5);
+    });
+    expect(result.current.saveFailed).toBe(true);
+
+    // A later SUCCESSFUL coin write clears it (symmetric with useHp, #260).
+    putSpy.mockRestore();
+    await act(async () => {
+      await result.current.coins.add("gp", 1);
+    });
+    expect(result.current.saveFailed).toBe(false);
+    clearSaveError();
+  });
 });
