@@ -15,6 +15,7 @@ sections below `Unreleased` will be generated automatically from Conventional Co
 ### Added
 
 * **layout:** responsive — phone-fill, tablet card, landscape reflow ([#88](https://github.com/joshuafuller/hoard-hp-tracker/issues/88)) ([#270](https://github.com/joshuafuller/hoard-hp-tracker/issues/270)) ([89fc3a7](https://github.com/joshuafuller/hoard-hp-tracker/commit/89fc3a79e472f74016ae2708c7347970f994d564))
+* **tour:** feature tour content + first-run trigger ([#178](https://github.com/joshuafuller/hoard-hp-tracker/issues/178), [#181](https://github.com/joshuafuller/hoard-hp-tracker/issues/181)) ([#269](https://github.com/joshuafuller/hoard-hp-tracker/issues/269)) ([cc55cd5](https://github.com/joshuafuller/hoard-hp-tracker/commit/cc55cd55d5fbd09dd982f479f035728b41809f84))
 
 ## [0.0.11](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.10...v0.0.11) (2026-06-24)
 
