@@ -33,6 +33,8 @@ describe("WhatsNew (#209, #266)", () => {
     expect(screen.queryByText("v0.0.5")).toBeNull(); // beyond the recent window
     fireEvent.click(screen.getByRole("button", { name: /show 2 older/i }));
     expect(screen.getByText("v0.0.5")).toBeInTheDocument();
+    // Focus moved to a stable control (the button unmounted) — not dropped to <body> (Copilot).
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Close" }));
   });
 
   it("closes via the ✕, the backdrop, and Escape", () => {

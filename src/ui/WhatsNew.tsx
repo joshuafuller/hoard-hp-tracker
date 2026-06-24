@@ -104,7 +104,16 @@ export function WhatsNew({ entries, onClose }: WhatsNewProps) {
             </section>
           ))}
           {olderCount > 0 && (
-            <button type="button" className="whatsnew__more" onClick={() => setShowAll(true)}>
+            <button
+              type="button"
+              className="whatsnew__more"
+              onClick={() => {
+                // The button unmounts (olderCount → 0); move focus to a stable control
+                // FIRST so keyboard focus isn't dropped to <body> (Copilot a11y).
+                dialogRef.current?.querySelector<HTMLButtonElement>(".whatsnew__close")?.focus();
+                setShowAll(true);
+              }}
+            >
               Show {olderCount} older version{olderCount > 1 ? "s" : ""}
             </button>
           )}
