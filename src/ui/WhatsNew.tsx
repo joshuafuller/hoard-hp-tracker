@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { IconButton } from "./controls";
 import type { ChangelogEntry } from "./changelog";
 import "./WhatsNew.css";
@@ -9,32 +9,41 @@ interface WhatsNewProps {
   onClose: () => void;
 }
 
-/** Render a bullet's text with `**scope:**` spans bolded (the only markdown we emit). */
-function renderText(text: string) {
-  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
-    part.startsWith("**") && part.endsWith("**") ? (
-      <strong key={i}>{part.slice(2, -2)}</strong>
-    ) : (
-      <span key={i}>{part}</span>
-    ),
-  );
+/** How many recent versions to show before the "Show older" affordance (#266). */
+const RECENT = 3;
+
+/** Capitalise the first letter (the scope prefix is now a separate tag, so the prose
+ *  used to start lower-case, e.g. "pluggable…" → "Pluggable…"). */
+function sentence(text: string): string {
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+}
+
+/** Classify a section heading so its dot can be colour-coded (#266). */
+function sectionKind(title: string): "added" | "fixed" | "changed" {
+  const t = title.toLowerCase();
+  if (t.includes("add") || t.includes("feat")) return "added";
+  if (t.includes("fix")) return "fixed";
+  return "changed";
 }
 
 /**
- * "What's new" (#209): an offline, read-only changelog view reached from the About
- * version line. Renders the bundled, parsed CHANGELOG — never fetches. Dialog
- * semantics + Escape/backdrop close + focus on open; reduced-motion via CSS.
+ * "What's new" (#209, polished #266): an offline, read-only changelog reached from the
+ * About version line. Player-facing — the commit scope becomes a subtle category tag,
+ * issue refs are dropped, sections get colour-coded dots, and only the most recent
+ * versions show until "Show older". Dialog semantics + Escape/backdrop close + focus on
+ * open; reduced-motion via CSS. Renders the bundled, parsed CHANGELOG — never fetches.
  */
 export function WhatsNew({ entries, onClose }: WhatsNewProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const [showAll, setShowAll] = useState(false);
+  const visible = showAll ? entries : entries.slice(0, RECENT);
+  const olderCount = entries.length - visible.length;
+
   useEffect(() => {
-    // Move focus into the dialog (the close button) on open, for keyboard + SR users.
     dialogRef.current?.querySelector<HTMLButtonElement>(".whatsnew__close")?.focus();
     const onKey = (e: KeyboardEvent) => {
-      // Stop Escape before it reaches About's own window-level handler — otherwise it
-      // closes this AND the About panel underneath (Codex #256). Same reason the
-      // backdrop click below stops propagation: a React PORTAL still bubbles events
-      // through the React tree (into About's backdrop), DOM relocation notwithstanding.
+      // Stop Escape before About's window-level handler — a React portal still bubbles
+      // through the React tree, so this would otherwise close About too (Codex #256).
       if (e.key === "Escape") {
         e.stopPropagation();
         onClose();
@@ -70,20 +79,23 @@ export function WhatsNew({ entries, onClose }: WhatsNewProps) {
         <h2 className="whatsnew__title">What&rsquo;s new</h2>
         <div className="whatsnew__scroll">
           {entries.length === 0 && <p className="whatsnew__empty">No release notes yet.</p>}
-          {entries.map((entry) => (
+          {visible.map((entry) => (
             <section className="whatsnew__release" key={entry.version}>
               <h3 className="whatsnew__version">
-                v{entry.version}
+                <span className="whatsnew__v">v{entry.version}</span>
                 {entry.date && <span className="whatsnew__date">{entry.date}</span>}
               </h3>
               {entry.sections.map((section) => (
                 <div className="whatsnew__section" key={section.title}>
-                  <h4 className="whatsnew__section-title">{section.title}</h4>
+                  <h4 className="whatsnew__section-title" data-kind={sectionKind(section.title)}>
+                    <span className="whatsnew__sdot" aria-hidden="true" />
+                    {section.title}
+                  </h4>
                   <ul className="whatsnew__items">
                     {section.items.map((item, i) => (
                       <li className="whatsnew__item" key={i}>
-                        {renderText(item.text)}
-                        {item.refs.length > 0 && <span className="whatsnew__refs"> ({item.refs.join(", ")})</span>}
+                        {item.scope && <span className="whatsnew__tag">{item.scope}</span>}
+                        <span className="whatsnew__text">{sentence(item.text)}</span>
                       </li>
                     ))}
                   </ul>
@@ -91,6 +103,11 @@ export function WhatsNew({ entries, onClose }: WhatsNewProps) {
               ))}
             </section>
           ))}
+          {olderCount > 0 && (
+            <button type="button" className="whatsnew__more" onClick={() => setShowAll(true)}>
+              Show {olderCount} older version{olderCount > 1 ? "s" : ""}
+            </button>
+          )}
         </div>
       </div>
     </div>
