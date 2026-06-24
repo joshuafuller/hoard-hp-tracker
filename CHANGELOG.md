@@ -9,13 +9,19 @@ Entries describe changes in player-meaningful terms, not raw commit subjects. On
 [release-please](https://github.com/googleapis/release-please) is adopted (#169), the
 sections below `Unreleased` will be generated automatically from Conventional Commits.
 
+## [0.0.13](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.12...v0.0.13) (2026-06-24)
+
+
+### Added
+
+* **tour:** 'name your character' onboarding step ([#179](https://github.com/joshuafuller/hoard-hp-tracker/issues/179)) ([#284](https://github.com/joshuafuller/hoard-hp-tracker/issues/284)) ([89e9489](https://github.com/joshuafuller/hoard-hp-tracker/commit/89e94898504d73770e3c85e5017106d2cc91d5a8))
+
 ## [0.0.12](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.11...v0.0.12) (2026-06-24)
 
 
 ### Added
 
 * **layout:** responsive — phone-fill, tablet card, landscape reflow ([#88](https://github.com/joshuafuller/hoard-hp-tracker/issues/88)) ([#270](https://github.com/joshuafuller/hoard-hp-tracker/issues/270)) ([89fc3a7](https://github.com/joshuafuller/hoard-hp-tracker/commit/89fc3a79e472f74016ae2708c7347970f994d564))
-* **tour:** feature tour content + first-run trigger ([#178](https://github.com/joshuafuller/hoard-hp-tracker/issues/178), [#181](https://github.com/joshuafuller/hoard-hp-tracker/issues/181)) ([#269](https://github.com/joshuafuller/hoard-hp-tracker/issues/269)) ([cc55cd5](https://github.com/joshuafuller/hoard-hp-tracker/commit/cc55cd55d5fbd09dd982f479f035728b41809f84))
 
 ## [0.0.11](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.10...v0.0.11) (2026-06-24)
 
