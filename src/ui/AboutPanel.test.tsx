@@ -34,6 +34,12 @@ describe("AboutPanel", () => {
     ).toBeInTheDocument();
   });
 
+  it("opens the What's new changelog from the version line (#209)", () => {
+    render(<AboutPanel onClose={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /what.s new/i }));
+    expect(screen.getByRole("dialog", { name: /what.s new/i })).toBeInTheDocument();
+  });
+
   it("shows a traceable build identity beneath the version (#169)", () => {
     render(<AboutPanel onClose={vi.fn()} />);
     // A build id (git describe/short-SHA + build date), injected at build via __BUILD__,

@@ -1,0 +1,52 @@
+import { describe, expect, it } from "vitest";
+import { parseChangelog } from "./changelog";
+
+const SAMPLE = `# Changelog
+
+Some preamble that must be ignored.
+
+## [0.0.6](https://x/compare/v0.0.5...v0.0.6) (2026-06-23)
+
+
+### Fixed
+
+* **about:** close ✕ was covered by the panel hero — lift it with z-index ([#249](https://x/issues/249)) ([#250](https://x/issues/250)) ([27d94df](https://x/commit/27d94df))
+* **sound:** resume the AudioContext before scheduling cues ([#248](https://x/issues/248)) ([#252](https://x/issues/252))
+
+## [0.0.5](https://x/compare/v0.0.4...v0.0.5) (2026-06-22)
+
+
+### Features
+
+* **haptics:** authentic tactile feel — shared module + felt heartbeat ([#245](https://x/issues/245))
+`;
+
+describe("parseChangelog (#209)", () => {
+  const entries = parseChangelog(SAMPLE);
+
+  it("returns one entry per version header, newest first, ignoring the preamble", () => {
+    expect(entries.map((e) => e.version)).toEqual(["0.0.6", "0.0.5"]);
+  });
+
+  it("captures the release date", () => {
+    expect(entries[0]!.date).toBe("2026-06-23");
+  });
+
+  it("groups bullets under their section title", () => {
+    const v6 = entries[0]!;
+    expect(v6.sections.map((s) => s.title)).toEqual(["Fixed"]);
+    expect(v6.sections[0]!.items).toHaveLength(2);
+  });
+
+  it("strips the link clutter from the bullet text but keeps issue refs", () => {
+    const item = entries[0]!.sections[0]!.items[0]!;
+    expect(item.text).toBe("**about:** close ✕ was covered by the panel hero — lift it with z-index");
+    expect(item.refs).toEqual(["#249", "#250"]); // commit sha excluded
+  });
+
+  it("parses a Features section on another version", () => {
+    const v5 = entries[1]!;
+    expect(v5.sections[0]!.title).toBe("Features");
+    expect(v5.sections[0]!.items[0]!.refs).toEqual(["#245"]);
+  });
+});
