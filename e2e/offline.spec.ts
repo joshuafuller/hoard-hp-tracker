@@ -4,7 +4,7 @@
  * manifest. Runs against the production build (the webServer previews `dist`,
  * where vite-plugin-pwa emits the SW + manifest). Both viewport projects.
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 
 const swReady = (page: Page) =>
   page.evaluate(async () => {

@@ -8,7 +8,7 @@
  * over the WebGL orb canvas, which confuses Playwright's pointer hit-test — same
  * dispatchEvent escape hatch as layout.spec.ts's dice-open).
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 
 async function openCoins(page: Page) {
   await page.goto("/");

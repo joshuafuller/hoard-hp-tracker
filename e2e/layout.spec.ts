@@ -16,7 +16,7 @@
  *     large enough to tap (≥ 80 px wide).
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("mobile layout", () => {
   test.beforeEach(async ({ page }) => {
