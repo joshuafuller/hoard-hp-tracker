@@ -4,6 +4,7 @@ import { IconButton } from "./controls";
 import { shareHoard } from "./shareHoard";
 import { WhatsNew } from "./WhatsNew";
 import { CHANGELOG } from "./changelogData";
+import { useDialogFocus } from "./useDialogFocus";
 import "./AboutPanel.css";
 
 /** The canonical source-repo URL (the project lives on GitHub). */
@@ -26,6 +27,7 @@ const FEATURES = ["Offline-first", "Installable PWA", "Open source"];
  */
 export function AboutPanel({ onClose }: AboutPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(panelRef); // trap Tab within the panel + restore focus to the trigger on close (#262)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
