@@ -9,6 +9,13 @@ Entries describe changes in player-meaningful terms, not raw commit subjects. On
 [release-please](https://github.com/googleapis/release-please) is adopted (#169), the
 sections below `Unreleased` will be generated automatically from Conventional Commits.
 
+## [0.0.11](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.10...v0.0.11) (2026-06-24)
+
+
+### Added
+
+* **sound:** temp-HP shimmer + prefers-reduced-motion simplification ([#90](https://github.com/joshuafuller/hoard-hp-tracker/issues/90)) ([#273](https://github.com/joshuafuller/hoard-hp-tracker/issues/273)) ([40106c5](https://github.com/joshuafuller/hoard-hp-tracker/commit/40106c5c42d1d887cab030c3fe8405f9bf113ae7))
+
 ## [0.0.10](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.9...v0.0.10) (2026-06-24)
 
 
