@@ -80,20 +80,68 @@
   flex: 1 1 auto;
   min-height: 0;
   width: 100%;
-  max-width: 30rem;
+  /* Phones (#88, spike §3): fill edge-to-edge — the dark stage IS the card on a fullscreen
+     PWA, so drop the width cap + the frame (border/radius/shadow) and tighten the side
+     padding. Content stays inside the safe area via .hp-tracker's insets. Tablet re-frames. */
+  max-width: none;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: clamp(0.3rem, 1.2vh, 0.9rem); /* fallback for browsers without svh */
   gap: clamp(0.3rem, 1.2svh, 0.9rem);
-  padding: clamp(0.7rem, 2.4svh, 1.5rem) clamp(0.8rem, 4vw, 1.5rem);
+  padding: clamp(0.7rem, 2.4vh, 1.5rem) clamp(0.5rem, 3vw, 1.1rem); /* fallback for browsers without svh */
+  padding: clamp(0.7rem, 2.4svh, 1.5rem) clamp(0.5rem, 3vw, 1.1rem);
   background: linear-gradient(180deg, #17140d, #100e0a);
-  border: 1px solid #2a2418;
-  border-radius: 28px;
-  overflow: hidden; /* a real card: clip content to the rounded shape */
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 244, 206, 0.05);
+  border: 0;
+  border-radius: 0;
+  overflow: hidden;
+}
+/* Tablet+ (≥768): re-introduce the framed card as an intentional centered object. */
+@media (min-width: 768px) {
+  .hp-tracker__card {
+    max-width: 36rem;
+    padding: clamp(1rem, 2.4vh, 1.6rem) clamp(1rem, 4vw, 1.6rem); /* fallback for browsers without svh */
+    padding: clamp(1rem, 2.4svh, 1.6rem) clamp(1rem, 4vw, 1.6rem);
+    border: 1px solid #2a2418;
+    border-radius: 28px;
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 244, 206, 0.05);
+  }
+}
+
+/* Short landscape — a rotated phone (#88, spike §4): the portrait column (name → orb →
+   panel → footer) would overflow ~390px of height and clip a control, so reflow to TWO
+   columns — the orb on the left spanning full height, the name + panel + footer stacked
+   on the right. Gated to SHORT landscape so tall landscape tablets keep the portrait
+   composition. "Must-not-break", not polish — the guarantee is nothing clips. */
+@media (orientation: landscape) and (max-height: 540px) {
+  .hp-tracker__card {
+    max-width: none;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 1.1rem;
+    padding: clamp(0.3rem, 2vh, 0.7rem) clamp(0.6rem, 3vw, 1.2rem); /* fallback for browsers without svh */
+    padding: clamp(0.3rem, 2svh, 0.7rem) clamp(0.6rem, 3vw, 1.2rem);
+  }
+  .hp-tracker__stage { grid-column: 1; grid-row: 1 / 4; } /* orb spans the full height, left */
+  .character-name { grid-column: 2; grid-row: 1; }
+  .hp-tracker__panel { grid-column: 2; grid-row: 2; }
+  .hp-tracker__footer { grid-column: 2; grid-row: 3; }
+  /* Explicit square: in the grid cell the base `height:100%` has no definite parent to
+     resolve against (it collapses to min-height), so size the orb directly off the smaller
+     of the left-column width budget and the short viewport height. */
+  .vessel {
+    width: min(46vw, 80vh); /* fallback for browsers without svh */
+    width: min(46vw, 80svh);
+    height: min(46vw, 80vh);
+    height: min(46vw, 80svh);
+    max-width: none;
+    max-height: none;
+  }
 }
 
 /* Save-failure banner (#101) — ruby alert, dismissible, existing tokens only. */
