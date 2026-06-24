@@ -139,6 +139,22 @@ export function App() {
     prevSaves.current = { s: hp.successes, f: hp.failures };
   }, [hp.hydrated, hp.status, hp.successes, hp.failures]);
 
+  // Temp-HP gained (#90): a soft ward shimmer when temp HP INCREASES (a new ward), not on
+  // a decrease (a hit soaking it). Baselined on first hydration so reopening with temp is
+  // silent. playSfx self-gates on mute.
+  const prevTemp = useRef(0);
+  const tempBaselined = useRef(false);
+  useEffect(() => {
+    if (!hp.hydrated) return;
+    if (!tempBaselined.current) {
+      prevTemp.current = hp.temp;
+      tempBaselined.current = true;
+      return;
+    }
+    if (hp.temp > prevTemp.current) playSfx("tempGained");
+    prevTemp.current = hp.temp;
+  }, [hp.hydrated, hp.temp]);
+
   const undoLabel = (lc: NonNullable<HpLastChange>) =>
     lc.kind === "damage" ? `Took ${lc.amount}`
     : lc.kind === "heal" ? `Healed +${lc.amount}`

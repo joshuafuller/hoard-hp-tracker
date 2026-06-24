@@ -37,6 +37,7 @@ export const SFX_NAMES = [
   "fumble",
   "deathSavePass",
   "deathSaveFail",
+  "tempGained",
 ] as const;
 
 export type SfxName = (typeof SFX_NAMES)[number];
@@ -124,6 +125,14 @@ export const RECIPES: Record<SfxName, Voice[]> = {
   // success; a low, damped negative tone (E3) on a failure. Short, never startling.
   deathSavePass: [{ type: "sine", freq: 659.25, gain: 0.12, duration: 0.12 }],
   deathSaveFail: [{ type: "sine", freq: 164.81, gain: 0.14, duration: 0.14 }],
+  // Temp HP gained (#90, sound-design.md): a soft two-note ward shimmer (G4 → D5) — a
+  // protective, positive flourish distinct from a heal's warmth. The D5 is STAGGERED so it
+  // reads as a rising shimmer, not a simultaneous chord (Copilot #273; mirrors how
+  // heal/stabilize/longRest delay their second note).
+  tempGained: [
+    { type: "sine", freq: 392, gain: 0.1, duration: 0.18 },
+    { type: "sine", freq: 587.33, gain: 0.07, duration: 0.2, delay: 0.08 },
+  ],
 };
 
 /** The lazily-created, shared AudioContext (null until the first real play). */
@@ -279,6 +288,24 @@ function playCoinCascade(context: AudioContext): void {
   // (so the loudness guard covers it) — not here.
 }
 
+/** True when the user asks for reduced motion — they typically want less sensory load
+ *  overall, so we simplify sound too (sound-design.md §5). Safe where matchMedia is
+ *  absent (jsdom without a mock / SSR). Checked per-play so a flipped pref takes effect
+ *  on the next cue, no reload. */
+function prefersReducedMotion(): boolean {
+  try {
+    return globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  } catch {
+    return false;
+  }
+}
+
+/** Pure-flavor cues — decorative layers/flourishes with no essential confirmation role.
+ *  Silenced entirely under reduced-motion (sound-design.md §5: strip the bloodied swell,
+ *  crit overtones, the coin-distill cascade, the temp-ward shimmer). Everything else is an
+ *  essential confirming cue and still fires, collapsed to its core tone. */
+const FLAVOR_CUES: ReadonlySet<SfxName> = new Set(["crit", "fumble", "coinDistill", "tempGained"]);
+
 /**
  * Play a sound cue by name. No-ops silently when muted, when the name is
  * unknown, or when Web Audio is unavailable.
@@ -287,6 +314,13 @@ export function playSfx(name: SfxName): void {
   if (!isSoundEnabled()) return;
   const recipe = RECIPES[name];
   if (!recipe) return;
+  // prefers-reduced-motion (sound-design.md §5): users wanting less sensory load get a
+  // SIMPLER soundscape — strip pure-flavor cues entirely, and collapse each remaining
+  // multi-voice cue to its single core tone (dropping layered overtones / decorative
+  // tails). Essential confirming cues (damage/heal/death/taps/toggles/saves) still fire,
+  // just plainer. Mute (above) still trumps everything; both are checked at play time.
+  const reduce = prefersReducedMotion();
+  if (reduce && FLAVOR_CUES.has(name)) return;
   const context = ensureContext();
   if (!context) return;
 
@@ -301,11 +335,15 @@ export function playSfx(name: SfxName): void {
         return;
       }
       if (name === "coinDistill") {
-        playCoinCascade(context); // the tumbling ticks
-        for (const voice of recipe) playVoice(context, voice); // the settled ring (guarded)
+        // (Flavor — already returned under reduced-motion above.) The tumbling cascade
+        // plus the settled ring (a RECIPES voice, so the loudness guard covers it).
+        playCoinCascade(context);
+        for (const voice of recipe) playVoice(context, voice);
         return;
       }
-      for (const voice of recipe) playVoice(context, voice);
+      // Collapse multi-voice essential cues to their core tone under reduced-motion.
+      const voices = reduce ? recipe.slice(0, 1) : recipe;
+      for (const voice of voices) playVoice(context, voice);
     } catch {
       /* never let an audio glitch break an interaction */
     }
