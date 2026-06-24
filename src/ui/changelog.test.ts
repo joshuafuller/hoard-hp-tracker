@@ -38,10 +38,18 @@ describe("parseChangelog (#209)", () => {
     expect(v6.sections[0]!.items).toHaveLength(2);
   });
 
-  it("strips the link clutter from the bullet text but keeps issue refs", () => {
+  it("splits the scope out and strips link clutter, keeping issue refs", () => {
     const item = entries[0]!.sections[0]!.items[0]!;
-    expect(item.text).toBe("**about:** close ✕ was covered by the panel hero — lift it with z-index");
+    expect(item.scope).toBe("about"); // leading **scope:** pulled out for a tag
+    expect(item.text).toBe("close ✕ was covered by the panel hero — lift it with z-index");
     expect(item.refs).toEqual(["#249", "#250"]); // commit sha excluded
+  });
+
+  it("leaves text scope-less when there's no **scope:** prefix", () => {
+    const e = parseChangelog("## [1.0.0](u) (2026-01-01)\n### Fixed\n* a plain note, no scope\n");
+    const item = e[0]!.sections[0]!.items[0]!;
+    expect(item.scope).toBeUndefined();
+    expect(item.text).toBe("a plain note, no scope");
   });
 
   it("parses a Features section on another version", () => {
@@ -64,5 +72,19 @@ describe("parseChangelog (#209)", () => {
     const e = parseChangelog(md);
     expect(e).toHaveLength(1); // only the versioned entry
     expect(e[0]!.sections).toHaveLength(1); // just "Fixed"; the post-Unreleased section is dropped
+  });
+
+  it("strips link-bearing parentheticals (even with surrounding prose) + inline links (Codex #266)", () => {
+    const md = [
+      "## [1.0.0](u) (2026-01-01)",
+      "### Fixed",
+      "* **ci:** deflaked the share test (Copilot+Codex [#219](https://x/219)) ([#221](https://x/221))",
+      "* see the [docs](https://x/docs) for more",
+    ].join("\n");
+    const items = parseChangelog(md)[0]!.sections[0]!.items;
+    expect(items[0]!.scope).toBe("ci");
+    expect(items[0]!.text).toBe("deflaked the share test"); // no raw markdown leaks
+    expect(items[0]!.refs).toEqual(["#219", "#221"]);
+    expect(items[1]!.text).toBe("see the docs for more"); // inline link → its label
   });
 });
