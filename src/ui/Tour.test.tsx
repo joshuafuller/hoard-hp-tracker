@@ -35,6 +35,23 @@ describe("Tour engine (#177)", () => {
     expect(screen.getByTestId("tour-block")).toBeInTheDocument(); // blocks background taps (Codex)
   });
 
+  // Positions are derived from window.innerHeight so the "lower/upper half" intent holds
+  // regardless of the test viewport height (Copilot #285).
+  const rectAt = (top: number): DOMRect =>
+    ({ top, left: 10, width: 100, height: 40, bottom: top + 40, right: 110, x: 10, y: top, toJSON: () => ({}) }) as DOMRect;
+
+  it("flips the card to the top when the spotlight target is in the lower half (no overlap)", () => {
+    document.getElementById("orb")!.getBoundingClientRect = () => rectAt(window.innerHeight * 0.8);
+    render(<Tour steps={STEPS} seenKey={KEY} onClose={() => {}} />);
+    expect(document.querySelector(".tour__card")?.getAttribute("data-pos")).toBe("top");
+  });
+
+  it("keeps the card at the bottom when the target is in the upper half", () => {
+    document.getElementById("orb")!.getBoundingClientRect = () => rectAt(window.innerHeight * 0.1);
+    render(<Tour steps={STEPS} seenKey={KEY} onClose={() => {}} />);
+    expect(document.querySelector(".tour__card")?.getAttribute("data-pos")).toBe("bottom");
+  });
+
   it("restores focus to the launching element when it closes (Copilot a11y)", () => {
     const launcher = document.createElement("button");
     document.body.appendChild(launcher);
