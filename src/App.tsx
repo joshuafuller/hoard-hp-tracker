@@ -117,6 +117,21 @@ export function App() {
     return () => clearTimeout(statusCueTimer.current); // cancel a still-pending staggered cue
   }, [hp.hydrated, hp.status]);
 
+  // Death-save pips (#90): a bright ping on a NEW success, a low damped tone on a new
+  // failure. Baselined on first hydration so reopening mid-save doesn't fire a cue.
+  const prevSaves = useRef({ s: 0, f: 0 });
+  const savesBaselined = useRef(false);
+  useEffect(() => {
+    if (!hp.hydrated) return;
+    if (!savesBaselined.current) {
+      prevSaves.current = { s: hp.successes, f: hp.failures };
+      savesBaselined.current = true;
+      return;
+    }
+    if (hp.successes > prevSaves.current.s) playSfx("deathSavePass");
+    else if (hp.failures > prevSaves.current.f) playSfx("deathSaveFail");
+    prevSaves.current = { s: hp.successes, f: hp.failures };
+  }, [hp.hydrated, hp.successes, hp.failures]);
 
   const undoLabel = (lc: NonNullable<HpLastChange>) =>
     lc.kind === "damage" ? `Took ${lc.amount}`

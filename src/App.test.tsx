@@ -97,6 +97,18 @@ describe("App (integration)", () => {
     await waitFor(() => expect(playSfx).toHaveBeenCalledWith("revive"));
   });
 
+  it("plays the death-save pip cues on a new success and failure (#90)", async () => {
+    render(<App />);
+    await screen.findByText("10");
+    await keypad("damage", 10); // → 0 HP, death saves appear
+    await screen.findByLabelText(/death saving throws/i);
+    vi.mocked(playSfx).mockClear(); // ignore the down/transition cues
+    await userEvent.click(screen.getByRole("button", { name: /success 1/i }));
+    await waitFor(() => expect(playSfx).toHaveBeenCalledWith("deathSavePass"));
+    await userEvent.click(screen.getByRole("button", { name: /failure 1/i }));
+    await waitFor(() => expect(playSfx).toHaveBeenCalledWith("deathSaveFail"));
+  });
+
   it("edits Max HP through the pill modal", async () => {
     render(<App />);
     await screen.findByText("10");
