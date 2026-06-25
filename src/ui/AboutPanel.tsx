@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { IconButton } from "./controls";
+import { Button, IconButton } from "./controls";
 import { shareHoard } from "./shareHoard";
 import { WhatsNew } from "./WhatsNew";
 import { CHANGELOG } from "./changelogData";
@@ -17,15 +17,34 @@ export interface AboutPanelProps {
   onTakeTour?: () => void;
 }
 
-const FEATURES = ["Offline-first", "Installable PWA", "Open source"];
+const shareIcon = (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="18" cy="5" r="3" />
+    <circle cx="6" cy="12" r="3" />
+    <circle cx="18" cy="19" r="3" />
+    <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
+  </svg>
+);
+
+const tourIcon = (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 2a8 8 0 00-8 8c0 5 8 12 8 12s8-7 8-12a8 8 0 00-8-8z" />
+    <circle cx="12" cy="10" r="2.5" />
+  </svg>
+);
+
+const githubIcon = (
+  <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true">
+    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.65 7.65 0 012-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+  </svg>
+);
 
 /**
  * The "About" sheet reached from the radial hub (#74) — a small premium card, not a
- * plain modal: a gold emblem + wordmark hero over a soft bloom, feature badges, the
- * source-repo link (#52), and a footer. Layered for depth (backdrop blur, glow,
- * rimmed obsidian card) and springs in. The GitHub mark is an inline SVG so it works
- * fully offline. Dismisses on the close button, a backdrop tap, or Escape; focus
- * moves into the dialog on open.
+ * plain modal: a gold emblem + wordmark hero, one grouped action area, and quiet
+ * project metadata. The GitHub mark is an inline SVG so it works fully offline.
+ * Dismisses on the close button, a backdrop tap, or Escape; focus moves into the
+ * dialog on open.
  */
 export function AboutPanel({ onClose, onTakeTour }: AboutPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -90,58 +109,44 @@ export function AboutPanel({ onClose, onTakeTour }: AboutPanelProps) {
             <path d="M15 16c4-3 14-3 18 0" fill="none" stroke="#fff6da" strokeWidth="2" strokeLinecap="round" opacity="0.8" />
           </svg>
           <h2 className="about-panel__title">Hoard</h2>
-          <p className="about-panel__tagline">An offline, at-the-table HP, coins &amp; dice companion.</p>
+          <p className="about-panel__tagline">Offline HP, coins, dice, and rests for the table.</p>
         </div>
 
-        <ul className="about-panel__features">
-          {FEATURES.map((f) => (
-            <li key={f} className="about-panel__feature">{f}</li>
-          ))}
-        </ul>
+        <div className="about-panel__actions" aria-label="About actions">
+          <Button className="about-panel__action" aria-label="Share Hoard" onClick={onShare} leading={shareIcon}>
+            <span aria-live="polite">{copied ? "Link copied" : "Share Hoard"}</span>
+          </Button>
 
-        <button type="button" className="about-panel__share" aria-label="Share Hoard" onClick={onShare}>
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <circle cx="18" cy="5" r="3" />
-            <circle cx="6" cy="12" r="3" />
-            <circle cx="18" cy="19" r="3" />
-            <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
-          </svg>
-          <span aria-live="polite">{copied ? "Link copied" : "Share Hoard"}</span>
-        </button>
+          {onTakeTour && (
+            <Button variant="ghost" className="about-panel__action about-panel__tour" onClick={onTakeTour} leading={tourIcon}>
+              Take the tour
+            </Button>
+          )}
+        </div>
 
-        {onTakeTour && (
-          <button type="button" className="about-panel__share about-panel__tour" onClick={onTakeTour}>
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M12 2a8 8 0 00-8 8c0 5 8 12 8 12s8-7 8-12a8 8 0 00-8-8z" />
-              <circle cx="12" cy="10" r="2.5" />
-            </svg>
-            <span>Take the tour</span>
+        <div className="about-panel__meta" aria-label="Project details">
+          <a
+            className="about-panel__link"
+            href={REPO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="View source on GitHub"
+          >
+            {githubIcon}
+            <span>View source on GitHub</span>
+          </a>
+
+          <button
+            type="button"
+            className="about-panel__version about-panel__whatsnew"
+            onClick={() => setShowWhatsNew(true)}
+            aria-haspopup="dialog"
+          >
+            v{__APP_VERSION__} · What&rsquo;s new
           </button>
-        )}
-
-        <a
-          className="about-panel__link"
-          href={REPO_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="View source on GitHub"
-        >
-          <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true">
-            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.65 7.65 0 012-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
-          </svg>
-          View source on GitHub
-        </a>
-
-        <button
-          type="button"
-          className="about-panel__version about-panel__whatsnew"
-          onClick={() => setShowWhatsNew(true)}
-          aria-haspopup="dialog"
-        >
-          v{__APP_VERSION__} · What&rsquo;s new
-        </button>
-        <p className="about-panel__build" data-testid="about-build">{__BUILD__}</p>
-        <p className="about-panel__footer">AGPL-3.0 · ships no game content · built for the table</p>
+          <p className="about-panel__build" data-testid="about-build">{__BUILD__}</p>
+          <p className="about-panel__footer">AGPL-3.0 · no game content</p>
+        </div>
       </div>
       {/* Portal to body so the What's-new backdrop isn't nested in the About backdrop
           (whose click closes About) — otherwise its clicks would bubble + double-close. */}

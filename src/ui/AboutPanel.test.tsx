@@ -47,6 +47,22 @@ describe("AboutPanel", () => {
     expect(onTakeTour).toHaveBeenCalledTimes(1);
   });
 
+  it("groups primary actions separately from quieter project metadata (#294)", () => {
+    render(<AboutPanel onClose={vi.fn()} onTakeTour={vi.fn()} />);
+    const dialog = screen.getByRole("dialog", { name: /about/i });
+    const actions = dialog.querySelector(".about-panel__actions");
+    const meta = dialog.querySelector(".about-panel__meta");
+    if (!actions || !meta) throw new Error("About hierarchy missing action or metadata group");
+
+    expect(actions).toContainElement(screen.getByRole("button", { name: /share hoard/i }));
+    expect(actions).toContainElement(screen.getByRole("button", { name: /take the tour/i }));
+    expect(meta).toContainElement(screen.getByRole("link", { name: /view source on github/i }));
+    expect(meta).toContainElement(screen.getByRole("button", { name: /what.s new/i }));
+    expect(screen.queryByText("Offline-first")).toBeNull();
+    expect(screen.queryByText("Installable PWA")).toBeNull();
+    expect(screen.queryByText("Open source")).toBeNull();
+  });
+
   it("omits the tour button when no onTakeTour is given", () => {
     render(<AboutPanel onClose={vi.fn()} />);
     expect(screen.queryByRole("button", { name: /take the tour/i })).toBeNull();
