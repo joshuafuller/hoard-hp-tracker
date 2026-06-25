@@ -9,6 +9,14 @@ Entries describe changes in player-meaningful terms, not raw commit subjects. On
 [release-please](https://github.com/googleapis/release-please) is adopted (#169), the
 sections below `Unreleased` will be generated automatically from Conventional Commits.
 
+## [0.0.15](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.14...v0.0.15) (2026-06-25)
+
+
+### Added
+
+* **about:** declutter About panel ([e01339f](https://github.com/joshuafuller/hoard-hp-tracker/commit/e01339f8873f6f27bf7a0810032fa4d922cfdcbf))
+* **about:** declutter About panel ([638eda5](https://github.com/joshuafuller/hoard-hp-tracker/commit/638eda57b54a611b92726dfd81ed398afab0f0a2)), closes [#294](https://github.com/joshuafuller/hoard-hp-tracker/issues/294)
+
 ## [0.0.14](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.13...v0.0.14) (2026-06-24)
 
 
