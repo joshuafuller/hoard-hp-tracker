@@ -9,6 +9,13 @@ Entries describe changes in player-meaningful terms, not raw commit subjects. On
 [release-please](https://github.com/googleapis/release-please) is adopted (#169), the
 sections below `Unreleased` will be generated automatically from Conventional Commits.
 
+## [0.0.16](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.15...v0.0.16) (2026-08-03)
+
+
+### Fixed
+
+* **deps:** pin postcss &gt;=8.5.18 for GHSA-r28c-9q8g-f849 ([#297](https://github.com/joshuafuller/hoard-hp-tracker/issues/297)) ([c88d5bb](https://github.com/joshuafuller/hoard-hp-tracker/commit/c88d5bb6ee90f08f7461200b7b389e7094feabc5))
+
 ## [0.0.15](https://github.com/joshuafuller/hoard-hp-tracker/compare/v0.0.14...v0.0.15) (2026-06-25)
 
 
