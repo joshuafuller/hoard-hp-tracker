@@ -3,14 +3,19 @@ import Dexie from "dexie";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { RollRecord } from "../../domain/dice";
 import { createHpDb, type HpDb } from "../../store/db";
+import type { DiceTray as DiceEngineTray } from "./diceEngine";
 
 // Mock the engine: rollHeadless returns a fixed record; createDiceTray yields a
 // fake tray. Lets us test the tray's orchestration without WebGL (covered by e2e).
 const { createDiceTray, rollHeadless } = vi.hoisted(() => {
   const rec = { notation: "1d20+5", total: 23, result: [18], dice: [{ sides: 20, value: 18, dropped: false }] };
   return {
-    createDiceTray: vi.fn(async () => ({ roll: vi.fn(async () => rec), clear: vi.fn() })),
+    createDiceTray: vi.fn(async (): Promise<DiceEngineTray> => ({
+      roll: vi.fn(async () => rec),
+      clear: vi.fn(),
+    })),
     rollHeadless: vi.fn(() => rec),
   };
 });
@@ -197,8 +202,8 @@ describe("DiceTray", () => {
   });
 
   it("ignores a tap on the dimmed area mid-roll — no sweep, no stuck Throwing", async () => {
-    let resolveRoll!: (r: unknown) => void;
-    const tray = { roll: vi.fn(() => new Promise((res) => { resolveRoll = res; })), clear: vi.fn() };
+    let resolveRoll!: (r: RollRecord) => void;
+    const tray: DiceEngineTray = { roll: vi.fn(() => new Promise<RollRecord>((res) => { resolveRoll = res; })), clear: vi.fn() };
     createDiceTray.mockResolvedValueOnce(tray);
     render(<DiceTray open onClose={vi.fn()} onApplyHeal={vi.fn()} db={db} reducedMotion={false} />);
     await waitFor(() => expect(createDiceTray).toHaveBeenCalled());
@@ -222,7 +227,7 @@ describe("DiceTray", () => {
       // Faithful to bindTray: the roll never settles on its own, and clear() REJECTS
       // it (abandon) — exactly the interaction that made the buggy order return null.
       let rejectRoll: ((e: Error) => void) | undefined;
-      const tray = {
+      const tray: DiceEngineTray = {
         roll: vi.fn(() => new Promise<never>((_, rej) => { rejectRoll = rej; })),
         clear: vi.fn(() => rejectRoll?.(new Error("dice roll superseded"))),
       };
@@ -246,12 +251,12 @@ describe("DiceTray", () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     try {
       let onProgress: (() => void) | undefined;
-      let resolveRoll: ((rec: unknown) => void) | undefined;
+      let resolveRoll: ((rec: RollRecord) => void) | undefined;
       const tray = {
         // Capture the onProgress hook; never settle on our own — we drive it by hand.
         roll: vi.fn((_notation: string, op?: () => void) => {
           onProgress = op;
-          return new Promise((res) => { resolveRoll = res; });
+          return new Promise<RollRecord>((res) => { resolveRoll = res; });
         }),
         clear: vi.fn(),
       };
@@ -316,8 +321,8 @@ describe("DiceTray", () => {
 
     it("discards a contextual roll abandoned mid-throw — a late settle never applies", async () => {
       // Engine roll we resolve by hand, so we can close the tray mid-flight.
-      let resolveRoll!: (r: unknown) => void;
-      const tray = { roll: vi.fn(() => new Promise((res) => { resolveRoll = res; })), clear: vi.fn() };
+      let resolveRoll!: (r: RollRecord) => void;
+      const tray: DiceEngineTray = { roll: vi.fn(() => new Promise<RollRecord>((res) => { resolveRoll = res; })), clear: vi.fn() };
       createDiceTray.mockResolvedValueOnce(tray);
       const onDeathSave = vi.fn();
       render(
